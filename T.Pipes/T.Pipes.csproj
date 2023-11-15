@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>net6.0;net4.8;net7.0;netstandard2.0</TargetFrameworks>
+    <Nullable>enable</Nullable>
+    <OutputType>Library</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="H.Pipes" Version="2.0.*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\T.Pipes.SourceGeneration\T.Pipes.SourceGeneration.csproj" />
+  </ItemGroup>
+
+</Project>
