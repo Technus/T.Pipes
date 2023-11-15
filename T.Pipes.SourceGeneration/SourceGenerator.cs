@@ -18,7 +18,7 @@ namespace T.Pipes.SourceGeneration
     {
       var classDeclarations = ctx.SyntaxProvider.CreateSyntaxProvider(
         predicate: static (s, _) => HasAttributes(s),
-        transform: static (ctx, _) => GetClass(ctx))
+        transform: static (ctx, _) => GetType(ctx))
         .Where(static m => m is not null);
 
       var compilationAndClasses = ctx.CompilationProvider.Combine(classDeclarations.Collect());
@@ -26,7 +26,7 @@ namespace T.Pipes.SourceGeneration
       ctx.RegisterSourceOutput(compilationAndClasses, static (spc, src) => Execute(src.Left, src.Right, spc));
     }
 
-    private static void Execute(Compilation compilation, ImmutableArray<ClassDeclarationSyntax?> classes, SourceProductionContext context)
+    private static void Execute(Compilation compilation, ImmutableArray<TypeDeclarationSyntax?> classes, SourceProductionContext context)
     {
       if (classes.IsDefaultOrEmpty)
       {
@@ -42,16 +42,16 @@ namespace T.Pipes.SourceGeneration
 
         foreach (var item in classes)
         {
-          var classDefinition = p.GenerateClass(item!);
-          var outputDefinition = e.EmitClass(classDefinition);
-          context.AddSource(outputDefinition.HintName + ".g.cs", SourceText.From(outputDefinition.Source, Encoding.UTF8));
+          var typeDefinition = p.GenerateType(item!);
+          (string HintName, string Source) = e.EmitType(typeDefinition);
+          context.AddSource(HintName + ".g.cs", SourceText.From(Source, Encoding.UTF8));
         }
       }
     }
 
     private static bool HasAttributes(SyntaxNode node) => node is MemberDeclarationSyntax memberDeclaration && memberDeclaration.AttributeLists.Count > 0;
 
-    private static ClassDeclarationSyntax? GetClass(GeneratorSyntaxContext context)
+    private static TypeDeclarationSyntax? GetType(GeneratorSyntaxContext context)
     {
       // we know the node is a MethodDeclarationSyntax thanks to IsSyntaxTargetForGeneration
       var memberDeclarationSyntax = (MemberDeclarationSyntax)context.Node;
@@ -75,7 +75,7 @@ namespace T.Pipes.SourceGeneration
           if (fullName == PipeMeAttribute)
           {
             // return the parent class of the method
-            return memberDeclarationSyntax.Parent as ClassDeclarationSyntax;
+            return memberDeclarationSyntax.Parent as TypeDeclarationSyntax;
           }
         }
       }

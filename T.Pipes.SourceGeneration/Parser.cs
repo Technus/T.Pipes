@@ -21,17 +21,17 @@ namespace T.Pipes.SourceGeneration
       this.cancellationToken = cancellationToken;
     }
 
-    internal ClassDefinition GenerateClass(ClassDeclarationSyntax classy)
+    internal TypeDefiniton GenerateType(TypeDeclarationSyntax classy)
     {
       return new(classy, GetHintName(classy));
     }
 
-    private string GetHintName(ClassDeclarationSyntax classy)
+    private string GetHintName(TypeDeclarationSyntax classy)
     {
       var sb = new StringBuilder(128);
       sb.Append(classy.Identifier.ToString());
 
-      while (TryGetParentSyntax<ClassDeclarationSyntax>(classy, out var cl))
+      while (TryGetParentSyntax<TypeDeclarationSyntax>(classy, out var cl))
       {
         sb.Insert(0, '.');
         sb.Insert(0, cl.Identifier.ToString());
@@ -67,8 +67,14 @@ namespace T.Pipes.SourceGeneration
 
         if (syntaxNode.GetType() == typeof(T))
         {
-          result = (T)syntaxNode;
-          return true;
+          var t = syntaxNode as T;
+          if(t is not null)
+          {
+            result = t;
+            return true;
+          }
+          result = null;
+          return false;
         }
 
         return TryGetParentSyntax<T>(syntaxNode, out result);

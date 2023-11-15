@@ -12,6 +12,6 @@ namespace T.Pipes.SourceGeneration
 
     public Emitter(CancellationToken cancellationToken) => this.cancellationToken = cancellationToken;
 
-    internal (string HintName, string Source) EmitClass(ClassDefinition classDefinition) => (classDefinition.Name, "namespace Egg { class Nog {} }");
+    internal (string HintName, string Source) EmitType(TypeDefiniton classDefinition) => (classDefinition.Name, "namespace Egg { class Nog {} }");
   }
 }
