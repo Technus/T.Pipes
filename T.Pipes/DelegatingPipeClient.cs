@@ -7,7 +7,7 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using H.Pipes;
-using Idefix.BaseClasses.Patterns;
+using T.Pipes.Abstractions;
 
 namespace T.Pipes
 {
@@ -42,10 +42,9 @@ namespace T.Pipes
         _type = target.GetType();
       }
 
-      protected override async ValueTask DisposeManagedAsync()
+      public async ValueTask DisposeAsync()
       {
-        await base.DisposeManagedAsync();
-        _semaphore.Wait();
+        await _semaphore.WaitAsync();
         foreach (var item in _responses)
         {
           item.Value.TrySetCanceled();
@@ -54,6 +53,8 @@ namespace T.Pipes
         _semaphore.Dispose();
         _failedOnce.TrySetCanceled();
       }
+
+      public void Dispose() => DisposeAsync().AsTask().Wait();
 
       public void Clear()
       {
@@ -153,7 +154,7 @@ namespace T.Pipes
 
       public void AddProperty(string propertyName, PropertyInfo property)
       {
-        property ??= _type.GetProperty(propertyName);
+        property ??= _type.GetProperty(propertyName) ?? throw new ArgumentNullException();
         var type = property.PropertyType;
         var setter = property.GetSetMethod()?.CreateDelegate(typeof(Action<>).MakeGenericType(type), _target);
         if (setter != null)
@@ -169,7 +170,7 @@ namespace T.Pipes
 
       public void AddMethod(string methodName, MethodInfo method)
       {
-        method ??= _type.GetMethod(methodName);
+        method ??= _type.GetMethod(methodName) ?? throw new ArgumentNullException();
         var returnType = method.ReturnType;
         var parameters = method.GetParameters();
         var parameterTypes = parameters.Select(x => x.ParameterType).ToArray();
@@ -194,7 +195,7 @@ namespace T.Pipes
             14 => typeof(Action<,,,,,,,,,,,,,>),
             15 => typeof(Action<,,,,,,,,,,,,,,>),
             16 => typeof(Action<,,,,,,,,,,,,,,,>),
-            _ => null
+            _ => throw new ArgumentNullException(),
           };
           if (parameterTypes.Length == 0)
           {
@@ -228,7 +229,7 @@ namespace T.Pipes
             14 => typeof(Func<,,,,,,,,,,,,,,>),
             15 => typeof(Func<,,,,,,,,,,,,,,,>),
             16 => typeof(Func<,,,,,,,,,,,,,,,,>),
-            _ => null
+            _ => throw new ArgumentNullException(),
           };
           if (type != null)
           {
@@ -239,9 +240,9 @@ namespace T.Pipes
       }
     }
 
-    protected override async ValueTask DisposeManagedAsync()
+    public override async ValueTask DisposeAsync()
     {
-      await base.DisposeManagedAsync();
+      await base.DisposeAsync();
       await Callback.DisposeAsync();
     }
 

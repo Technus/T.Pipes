@@ -2,7 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace T.Pipes
+namespace T.Pipes.Abstractions
 {
   public interface IPipeConnection<T> : IAsyncDisposable, IDisposable
   {

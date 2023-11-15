@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace T.Pipes
+namespace T.Pipes.Abstractions
 {
   public interface IPipeCallback<TMessage> : IDisposable, IAsyncDisposable
   {

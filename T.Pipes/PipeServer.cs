@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using H.Pipes;
 using H.Pipes.Args;
+using T.Pipes.Abstractions;
 
 namespace T.Pipes
 {
@@ -25,9 +26,9 @@ namespace T.Pipes
     private void OnClientDisconnected(object? sender, ConnectionEventArgs<TPacket> e) => Callback?.Disconnected(e.Connection.PipeName);
     private void OnClientConnected(object? sender, ConnectionEventArgs<TPacket> e) => Callback?.Connected(e.Connection.PipeName);
 
-    protected override async ValueTask DisposeManagedAsync()
+    public override async ValueTask DisposeAsync()
     {
-      await base.DisposeManagedAsync();
+      await base.DisposeAsync();
       Pipe.ClientDisconnected -= OnClientDisconnected;
       Pipe.ClientConnected -= OnClientConnected;
     }

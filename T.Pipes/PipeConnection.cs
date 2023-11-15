@@ -1,7 +1,7 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
 using H.Pipes.Args;
-using Idefix.BaseClasses.Patterns;
+using T.Pipes.Abstractions;
 
 namespace T.Pipes
 {
@@ -27,13 +27,14 @@ namespace T.Pipes
     private void OnMessageReceived(object? sender, ConnectionMessageEventArgs<TPacket?> e) => Callback.OnMessageReceived(e.Message);
     private void OnExceptionOccurred(object? sender, ExceptionEventArgs e) => Callback.OnExceptionOccurred(e.Exception);
 
-    protected override async ValueTask DisposeManagedAsync()
+    public virtual async ValueTask DisposeAsync()
     {
-      await base.DisposeManagedAsync();
       await Pipe.DisposeAsync();
       Pipe.MessageReceived -= OnMessageReceived;
       Pipe.ExceptionOccurred -= OnExceptionOccurred;
     }
+
+    public void Dispose() => DisposeAsync().AsTask().Wait();
 
     public async Task WriteAsync(TPacket value, CancellationToken cancellationToken = default)
     {

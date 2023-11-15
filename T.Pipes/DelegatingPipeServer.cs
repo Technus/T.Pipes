@@ -6,7 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using H.Pipes;
-using Idefix.BaseClasses.Patterns;
+using T.Pipes.Abstractions;
 
 namespace T.Pipes
 {
@@ -24,7 +24,7 @@ namespace T.Pipes
     {
     }
 
-    public class PipeCallback : DisposableAsync, IPipeCallback<PipeMessage>
+    public class PipeCallback : IPipeCallback<PipeMessage>
     {
       private readonly TaskCompletionSource<object?> _connectedOnce = new TaskCompletionSource<object?>();
       private readonly TaskCompletionSource<object?> _failedOnce = new TaskCompletionSource<object?>();
@@ -40,11 +40,10 @@ namespace T.Pipes
 
       internal PipeCallback(IPipeServer<PipeMessage> pipe) => _pipe = pipe;
 
-      protected override async ValueTask DisposeManagedAsync()
+      public async ValueTask DisposeAsync()
       {
-        await base.DisposeManagedAsync();
         _events.Clear();
-        _semaphore.Wait();
+        await _semaphore.WaitAsync();
         foreach (var item in _responses)
         {
           item.Value.SetCanceled();
@@ -54,6 +53,8 @@ namespace T.Pipes
         _connectedOnce.TrySetCanceled();
         _failedOnce.TrySetCanceled();
       }
+
+      public void Dispose() => DisposeAsync().AsTask().Wait();
 
       public void Clear()
       {
@@ -135,9 +136,9 @@ namespace T.Pipes
       public void RemoveAction(string callerName) => _events.Remove(callerName);
     }
 
-    protected override async ValueTask DisposeManagedAsync()
+    public override async ValueTask DisposeAsync()
     {
-      await base.DisposeManagedAsync();
+      await base.DisposeAsync();
       await Callback.DisposeAsync();
     }
 

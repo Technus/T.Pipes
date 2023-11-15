@@ -6,28 +6,28 @@ namespace T.Pipes
   /// Generic Uniquely identifiable message
   /// </summary>
   [Serializable]
-  public class PipeMessage<T> where T : struct
+  public class PipeMessage
   {
-    private PipeMessage(Guid command, Guid transactionId)
+    private PipeMessage(string command, Guid id)
     {
-      CommandId = command;
-      TransactionId = transactionId;
+      Command = command;
+      Id = id;
     }
 
-    public PipeMessage(Guid command) : this(command, Guid.NewGuid())
+    public PipeMessage(string command) : this(command, Guid.NewGuid())
     {
     }
 
-    public PipeMessage(Guid command, T parameter = default) : this(command) =>
+    public PipeMessage(string command, object? parameter = default) : this(command) =>
       Parameter = parameter;
 
-    public PipeMessage<TResponse> ToResponse<TResponse>(TResponse response = default) where TResponse : struct =>
-       new(CommandId, TransactionId) { Parameter = response };
+    public PipeMessage ToResponse<TResponse>(TResponse? response = default) =>
+       new(Command, Id) { Parameter = response };
 
-    public Guid TransactionId { get; private set; }
-    public Guid CommandId { get; private set; }
-    public T Parameter { get; private set; }
+    public Guid Id { get; private set; }
+    public string Command { get; private set; }
+    public object? Parameter { get; private set; }
 
-    public override string ToString() => $"{TransactionId} / {CommandId} / {Parameter}";
+    public override string ToString() => $"{Id} / {Command} / {Parameter}";
   }
 }

@@ -4,6 +4,7 @@
     <TargetFrameworks>net6.0;net4.8;net7.0;netstandard2.0</TargetFrameworks>
     <Nullable>enable</Nullable>
     <OutputType>Library</OutputType>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -11,7 +12,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\T.Pipes.SourceGeneration\T.Pipes.SourceGeneration.csproj" />
+    <ProjectReference Include="..\T.Pipes.Abstractions\T.Pipes.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\T.Pipes.SourceGeneration\T.Pipes.SourceGeneration.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false" />
   </ItemGroup>
 
 </Project>
