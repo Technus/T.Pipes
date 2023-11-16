@@ -38,8 +38,8 @@ namespace T.Pipes
 
     public async Task WriteAsync(TPacket value, CancellationToken cancellationToken = default)
     {
-      await Pipe.WriteAsync(value, cancellationToken);
       Callback.OnMessageSent(value);
+      await Pipe.WriteAsync(value, cancellationToken);
     }
 
     public abstract Task StartAsync(CancellationToken cancellationToken = default);

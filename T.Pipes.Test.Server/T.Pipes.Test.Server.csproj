@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Pastel" Version="4.2.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\T.Pipes.Test.Client\T.Pipes.Test.Client.csproj" ReferenceOutputAssembly="false" TreatAsUsed="true" OutputItemType="Content" CopyToOutputDirectory="Always" />
+    <ProjectReference Include="..\T.Pipes\T.Pipes.csproj" />
+  </ItemGroup>
+
+</Project>
