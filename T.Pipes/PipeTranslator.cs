@@ -1,13 +1,16 @@
-﻿namespace T.Pipes
+﻿using T.Pipes.Abstractions;
+
+namespace T.Pipes
 {
-  public class PipeTranslator
+  public partial class PipeTranslator
   {
 
-  }
+    public partial class A<Tea>
+    {
+      [PipeMe]
+      partial void Kek();
 
-  public partial class A
-  {
-    partial void Kek();
+    }
 
   }
 }

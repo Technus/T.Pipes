@@ -1,8 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.Immutable;
+﻿using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using CodegenCS;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
@@ -12,7 +12,9 @@ namespace T.Pipes.SourceGeneration
   [Generator(LanguageNames.CSharp)]
   public class SourceGenerator : IIncrementalGenerator
   {
-    const string PipeMeAttribute = "T.Pipes.Abstractions.PipeMeAttribute";
+    private static DiagnosticDescriptor Descriptor { get; } = new("T_Pipes_SourceGeneration", "File Generated", "File Generated: {0}", "Files", DiagnosticSeverity.Info, true);
+
+    private const string PipeMeAttribute = "T.Pipes.Abstractions.PipeMeAttribute";
 
     public void Initialize(IncrementalGeneratorInitializationContext ctx)
     {
@@ -35,7 +37,7 @@ namespace T.Pipes.SourceGeneration
       }
 
       classes = classes.Where(static x => x is not null).Distinct().ToImmutableArray();
-      if(classes.Length > 0)
+      if (classes.Length > 0)
       {
         var p = new Parser(compilation, context.ReportDiagnostic, context.CancellationToken);
         var e = new Emitter(context.CancellationToken);
@@ -43,8 +45,9 @@ namespace T.Pipes.SourceGeneration
         foreach (var item in classes)
         {
           var typeDefinition = p.GenerateType(item!);
-          (string HintName, string Source) = e.EmitType(typeDefinition);
-          context.AddSource(HintName + ".g.cs", SourceText.From(Source, Encoding.UTF8));
+          var (hintName, source) = e.EmitType(typeDefinition);
+          context.ReportDiagnostic(Diagnostic.Create(Descriptor, null, hintName));
+          context.AddSource(hintName, SourceText.From(source, Encoding.UTF8));
         }
       }
     }
