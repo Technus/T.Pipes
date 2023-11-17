@@ -1,5 +1,4 @@
 ﻿using System.Diagnostics;
-using Pastel;
 
 namespace T.Pipes.Test.Server
 {

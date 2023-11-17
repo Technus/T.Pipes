@@ -2,9 +2,12 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFrameworks>net6.0;net48;net7.0;net8.0</TargetFrameworks>
+    <LangVersion>latest</LangVersion>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+	<EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+	<CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>
   </PropertyGroup>
 
   <ItemGroup>
@@ -12,8 +15,15 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\T.Pipes.Test.Abstractions\T.Pipes.Test.Abstractions.csproj" />
     <ProjectReference Include="..\T.Pipes.Test.Client\T.Pipes.Test.Client.csproj" ReferenceOutputAssembly="false" TreatAsUsed="true" OutputItemType="Content" CopyToOutputDirectory="Always" />
     <ProjectReference Include="..\T.Pipes\T.Pipes.csproj" />
   </ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\T.Pipes.SourceGeneration\T.Pipes.SourceGeneration.csproj"
+						  OutputItemType="Analyzer"
+						  ReferenceOutputAssembly="false"/>
+	</ItemGroup>
 
 </Project>

@@ -1,8 +1,6 @@
-﻿using System.Collections.Immutable;
-using System.Diagnostics;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
-using CodegenCS;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
@@ -74,7 +72,6 @@ namespace T.Pipes.SourceGeneration
           var attributeContainingTypeSymbol = attributeSymbol.ContainingType;
           var fullName = attributeContainingTypeSymbol.ToDisplayString();
 
-          // Is the attribute the [PipeMe] attribute?
           if (fullName == PipeMeAttribute)
           {
             // return the parent class of the method

@@ -38,22 +38,18 @@ namespace T.Pipes.SourceGeneration
       {{() => typeDefinition.TypeList.ForEach(x => RenderTypeEnd())}}
       """);
 
-    private void RenderTypeStart(string typeDefinition)
-    {
-      writer.IncreaseIndent();
-      writer.WriteLine($$"""
+    private void RenderTypeStart(string typeDefinition) => writer
+      .IncreaseIndent()
+      .WriteLine($$"""
       {{typeDefinition}}
       {
       """);
-    }
 
-    private void RenderTypeEnd()
-    {
-      writer.WriteLine($$"""
+    private void RenderTypeEnd() => writer
+      .WriteLine($$"""
       }
-      """);
-      writer.DecreaseIndent();
-    }
+      """)
+      .DecreaseIndent();
 
     private void RenderInnerContent(TypeDefinition typeDefinition) => writer.WriteLine("//Nog");
   }

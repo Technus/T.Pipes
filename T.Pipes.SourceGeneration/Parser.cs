@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Threading;
 using Microsoft.CodeAnalysis;
@@ -11,8 +9,8 @@ namespace T.Pipes.SourceGeneration
 {
   internal class Parser
   {
-    private Compilation compilation;
-    private Action<Diagnostic> reportDiagnostic;
+    private readonly Compilation compilation;
+    private readonly Action<Diagnostic> reportDiagnostic;
     private CancellationToken cancellationToken;
 
     internal Parser(Compilation compilation, Action<Diagnostic> reportDiagnostic, CancellationToken cancellationToken)
@@ -26,10 +24,23 @@ namespace T.Pipes.SourceGeneration
     {
       TypeDeclarationSyntax = classy,
       Name = GetHintName(classy),
-      Namespace = TryGetParentSyntax<NamespaceDeclarationSyntax>(classy, out var parent) ? parent.Name.ToString() : throw new ArgumentException("Has no Namespace",nameof(classy)),
+      Namespace = classy.TryGetParentSyntax<NamespaceDeclarationSyntax>(out var parent) ? parent.Name.ToString() : throw new ArgumentException("Has no Namespace", nameof(classy)),
       TypeList = GetTypeList(classy),
-      UsingList = new List<string> {},
+      UsingList = new List<string> { },
+      MemberDeclarations = GetMembers(classy),
     };
+
+    private static List<MemberDeclarationSyntax> GetMembers(TypeDeclarationSyntax classy)
+    {
+      var members = new List<MemberDeclarationSyntax>();
+
+      foreach (var item in classy.Members)
+      {
+
+      }
+
+      return members;
+    }
 
     private static List<string> GetTypeList(TypeDeclarationSyntax classy)
     {
@@ -38,7 +49,7 @@ namespace T.Pipes.SourceGeneration
         GetTypeDeclaration(classy)
       };
 
-      while (TryGetParentSyntax<TypeDeclarationSyntax>(classy, out var cl))
+      while (classy.TryGetParentSyntax<TypeDeclarationSyntax>(out var cl))
       {
         classy = cl;
         list.Insert(0, GetTypeDeclaration(classy));
@@ -64,13 +75,13 @@ namespace T.Pipes.SourceGeneration
       var sb = new StringBuilder(128);
       sb.Append(classy.Identifier.ToString());
 
-      while (TryGetParentSyntax<TypeDeclarationSyntax>(classy, out var cl))
+      while (classy.TryGetParentSyntax<TypeDeclarationSyntax>(out var cl))
       {
         classy = cl;
         sb.Insert(0, '.');
         sb.Insert(0, classy.Identifier.ToString());
       }
-      if (TryGetParentSyntax<NamespaceDeclarationSyntax>(classy, out var ns))
+      if (classy.TryGetParentSyntax<NamespaceDeclarationSyntax>(out var ns))
       {
         sb.Insert(0, '.');
         sb.Insert(0, ns.Name.ToString());
@@ -78,40 +89,5 @@ namespace T.Pipes.SourceGeneration
       return sb.ToString();
     }
 
-
-    public static bool TryGetParentSyntax<T>(SyntaxNode? syntaxNode, [NotNullWhen(true)] out T? result) where T : SyntaxNode
-    {
-      // set defaults
-
-      if (syntaxNode == null)
-      {
-        result = null;
-        return false;
-      }
-
-      try
-      {
-        syntaxNode = syntaxNode.Parent;
-
-        if (syntaxNode == null)
-        {
-          result = null;
-          return false;
-        }
-
-        if (syntaxNode is T requestedNode)
-        {
-          result = requestedNode;
-          return true;
-        }
-
-        return TryGetParentSyntax<T>(syntaxNode, out result);
-      }
-      catch
-      {
-        result = null;
-        return false;
-      }
-    }
   }
 }

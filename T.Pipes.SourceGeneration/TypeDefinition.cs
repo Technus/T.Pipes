@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Linq;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace T.Pipes.SourceGeneration
@@ -27,5 +26,10 @@ namespace T.Pipes.SourceGeneration
     /// In case of types rooted in other types
     /// </summary>
     public List<string> TypeList { get; set; }
+
+    /// <summary>
+    /// Members in the type to write
+    /// </summary>
+    public List<MemberDeclarationSyntax> MemberDeclarations { get; set; }
   }
 }

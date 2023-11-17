@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using Pastel;
+﻿using Pastel;
 using T.Pipes.Abstractions;
 
 namespace T.Pipes.Test.Client

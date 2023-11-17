@@ -1,12 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <TargetFrameworks>net6.0;net4.8;net7.0;netstandard2.0</TargetFrameworks>
     <Nullable>enable</Nullable>
     <OutputType>Library</OutputType>
     <LangVersion>latest</LangVersion>
-    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
-    <CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>
   </PropertyGroup>
 
   <ItemGroup>
@@ -16,11 +13,4 @@
   <ItemGroup>
     <ProjectReference Include="..\T.Pipes.Abstractions\T.Pipes.Abstractions.csproj" />
   </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\T.Pipes.SourceGeneration\T.Pipes.SourceGeneration.csproj"
-                      OutputItemType="Analyzer"
-                      ReferenceOutputAssembly="false"/>
-  </ItemGroup>
-
 </Project>
