@@ -4,9 +4,9 @@ using System.Threading.Tasks;
 
 namespace T.Pipes.Abstractions
 {
-  public interface IPipeConnection<T> : IAsyncDisposable, IDisposable
+  public interface IPipeConnection<TMessage> : IAsyncDisposable, IDisposable
   {
-    Task WriteAsync(T value, CancellationToken cancellationToken = default);
+    Task WriteAsync(TMessage value, CancellationToken cancellationToken = default);
     Task StartAsync(CancellationToken cancellationToken = default);
     Task StopAsync(CancellationToken cancellationToken = default);
     bool IsRunning { get; }
