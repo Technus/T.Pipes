@@ -37,45 +37,45 @@ namespace T.Pipes
     {
       var cmd = PacketFactory.Create(callerName, parameters);
       Pipe.WriteAsync(cmd).Wait();
-      return (T?)Callback.GetResponse(cmd).Result;
+      return (T?)Callback.GetResponse(cmd);
     }
 
     public T? InvokeRemote<T>([CallerMemberName] string callerName = "")
     {
       var cmd = PacketFactory.Create(callerName);
       Pipe.WriteAsync(cmd).Wait();
-      return (T?)Callback.GetResponse(cmd).Result;
+      return (T?)Callback.GetResponse(cmd);
     }
 
     public void InvokeRemote(object? parameters, [CallerMemberName] string callerName = "")
     {
       var cmd = PacketFactory.Create(callerName, parameters);
       Pipe.WriteAsync(cmd).Wait();
-      _ = Callback.GetResponse(cmd).Result;
+      _ = Callback.GetResponse(cmd);
     }
 
     public void InvokeRemote([CallerMemberName] string callerName = "")
     {
       var cmd = PacketFactory.Create(callerName);
       Pipe.WriteAsync(cmd).Wait();
-      _ = Callback.GetResponse(cmd).Result;
+      _ = Callback.GetResponse(cmd);
     }
 
     public T? GetRemote<T>([CallerMemberName] string callerName = "")
     {
       var cmd = PacketFactory.Create("get_" + callerName);
       Pipe.WriteAsync(cmd).Wait();
-      return (T?)Callback.GetResponse(cmd).Result;
+      return (T?)Callback.GetResponse(cmd);
     }
 
     public void SetRemote<T>(T? value, [CallerMemberName] string callerName = "")
     {
       var cmd = PacketFactory.Create("set_" + callerName, value);
       Pipe.WriteAsync(cmd).Wait();
-      _ = Callback.GetResponse(cmd).Result;
+      _ = Callback.GetResponse(cmd);
     }
 
-    public void AddFunctionRemote(Func<object?, object?> function, string callerName) => Callback.AddFunction(callerName, function);
+    public void SetFunctionRemote(Func<object?, object?> function, string callerName) => Callback.SetFunction(callerName, function);
 
     public void RemoveFunctionRemote(string callerName) => Callback.RemoveFunction(callerName);
   }

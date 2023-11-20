@@ -11,9 +11,9 @@ namespace T.Pipes.Test.Server
 
     public DelegatingServer(IPipeServer<PipeMessage> pipe) : base(new PipeMessageFactory(), pipe)
     {
-      AddFunctionRemote(x => { Act?.Invoke(); return default; }, nameof(IAbstract.Act));
-      AddFunctionRemote(x => Set?.Invoke(), nameof(IAbstract.Set));
-      AddFunctionRemote(x => { Get?.Invoke(x as string ?? string.Empty); return default; }, nameof(IAbstract.Get));
+      SetFunctionRemote(x => { Act?.Invoke(); return default; }, nameof(IAbstract.Act));
+      SetFunctionRemote(x => Set?.Invoke(), nameof(IAbstract.Set));
+      SetFunctionRemote(x => { Get?.Invoke(x as string ?? string.Empty); return default; }, nameof(IAbstract.Get));
     }
 
     public Func<int, int>? Tea { get => GetRemote<Func<int, int>?>(); set => SetRemote<Func<int, int>?>(value); }

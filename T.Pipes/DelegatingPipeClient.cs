@@ -35,31 +35,31 @@ namespace T.Pipes
     {
       var cmd = PacketFactory.Create(callerName, parameters);
       Pipe.WriteAsync(cmd).Wait();
-      _ = Callback.GetResponse(cmd).Result;
+      Callback.GetResponse(cmd);
     }
 
     public void EventRemote(string callerName)
     {
       var cmd = PacketFactory.Create(callerName);
       Pipe.WriteAsync(cmd).Wait();
-      _ = Callback.GetResponse(cmd).Result;
+      Callback.GetResponse(cmd);
     }
 
     public T? EventRemote<T>(object? parameters, string callerName)
     {
       var cmd = PacketFactory.Create(callerName, parameters);
       Pipe.WriteAsync(cmd).Wait();
-      return (T?)Callback.GetResponse(cmd).Result;
+      return (T?)Callback.GetResponse(cmd);
     }
 
     public T? EventRemote<T>(string callerName)
     {
       var cmd = PacketFactory.Create(callerName);
       Pipe.WriteAsync(cmd).Wait();
-      return (T?)Callback.GetResponse(cmd).Result;
+      return (T?)Callback.GetResponse(cmd);
     }
 
-    public void AddFunctionRemote(Func<object?, object?> function, string callerName) => Callback.AddFunction(callerName, function);
+    public void SetFunctionRemote(Func<object?, object?> function, string callerName) => Callback.SetFunction(callerName, function);
 
     public void RemoveFunctionRemote(string callerName) => Callback.RemoveFunction(callerName);
   }

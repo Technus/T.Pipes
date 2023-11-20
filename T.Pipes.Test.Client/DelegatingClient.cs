@@ -14,7 +14,7 @@ namespace T.Pipes.Test.Client
       Target.Act += Target_Act;
       Target.Set += Target_Set;
       Target.Get += Target_Get;
-      AddFunctionRemote(x =>
+      SetFunctionRemote(x =>
       {
         var (a, b, c) = ((int, int, int))x!;
         (int ret, int d, int e) ret = default;
