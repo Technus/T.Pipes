@@ -25,6 +25,7 @@ namespace T.Pipes
     }
 
     private void OnMessageReceived(object? sender, ConnectionMessageEventArgs<TPacket?> e) => Callback.OnMessageReceived(e.Message);
+
     private void OnExceptionOccurred(object? sender, ExceptionEventArgs e) => Callback.OnExceptionOccurred(e.Exception);
 
     public virtual async ValueTask DisposeAsync()

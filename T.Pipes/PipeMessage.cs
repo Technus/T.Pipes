@@ -1,4 +1,5 @@
 ﻿using System;
+using T.Pipes.Abstractions;
 
 namespace T.Pipes
 {
@@ -6,27 +7,11 @@ namespace T.Pipes
   /// Generic Uniquely identifiable message
   /// </summary>
   [Serializable]
-  public class PipeMessage
+  public struct PipeMessage : IPipeMessage
   {
-    private PipeMessage(string command, Guid id)
-    {
-      Command = command;
-      Id = id;
-    }
-
-    public PipeMessage(string command) : this(command, Guid.NewGuid())
-    {
-    }
-
-    public PipeMessage(string command, object? parameter = default) : this(command) =>
-      Parameter = parameter;
-
-    public PipeMessage ToResponse<TResponse>(TResponse? response = default) =>
-       new(Command, Id) { Parameter = response };
-
-    public Guid Id { get; private set; }
-    public string Command { get; private set; }
-    public object? Parameter { get; private set; }
+    public Guid Id { get; set; }
+    public string Command { get; set; }
+    public object? Parameter { get; set; }
 
     public override string ToString() => $"{Id} / {Command} / {Parameter}";
   }

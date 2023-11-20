@@ -12,18 +12,22 @@ namespace T.Pipes
   /// <summary>
   /// IPC helper for remote interface consumer side
   /// </summary>
-  public class DelegatingPipeServer : PipeServer<PipeMessage, DelegatingPipeServer.PipeCallback>
+  public class DelegatingPipeServer<TPacket, TPacketFactory> : PipeServer<TPacket, DelegatingPipeServer<TPacket, TPacketFactory>.PipeCallback> 
+    where TPacket : IPipeMessage
+    where TPacketFactory : IPipeMessageFactory<TPacket>
   {
+    public TPacketFactory PacketFactory { get; }
 
-    public DelegatingPipeServer(string pipeName) : this(new PipeServer<PipeMessage>(pipeName))
+    public DelegatingPipeServer(TPacketFactory packetFactory, string pipeName) : this(packetFactory, new PipeServer<TPacket>(pipeName))
     {
     }
 
-    public DelegatingPipeServer(IPipeServer<PipeMessage> pipe) : base(pipe, new PipeCallback(pipe))
+    public DelegatingPipeServer(TPacketFactory packetFactory, IPipeServer<TPacket> pipe) : base(pipe, new PipeCallback(pipe, packetFactory))
     {
+      PacketFactory = packetFactory;
     }
 
-    public class PipeCallback : IPipeCallback<PipeMessage>
+    public class PipeCallback : IPipeCallback<TPacket>
     {
       private readonly TaskCompletionSource<object?> _connectedOnce = new TaskCompletionSource<object?>();
       private readonly TaskCompletionSource<object?> _failedOnce = new TaskCompletionSource<object?>();
@@ -35,9 +39,14 @@ namespace T.Pipes
 
       private readonly IDictionary<string, Action<object?>> _events = new Dictionary<string, Action<object?>>();
 
-      private readonly IPipeServer<PipeMessage> _pipe;
+      private readonly IPipeServer<TPacket> _pipe;
+      private readonly TPacketFactory _packetFactory;
 
-      internal PipeCallback(IPipeServer<PipeMessage> pipe) => _pipe = pipe;
+      internal PipeCallback(IPipeServer<TPacket> pipe, TPacketFactory packetFactory)
+      {
+        _pipe = pipe;
+        _packetFactory = packetFactory;
+      }
 
       public async ValueTask DisposeAsync()
       {
@@ -91,11 +100,11 @@ namespace T.Pipes
         _connectedOnce.TrySetException(e);
       }
 
-      public void OnMessageReceived(PipeMessage? message)
+      public void OnMessageReceived(TPacket? message)
       {
         Debug.WriteLine(message);
 
-        if (message == null)
+        if (message is null)
         {
           return;
         }
@@ -103,7 +112,7 @@ namespace T.Pipes
         if (_events.TryGetValue(message.Command, out var action))
         {
           action.Invoke(message.Parameter);
-          _pipe.WriteAsync(message.ToResponse<object>()).Wait();
+          _pipe.WriteAsync(_packetFactory.CreateResponse(message)).Wait();
         }
         else
         {
@@ -117,12 +126,12 @@ namespace T.Pipes
         }
       }
 
-      public void OnMessageSent(PipeMessage? message)
+      public void OnMessageSent(TPacket? message)
       {
         Debug.WriteLine(message);
       }
 
-      public Task<object?> GetResponse(PipeMessage message)
+      public Task<object?> GetResponse(TPacket message)
       {
         var tcs = new TaskCompletionSource<object?>();
         _semaphore.Wait();
@@ -143,42 +152,42 @@ namespace T.Pipes
 
     public T? InvokeRemote<T>(object[] parameters, [CallerMemberName] string callerName = "")
     {
-      var cmd = new PipeMessage(callerName, parameters);
+      var cmd = PacketFactory.Create(callerName, parameters);
       Pipe.WriteAsync(cmd).Wait();
       return (T?)Callback.GetResponse(cmd).Result;
     }
 
     public T? InvokeRemote<T>([CallerMemberName] string callerName = "")
     {
-      var cmd = new PipeMessage(callerName);
+      var cmd = PacketFactory.Create(callerName);
       Pipe.WriteAsync(cmd).Wait();
       return (T?)Callback.GetResponse(cmd).Result;
     }
 
     public void InvokeRemote(object[] parameters, [CallerMemberName] string callerName = "")
     {
-      var cmd = new PipeMessage(callerName, parameters);
+      var cmd = PacketFactory.Create(callerName, parameters);
       Pipe.WriteAsync(cmd).Wait();
       _ = Callback.GetResponse(cmd).Result;
     }
 
     public void InvokeRemote([CallerMemberName] string callerName = "")
     {
-      var cmd = new PipeMessage(callerName);
+      var cmd = PacketFactory.Create(callerName);
       Pipe.WriteAsync(cmd).Wait();
       _ = Callback.GetResponse(cmd).Result;
     }
 
     public T? GetRemote<T>([CallerMemberName] string callerName = "")
     {
-      var cmd = new PipeMessage("get_" + callerName);
+      var cmd = PacketFactory.Create("get_" + callerName);
       Pipe.WriteAsync(cmd).Wait();
       return (T?)Callback.GetResponse(cmd).Result;
     }
 
     public void SetRemote<T>(T? value, [CallerMemberName] string callerName = "")
     {
-      var cmd = new PipeMessage("set_" + callerName, value);
+      var cmd = PacketFactory.Create("set_" + callerName, value);
       Pipe.WriteAsync(cmd).Wait();
       _ = Callback.GetResponse(cmd).Result;
     }

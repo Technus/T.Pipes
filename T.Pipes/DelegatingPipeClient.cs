@@ -10,17 +10,24 @@ using T.Pipes.Abstractions;
 
 namespace T.Pipes
 {
-  public class DelegatingPipeClient : PipeClient<PipeMessage, DelegatingPipeClient.PipeCallback>
+  public class DelegatingPipeClient<TTarget,TPacket,TPacketFactory> : PipeClient<TPacket, DelegatingPipeClient<TTarget, TPacket, TPacketFactory>.PipeCallback> 
+    where TPacket : IPipeMessage
+    where TPacketFactory : IPipeMessageFactory<TPacket>
   {
-    public DelegatingPipeClient(string pipeName, object target) : this(new PipeClient<PipeMessage>(pipeName), target)
+    public TPacketFactory PacketFactory { get; }
+
+    protected TTarget Target => Callback.Target;
+
+    public DelegatingPipeClient(TPacketFactory packetFactory, string pipeName, TTarget target) : this(packetFactory, new PipeClient<TPacket>(pipeName), target)
     {
     }
 
-    public DelegatingPipeClient(IPipeClient<PipeMessage> pipe, object target) : base(pipe, new PipeCallback(target, pipe))
+    public DelegatingPipeClient(TPacketFactory packetFactory, IPipeClient<TPacket> pipe, TTarget target) : base(pipe, new PipeCallback(packetFactory, target, pipe))
     {
+      PacketFactory = packetFactory;
     }
 
-    public class PipeCallback : IPipeCallback<PipeMessage>
+    public class PipeCallback : IPipeCallback<TPacket>
     {
       private readonly TaskCompletionSource<object?> _failedOnce = new();
       public Task FailedOnce => _failedOnce.Task;
@@ -28,17 +35,19 @@ namespace T.Pipes
       private readonly IDictionary<Guid, TaskCompletionSource<object?>> _responses = new Dictionary<Guid, TaskCompletionSource<object?>>();
       private readonly SemaphoreSlim _semaphore = new(1, 1);
 
-      private readonly IPipeClient<PipeMessage> _pipe;
+      private readonly IPipeClient<TPacket> _pipe;
 
-      private readonly object _target;
+      private readonly TPacketFactory _packetFactory;
+      public TTarget Target { get; }
       private readonly Type _type;
-      private readonly IDictionary<string, object> _reflectionCache = new Dictionary<string, object>();
+      private readonly IDictionary<string, Delegate> _reflectionCache = new Dictionary<string, Delegate>();
 
-      internal PipeCallback(object target, IPipeClient<PipeMessage> pipe)
+      internal PipeCallback(TPacketFactory packetFactory, TTarget target, IPipeClient<TPacket> pipe)
       {
-        _target = target;
+        _packetFactory = packetFactory;
+        Target = target;
         _pipe = pipe;
-        _type = target.GetType();
+        _type = target?.GetType() ?? typeof(TTarget);
       }
 
       public async ValueTask DisposeAsync()
@@ -88,10 +97,11 @@ namespace T.Pipes
         _failedOnce.TrySetResult(null);
       }
 
-      public void OnMessageReceived(PipeMessage? message)
+      public void OnMessageReceived(TPacket? message)
       {
         Debug.WriteLine(message);
-        if (message == null)
+
+        if(message is null)
         {
           return;
         }
@@ -117,13 +127,13 @@ namespace T.Pipes
           }
           if (setter)
           {
-            property.SetValue(_target, message.Parameter);
-            _pipe.WriteAsync(message.ToResponse<object>()).Wait();
+            property.SetValue(Target, message.Parameter);
+            _pipe.WriteAsync(_packetFactory.CreateResponse(message)).Wait();
           }
           else
           {
-            var value = property.GetValue(_target);
-            _pipe.WriteAsync(message.ToResponse(value)).Wait();
+            var value = property.GetValue(Target);
+            _pipe.WriteAsync(_packetFactory.CreateResponse(message, value)).Wait();
           }
           return;
         }
@@ -133,11 +143,11 @@ namespace T.Pipes
         {
           throw new InvalidOperationException($"Method {target} on type {_type.Name} does not exist.");
         }
-        var returned = method.Invoke(_target, message.Parameter as object?[]);
-        _pipe.WriteAsync(message.ToResponse(returned)).Wait();
+        var returned = method.Invoke(Target, message.Parameter as object?[]);
+        _pipe.WriteAsync(_packetFactory.CreateResponse(message, returned)).Wait();
       }
 
-      public Task<object?> GetResponse(PipeMessage message)
+      public Task<object?> GetResponse(TPacket message)
       {
         var tcs = new TaskCompletionSource<object?>();
         _semaphore.Wait();
@@ -146,32 +156,32 @@ namespace T.Pipes
         return tcs.Task;
       }
 
-      public void OnMessageSent(PipeMessage? message)
+      public void OnMessageSent(TPacket? message)
       {
         Debug.WriteLine(message);
       }
 
-      public void AddProperty(string propertyName, PropertyInfo property)
+      public void AddProperty(string propertyName, PropertyInfo? propertyInfo = null)
       {
-        property ??= _type.GetProperty(propertyName) ?? throw new ArgumentNullException();
-        var type = property.PropertyType;
-        var setter = property.GetSetMethod()?.CreateDelegate(typeof(Action<>).MakeGenericType(type), _target);
+        propertyInfo ??= _type.GetProperty(propertyName) ?? throw new ArgumentNullException();
+        var type = propertyInfo.PropertyType;
+        var setter = propertyInfo.GetSetMethod()?.CreateDelegate(typeof(Action<>).MakeGenericType(type), Target);
         if (setter != null)
         {
           _reflectionCache.Add("set_" + propertyName, setter);
         }
-        var getter = property.GetGetMethod()?.CreateDelegate(typeof(Func<>).MakeGenericType(type), _target);
+        var getter = propertyInfo.GetGetMethod()?.CreateDelegate(typeof(Func<>).MakeGenericType(type), Target);
         if (getter != null)
         {
           _reflectionCache.Add("get_" + propertyName, getter);
         }
       }
 
-      public void AddMethod(string methodName, MethodInfo method)
+      public void AddMethod(string methodName, MethodInfo? methodInfo = null)
       {
-        method ??= _type.GetMethod(methodName) ?? throw new ArgumentNullException();
-        var returnType = method.ReturnType;
-        var parameters = method.GetParameters();
+        methodInfo ??= _type.GetMethod(methodName) ?? throw new ArgumentNullException();
+        var returnType = methodInfo.ReturnType;
+        var parameters = methodInfo.GetParameters();
         var parameterTypes = parameters.Select(x => x.ParameterType).ToArray();
         if (returnType == typeof(void))
         {
@@ -198,12 +208,12 @@ namespace T.Pipes
           };
           if (parameterTypes.Length == 0)
           {
-            var action = method.CreateDelegate(type, _target);
+            var action = methodInfo.CreateDelegate(type, Target);
             _reflectionCache.Add(methodName, action);
           }
           else if (type != null)
           {
-            var action = method.CreateDelegate(type.MakeGenericType(parameterTypes), _target);
+            var action = methodInfo.CreateDelegate(type.MakeGenericType(parameterTypes), Target);
             _reflectionCache.Add(methodName, action);
           }
         }
@@ -232,7 +242,7 @@ namespace T.Pipes
           };
           if (type != null)
           {
-            var function = method.CreateDelegate(type.MakeGenericType(parameterTypes), _target);
+            var function = methodInfo.CreateDelegate(type.MakeGenericType(parameterTypes), Target);
             _reflectionCache.Add(methodName, function);
           }
         }
@@ -247,16 +257,30 @@ namespace T.Pipes
 
     public void EventRemote(object[] parameters, string callerName)
     {
-      var cmd = new PipeMessage(callerName, parameters);
+      var cmd = PacketFactory.Create(callerName, parameters);
       Pipe.WriteAsync(cmd).Wait();
       _ = Callback.GetResponse(cmd).Result;
     }
 
     public void EventRemote(string callerName)
     {
-      var cmd = new PipeMessage(callerName);
+      var cmd = PacketFactory.Create(callerName);
       Pipe.WriteAsync(cmd).Wait();
       _ = Callback.GetResponse(cmd).Result;
+    }
+
+    public T? EventRemote<T>(object[] parameters, string callerName)
+    {
+      var cmd = PacketFactory.Create(callerName, parameters);
+      Pipe.WriteAsync(cmd).Wait();
+      return (T?)Callback.GetResponse(cmd).Result;
+    }
+
+    public T? EventRemote<T>(string callerName)
+    {
+      var cmd = PacketFactory.Create(callerName);
+      Pipe.WriteAsync(cmd).Wait();
+      return (T?)Callback.GetResponse(cmd).Result;
     }
   }
 }

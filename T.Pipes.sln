@@ -15,7 +15,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "T.Pipes.Test.Client", "T.Pi
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "T.Pipes.Test.Server", "T.Pipes.Test.Server\T.Pipes.Test.Server.csproj", "{B0A904D3-555C-49DE-8D27-040E0BFB5EC7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "T.Pipes.Test.Abstractions", "T.Pipes.Test.Abstractions\T.Pipes.Test.Abstractions.csproj", "{B0975DCB-7500-41CC-A667-7C413290D70B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "T.Pipes.Test.Abstractions", "T.Pipes.Test.Abstractions\T.Pipes.Test.Abstractions.csproj", "{B0975DCB-7500-41CC-A667-7C413290D70B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

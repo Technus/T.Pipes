@@ -41,16 +41,17 @@ namespace T.Pipes.Test.Client
       public ValueTask DisposeAsync() => default;
       public void OnExceptionOccurred(Exception e) => Console.WriteLine(e.ToString().Pastel(ConsoleColor.Yellow));
 
-      public void OnMessageReceived(PipeMessage? message)
+      public void OnMessageReceived(PipeMessage message)
       {
-        if(message != null)
-        {
-          Console.WriteLine(message.ToString().Pastel(ConsoleColor.DarkCyan));
-          Task.Run(()=>client.Pipe.WriteAsync(message.ToResponse(message.Parameter)));
-        }
+        Console.WriteLine(message.ToString().Pastel(ConsoleColor.DarkCyan));
+        Task.Run(() => client.Pipe.WriteAsync(new() {
+          Id = message.Id,
+          Command = message.Command,
+          Parameter = message.Parameter,
+        }));
       }
 
-      public void OnMessageSent(PipeMessage? message) => Console.WriteLine(message?.ToString().Pastel(ConsoleColor.Yellow));
+      public void OnMessageSent(PipeMessage message) => Console.WriteLine(message.ToString().Pastel(ConsoleColor.Yellow));
     }
   }
 }

@@ -55,13 +55,13 @@ namespace T.Pipes.Test.Server
       public void Connected(string connection)
       {
         _connectedOnce.TrySetResult(null);
-        server.Pipe.WriteAsync(new("Egg", new IntPtr(-1))).Wait();
-        server.Pipe.WriteAsync(new("Egg", new IntPtr(-10))).Wait();
-        server.Pipe.WriteAsync(new("Egg", new IntPtr(1))).Wait();
-        server.Pipe.WriteAsync(new("Egg", new IntPtr(10))).Wait();
-        server.Pipe.WriteAsync(new("Egg", new IntPtr(0))).Wait();
-        server.Pipe.WriteAsync(new("Egg", new IntPtr(((long)int.MinValue)))).Wait();
-        server.Pipe.WriteAsync(new("Egg", new IntPtr(((long)int.MaxValue)))).Wait();
+        server.Pipe.WriteAsync(new() { Id = Guid.NewGuid(), Command = "Egg", Parameter = new IntPtr(-1) }).Wait();
+        server.Pipe.WriteAsync(new() { Id = Guid.NewGuid(), Command = "Egg", Parameter = new IntPtr(-10) }).Wait();
+        server.Pipe.WriteAsync(new() { Id = Guid.NewGuid(), Command = "Egg", Parameter = new IntPtr(1) }).Wait();
+        server.Pipe.WriteAsync(new() { Id = Guid.NewGuid(), Command = "Egg", Parameter = new IntPtr(10) }).Wait();
+        server.Pipe.WriteAsync(new() { Id = Guid.NewGuid(), Command = "Egg", Parameter = new IntPtr(0) }).Wait();
+        server.Pipe.WriteAsync(new() { Id = Guid.NewGuid(), Command = "Egg", Parameter = new IntPtr(((long)int.MinValue)) }).Wait();
+        server.Pipe.WriteAsync(new() { Id = Guid.NewGuid(), Command = "Egg", Parameter = new IntPtr(((long)int.MaxValue)) }).Wait();
         //server.Pipe.WriteAsync(new("Egg", new IntPtr(((long)int.MinValue)-1))).Wait();//All fine will crash since client is forced to be x86
         //server.Pipe.WriteAsync(new("Egg", new IntPtr(((long)int.MaxValue)+1))).Wait();//All fine will crash since client is forced to be x86
       }
@@ -73,14 +73,14 @@ namespace T.Pipes.Test.Server
         Console.WriteLine(e.ToString()?.Pastel(ConsoleColor.Cyan));
         _connectedOnce.TrySetException(e);
       }
-      public void OnMessageReceived(PipeMessage? message)
+      public void OnMessageReceived(PipeMessage message)
       {
-        Console.WriteLine(message?.ToString()?.Pastel(ConsoleColor.DarkYellow));
+        Console.WriteLine(message.ToString()?.Pastel(ConsoleColor.DarkYellow));
       }
 
-      public void OnMessageSent(PipeMessage? message)
+      public void OnMessageSent(PipeMessage message)
       {
-        Console.WriteLine(message?.ToString()?.Pastel(ConsoleColor.Cyan));
+        Console.WriteLine(message.ToString()?.Pastel(ConsoleColor.Cyan));
       }
     }
   }
