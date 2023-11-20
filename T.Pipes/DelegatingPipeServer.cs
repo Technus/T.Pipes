@@ -188,12 +188,6 @@ namespace T.Pipes
       _ = Callback.GetResponse(cmd).Result;
     }
 
-    public void AddFunctionRemote(Action<object?> action, string callerName) => Callback.AddFunction(callerName, x =>
-    {
-      action(x);
-      return null;
-    });
-
     public void AddFunctionRemote(Func<object?, object?> function, string callerName) => Callback.AddFunction(callerName, function);
 
     public void RemoveFunctionRemote(string callerName) => Callback.RemoveFunction(callerName);

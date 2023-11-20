@@ -16,7 +16,7 @@ namespace T.Pipes.Test.Client
       Target.Get += Target_Get;
       AddFunctionRemote(x =>
       {
-        (int a, int b, int c) = ((int a, int b, int c))x!;
+        var (a, b, c) = ((int, int, int))x!;
         (int ret, int d, int e) ret = default;
         ret.ret = Target.DoIt(a, b, c, out ret.d, out ret.e);
         return ret;
