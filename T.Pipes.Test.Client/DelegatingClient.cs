@@ -14,6 +14,13 @@ namespace T.Pipes.Test.Client
       Target.Act += Target_Act;
       Target.Set += Target_Set;
       Target.Get += Target_Get;
+      AddFunctionRemote(x =>
+      {
+        (int a, int b, int c) = ((int a, int b, int c))x!;
+        (int ret, int d, int e) ret = default;
+        ret.ret = Target.DoIt(a, b, c, out ret.d, out ret.e);
+        return ret;
+      }, nameof(IAbstract.DoIt));
     }
 
     public async override ValueTask DisposeAsync()
@@ -24,7 +31,7 @@ namespace T.Pipes.Test.Client
       Target.Get -= Target_Get;
     }
 
-    private void Target_Get(string obj) => EventRemote(nameof(IAbstract.Get));
+    private void Target_Get(string obj) => EventRemote(obj, nameof(IAbstract.Get));
     private int Target_Set() => EventRemote<int>(nameof(IAbstract.Set));
     private void Target_Act() => EventRemote(nameof(IAbstract.Act));
   }

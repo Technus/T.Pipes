@@ -16,6 +16,13 @@ namespace T.Pipes.Test.Client
 
     public void Action() { }
 
+    public int DoIt(int a, int b, int c, out int d, out int e)
+    {
+      d = a;
+      e = b; 
+      return c;
+    }
+
     public int GetInt() => i;
 
     public int[] GetInts() => j;

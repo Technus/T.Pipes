@@ -70,5 +70,7 @@
     /// </summary>
     /// <param name="value"></param>
     void InInt(in int value);
+
+    int DoIt(int a, int b, int c, out int d, out int e);
   }
 }

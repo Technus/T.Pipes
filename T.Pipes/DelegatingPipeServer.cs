@@ -37,7 +37,7 @@ namespace T.Pipes
       private readonly IDictionary<Guid, TaskCompletionSource<object?>> _responses = new Dictionary<Guid, TaskCompletionSource<object?>>();
       private readonly SemaphoreSlim _semaphore = new(1, 1);
 
-      private readonly IDictionary<string, Action<object?>> _events = new Dictionary<string, Action<object?>>();
+      private readonly IDictionary<string, Func<object?, object?>> _functions = new Dictionary<string, Func<object?,object?>>();
 
       private readonly IPipeServer<TPacket> _pipe;
       private readonly TPacketFactory _packetFactory;
@@ -50,7 +50,7 @@ namespace T.Pipes
 
       public async ValueTask DisposeAsync()
       {
-        _events.Clear();
+        _functions.Clear();
         await _semaphore.WaitAsync();
         foreach (var item in _responses)
         {
@@ -109,10 +109,9 @@ namespace T.Pipes
           return;
         }
 
-        if (_events.TryGetValue(message.Command, out var action))
+        if (_functions.TryGetValue(message.Command, out var function))
         {
-          action.Invoke(message.Parameter);
-          _pipe.WriteAsync(_packetFactory.CreateResponse(message)).Wait();
+          _pipe.WriteAsync(_packetFactory.CreateResponse(message, function.Invoke(message.Parameter))).Wait();
         }
         else
         {
@@ -126,10 +125,7 @@ namespace T.Pipes
         }
       }
 
-      public void OnMessageSent(TPacket? message)
-      {
-        Debug.WriteLine(message);
-      }
+      public void OnMessageSent(TPacket? message) => Debug.WriteLine(message);
 
       public Task<object?> GetResponse(TPacket message)
       {
@@ -140,8 +136,8 @@ namespace T.Pipes
         return tcs.Task;
       }
 
-      public void AddAction(string callerName, Action<object?> action) => _events[callerName] = action;
-      public void RemoveAction(string callerName) => _events.Remove(callerName);
+      public void AddFunction(string callerName, Func<object?,object?> function) => _functions[callerName] = function;
+      public void RemoveFunction(string callerName) => _functions.Remove(callerName);
     }
 
     public override async ValueTask DisposeAsync()
@@ -150,7 +146,7 @@ namespace T.Pipes
       await Callback.DisposeAsync();
     }
 
-    public T? InvokeRemote<T>(object[] parameters, [CallerMemberName] string callerName = "")
+    public T? InvokeRemote<T>(object? parameters, [CallerMemberName] string callerName = "")
     {
       var cmd = PacketFactory.Create(callerName, parameters);
       Pipe.WriteAsync(cmd).Wait();
@@ -164,7 +160,7 @@ namespace T.Pipes
       return (T?)Callback.GetResponse(cmd).Result;
     }
 
-    public void InvokeRemote(object[] parameters, [CallerMemberName] string callerName = "")
+    public void InvokeRemote(object? parameters, [CallerMemberName] string callerName = "")
     {
       var cmd = PacketFactory.Create(callerName, parameters);
       Pipe.WriteAsync(cmd).Wait();
@@ -192,14 +188,14 @@ namespace T.Pipes
       _ = Callback.GetResponse(cmd).Result;
     }
 
-    public void AddEventRemote(Action<object?> action, string callerName)
+    public void AddFunctionRemote(Action<object?> action, string callerName) => Callback.AddFunction(callerName, x =>
     {
-      Callback.AddAction(callerName, action);
-    }
+      action(x);
+      return null;
+    });
 
-    public void RemoveEventRemote(string callerName)
-    {
-      Callback.RemoveAction(callerName);
-    }
+    public void AddFunctionRemote(Func<object?, object?> function, string callerName) => Callback.AddFunction(callerName, function);
+
+    public void RemoveFunctionRemote(string callerName) => Callback.RemoveFunction(callerName);
   }
 }
