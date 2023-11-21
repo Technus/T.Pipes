@@ -10,12 +10,30 @@ namespace T.Pipes
     where TPacket : IPipeMessage
     where TPacketFactory : IPipeMessageFactory<TPacket>
   {
-    public DelegatingPipeClient(string pipeName, TPacketFactory packetFactory, TTarget? target = default) 
+    public DelegatingPipeClient(string pipeName, TPacketFactory packetFactory)
+      : this(new PipeClient<TPacket>(pipeName), packetFactory, default)
+    {
+      if(this is TTarget target)
+      {
+        Callback.Target = target;
+      }
+    }
+
+    public DelegatingPipeClient(IPipeClient<TPacket> pipe, TPacketFactory packetFactory)
+      : base(pipe, new(pipe, packetFactory, default))
+    {
+      if (this is TTarget target)
+      {
+        Callback.Target = target;
+      }
+    }
+
+    public DelegatingPipeClient(string pipeName, TPacketFactory packetFactory, TTarget? target) 
       : this(new PipeClient<TPacket>(pipeName), packetFactory, target)
     {
     }
 
-    public DelegatingPipeClient(IPipeClient<TPacket> pipe, TPacketFactory packetFactory, TTarget? target = default)
+    public DelegatingPipeClient(IPipeClient<TPacket> pipe, TPacketFactory packetFactory, TTarget? target)
       : base(pipe, new(pipe, packetFactory, target))
     {
     }

@@ -15,6 +15,24 @@ namespace T.Pipes
     where TPacket : IPipeMessage
     where TPacketFactory : IPipeMessageFactory<TPacket>
   {
+    public DelegatingPipeServer(string pipeName, TPacketFactory packetFactory)
+      : this(new PipeServer<TPacket>(pipeName), packetFactory, default)
+    {
+      if (this is TTarget target)
+      {
+        Callback.Target = target;
+      }
+    }
+
+    public DelegatingPipeServer(IPipeServer<TPacket> pipe, TPacketFactory packetFactory)
+      : base(pipe, new(pipe, packetFactory, default))
+    {
+      if (this is TTarget target)
+      {
+        Callback.Target = target;
+      }
+    }
+
     public DelegatingPipeServer(string pipeName, TPacketFactory packetFactory, TTarget? target = default)
       : this(new PipeServer<TPacket>(pipeName), packetFactory, target)
     {
