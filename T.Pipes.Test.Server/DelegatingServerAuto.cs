@@ -3,15 +3,18 @@ using T.Pipes.Test.Abstractions;
 
 namespace T.Pipes.Test.Server
 {
-  internal class DelegatingServerAuto<TTarget> : DelegatingPipeServer<PipeMessage, PipeMessageFactory, TTarget>, IAbstract
+  internal class DelegatingServer<TTarget> : DelegatingPipeServer<PipeMessage, PipeMessageFactory, TTarget>, IAbstract
     where TTarget : IAbstract
   {
-    public DelegatingServerAuto(string pipeName) : this(new PipeServer<PipeMessage>(pipeName))
+    public DelegatingServer(string pipeName) : this(new PipeServer<PipeMessage>(pipeName))
     {
     }
 
-    public DelegatingServerAuto(IPipeServer<PipeMessage> pipe) : base(pipe, new PipeMessageFactory())
+    public DelegatingServer(IPipeServer<PipeMessage> pipe) : base(pipe, new PipeMessageFactory())
     {
+      SetFunctionRemote(x => { Act?.Invoke(); return default; }, nameof(IAbstract.Act));
+      SetFunctionRemote(x => Set?.Invoke(), nameof(IAbstract.Set));
+      SetFunctionRemote(x => { Get?.Invoke(x as string ?? string.Empty); return default; }, nameof(IAbstract.Get));
     }
 
     public Func<int, int>? Tea { get => GetRemote<Func<int, int>?>(); set => SetRemote<Func<int, int>?>(value); }

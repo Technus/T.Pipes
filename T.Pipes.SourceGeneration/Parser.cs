@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 using System.Threading;
 using Microsoft.CodeAnalysis;
@@ -26,16 +27,19 @@ namespace T.Pipes.SourceGeneration
       Name = GetHintName(classy),
       Namespace = classy.TryGetParentSyntax<NamespaceDeclarationSyntax>(out var parent) ? parent.Name.ToString() : throw new ArgumentException("Has no Namespace", nameof(classy)),
       TypeList = GetTypeList(classy),
-      UsingList = new List<string> { },
+      UsingList = new(){ "System", "System.Collections.Generic", "System.Threading", "System.Threading.Tasks", "T.Pipes.Abstractions", "T.Pipes"},
       MemberDeclarations = GetMembers(classy),
     };
 
-    private static List<MemberDeclarationSyntax> GetMembers(TypeDeclarationSyntax classy)
+    private List<MemberDeclarationSyntax> GetMembers(TypeDeclarationSyntax classy)
     {
       var members = new List<MemberDeclarationSyntax>();
 
+      Debugger.Launch();
+
       foreach (var item in classy.Members)
       {
+        var semantics = compilation.GetSemanticModel(item);
 
       }
 

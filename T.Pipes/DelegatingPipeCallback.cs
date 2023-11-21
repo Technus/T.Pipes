@@ -6,7 +6,8 @@ using T.Pipes.Abstractions;
 
 namespace T.Pipes
 {
-  public abstract class DelegatingPipeCallback<TPipe, TPacket, TPacketFactory> : IPipeCallback<TPacket>
+  public class DelegatingPipeCallback<TPipe, TPacket, TPacketFactory, TTarget> 
+    : IPipeCallback<TPacket>
     where TPipe : H.Pipes.IPipeConnection<TPacket>
     where TPacket : IPipeMessage
     where TPacketFactory : IPipeMessageFactory<TPacket>
@@ -16,14 +17,29 @@ namespace T.Pipes
     private readonly Dictionary<Guid, TaskCompletionSource<object?>> _responses = new();
     private readonly SemaphoreSlim _semaphore = new(1, 1);
     private readonly Dictionary<string, Func<object?, object?>> _functions = new();
+    private TTarget? _target;
+
+    public TTarget? Target
+    {
+      get => _target;
+      set
+      {
+        _target = value;
+        Type = Target?.GetType() ?? typeof(TTarget);
+      }
+    }
+
+    public Type Type { get; private set; }
 
     protected TPipe Pipe { get; }
     protected TPacketFactory PacketFactory { get; }
 
-    public DelegatingPipeCallback(TPipe pipe, TPacketFactory packetFactory)
+    public DelegatingPipeCallback(TPipe pipe, TPacketFactory packetFactory, TTarget? target = default)
     {
       Pipe = pipe;
       PacketFactory = packetFactory;
+      _target = target;
+      Type = target?.GetType() ?? typeof(TTarget);
     }
 
     public Task ConnectedOnce => _connectedOnce.Task;
@@ -100,10 +116,7 @@ namespace T.Pipes
       }
     }
 
-    protected virtual void OnUnknownMessage(TPacket message)
-    {
-      throw new ArgumentException($"Message is unknown: {message}", nameof(message));
-    }
+    protected virtual void OnUnknownMessage(TPacket message) => throw new ArgumentException($"Message is unknown: {message}", nameof(message));
 
     public virtual void OnMessageSent(TPacket? message) { }
 
@@ -182,6 +195,7 @@ namespace T.Pipes
     }
 
     public void SetFunction(string callerName, Func<object?, object?> function) => _functions[callerName] = function;
+
     public void RemoveFunction(string callerName) => _functions.Remove(callerName);
   }
 }

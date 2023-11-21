@@ -10,22 +10,19 @@ namespace T.Pipes
   /// <summary>
   /// IPC helper for remote interface consumer side
   /// </summary>
-  public partial class DelegatingPipeServer<TPacket, TPacketFactory> 
-    : PipeServer<TPacket, DelegatingPipeServerCallback<TPacket, TPacketFactory>> 
+  public partial class DelegatingPipeServer<TPacket, TPacketFactory, TTarget> 
+    : PipeServer<TPacket, DelegatingPipeCallback<IPipeServer<TPacket>, TPacket, TPacketFactory, TTarget>> 
     where TPacket : IPipeMessage
     where TPacketFactory : IPipeMessageFactory<TPacket>
   {
-    public TPacketFactory PacketFactory { get; }
-
-    public DelegatingPipeServer(TPacketFactory packetFactory, string pipeName) 
-      : this(packetFactory, new PipeServer<TPacket>(pipeName))
+    public DelegatingPipeServer(string pipeName, TPacketFactory packetFactory, TTarget? target = default)
+      : this(new PipeServer<TPacket>(pipeName), packetFactory, target)
     {
     }
 
-    public DelegatingPipeServer(TPacketFactory packetFactory, IPipeServer<TPacket> pipe) 
-      : base(pipe, new DelegatingPipeServerCallback<TPacket, TPacketFactory>(pipe, packetFactory))
+    public DelegatingPipeServer(IPipeServer<TPacket> pipe, TPacketFactory packetFactory, TTarget? target = default)
+      : base(pipe, new(pipe, packetFactory, target))
     {
-      PacketFactory = packetFactory;
     }
 
     public override async ValueTask DisposeAsync()

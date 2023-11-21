@@ -5,24 +5,19 @@ using T.Pipes.Abstractions;
 
 namespace T.Pipes
 {
-  public partial class DelegatingPipeClient<TTarget,TPacket,TPacketFactory> 
-    : PipeClient<TPacket, DelegatingPipeClientCallback<TTarget, TPacket, TPacketFactory>> 
+  public partial class DelegatingPipeClient<TPacket, TPacketFactory, TTarget> 
+    : PipeClient<TPacket, DelegatingPipeCallback<IPipeClient<TPacket>, TPacket, TPacketFactory, TTarget>> 
     where TPacket : IPipeMessage
     where TPacketFactory : IPipeMessageFactory<TPacket>
   {
-    public TPacketFactory PacketFactory { get; }
-
-    public TTarget Target => Callback.Target;
-
-    public DelegatingPipeClient(TPacketFactory packetFactory, string pipeName, TTarget target) 
-      : this(packetFactory, new PipeClient<TPacket>(pipeName), target)
+    public DelegatingPipeClient(string pipeName, TPacketFactory packetFactory, TTarget? target = default) 
+      : this(new PipeClient<TPacket>(pipeName), packetFactory, target)
     {
     }
 
-    public DelegatingPipeClient(TPacketFactory packetFactory, IPipeClient<TPacket> pipe, TTarget target) 
-      : base(pipe, new DelegatingPipeClientCallback<TTarget, TPacket, TPacketFactory>(packetFactory, target, pipe))
+    public DelegatingPipeClient(IPipeClient<TPacket> pipe, TPacketFactory packetFactory, TTarget? target = default)
+      : base(pipe, new(pipe, packetFactory, target))
     {
-      PacketFactory = packetFactory;
     }
 
     public override async ValueTask DisposeAsync()

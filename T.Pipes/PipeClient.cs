@@ -6,7 +6,8 @@ using T.Pipes.Abstractions;
 
 namespace T.Pipes
 {
-  public class PipeClient<TPacket, TCallback> : PipeConnection<IPipeClient<TPacket>, TPacket, TCallback>
+  public class PipeClient<TPacket, TCallback> 
+    : PipeConnection<IPipeClient<TPacket>, TPacket, TCallback>
     where TCallback : IPipeCallback<TPacket>
   {
     public override bool IsRunning => Pipe.IsConnected;

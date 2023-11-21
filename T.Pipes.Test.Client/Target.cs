@@ -19,7 +19,7 @@ namespace T.Pipes.Test.Client
     public int DoIt(int a, int b, int c, out int d, out int e)
     {
       d = a;
-      e = b; 
+      e = b;
       return c;
     }
 
@@ -34,6 +34,8 @@ namespace T.Pipes.Test.Client
     public void OutInt(out int value) => value = i;
 
     public void RefInt(ref int value) => value *= 2;
+
+    public void RefIt(ref int a, ref int b, ref int c) { a = 21; b = 37; c = 2137; }
 
     public void SetInt(int value) => i = value;
 

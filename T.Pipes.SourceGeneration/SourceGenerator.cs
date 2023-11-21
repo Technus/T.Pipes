@@ -12,7 +12,8 @@ namespace T.Pipes.SourceGeneration
   {
     private static DiagnosticDescriptor Descriptor { get; } = new("T_Pipes_SourceGeneration", "File Generated", "File Generated: {0}", "Files", DiagnosticSeverity.Info, true);
 
-    private const string PipeMeAttribute = "T.Pipes.Abstractions.PipeMeAttribute";
+    private const string PipeServeAttribute = "T.Pipes.Abstractions.PipeServeAttribute";
+    private const string PipeClientAttribute = "T.Pipes.Abstractions.PipeClientAttribute";
 
     public void Initialize(IncrementalGeneratorInitializationContext ctx)
     {
@@ -72,7 +73,7 @@ namespace T.Pipes.SourceGeneration
           var attributeContainingTypeSymbol = attributeSymbol.ContainingType;
           var fullName = attributeContainingTypeSymbol.ToDisplayString();
 
-          if (fullName == PipeMeAttribute)
+          if (fullName == PipeServeAttribute || fullName == PipeClientAttribute)
           {
             // return the parent class of the method
             return memberDeclarationSyntax.Parent as TypeDeclarationSyntax;
