@@ -5,7 +5,7 @@ using T.Pipes.Abstractions;
 
 namespace T.Pipes
 {
-  public partial class DelegatingPipeClient<TPacket, TPacketFactory, TTarget> 
+  public class DelegatingPipeClient<TPacket, TPacketFactory, TTarget> 
     : PipeClient<TPacket, DelegatingPipeCallback<IPipeClient<TPacket>, TPacket, TPacketFactory, TTarget>> 
     where TPacket : IPipeMessage
     where TPacketFactory : IPipeMessageFactory<TPacket>
@@ -35,6 +35,16 @@ namespace T.Pipes
 
     public DelegatingPipeClient(IPipeClient<TPacket> pipe, TPacketFactory packetFactory, TTarget? target)
       : base(pipe, new(pipe, packetFactory, target))
+    {
+    }
+
+    public DelegatingPipeClient(string pipeName, DelegatingPipeCallback<IPipeClient<TPacket>, TPacket, TPacketFactory, TTarget> callback)
+      : this(new PipeClient<TPacket>(pipeName), callback)
+    {
+    }
+
+    public DelegatingPipeClient(IPipeClient<TPacket> pipe, DelegatingPipeCallback<IPipeClient<TPacket>, TPacket, TPacketFactory, TTarget> callback)
+      : base(pipe, callback)
     {
     }
 

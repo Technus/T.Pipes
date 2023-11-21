@@ -10,7 +10,7 @@ namespace T.Pipes
   /// <summary>
   /// IPC helper for remote interface consumer side
   /// </summary>
-  public partial class DelegatingPipeServer<TPacket, TPacketFactory, TTarget> 
+  public class DelegatingPipeServer<TPacket, TPacketFactory, TTarget> 
     : PipeServer<TPacket, DelegatingPipeCallback<IPipeServer<TPacket>, TPacket, TPacketFactory, TTarget>> 
     where TPacket : IPipeMessage
     where TPacketFactory : IPipeMessageFactory<TPacket>
@@ -40,6 +40,16 @@ namespace T.Pipes
 
     public DelegatingPipeServer(IPipeServer<TPacket> pipe, TPacketFactory packetFactory, TTarget? target)
       : base(pipe, new(pipe, packetFactory, target))
+    {
+    }
+
+    public DelegatingPipeServer(string pipeName, DelegatingPipeCallback<IPipeServer<TPacket>, TPacket, TPacketFactory, TTarget> callback)
+      : this(new PipeServer<TPacket>(pipeName), callback)
+    {
+    }
+
+    public DelegatingPipeServer(IPipeServer<TPacket> pipe, DelegatingPipeCallback<IPipeServer<TPacket>, TPacket, TPacketFactory, TTarget> callback)
+      : base(pipe, callback)
     {
     }
 
