@@ -128,78 +128,80 @@ namespace T.Pipes
 
     public virtual void OnMessageSent(TPacket? message) { }
 
-    public object? GetResponse(TPacket message)
+#nullable disable
+    public T GetResponse<T>(TPacket message)
     {
-      var tcs = new TaskCompletionSource<object?>();
+      var tcs = new TaskCompletionSource<object>();
       _semaphore.Wait();
       _responses.Add(message.Id, tcs);
       _semaphore.Release();
-      return tcs.Task.Result;
+      return (T) tcs.Task.Result;
     }
 
-    public async Task<object?> GetResponseAsync(TPacket message)
+    public async Task<T> GetResponseAsync<T>(TPacket message)
     {
-      var tcs = new TaskCompletionSource<object?>();
+      var tcs = new TaskCompletionSource<object>();
       await _semaphore.WaitAsync();
       _responses.Add(message.Id, tcs);
       _semaphore.Release();
-      return await tcs.Task;
+      return (T) await tcs.Task;
     }
+#nullable restore
 
-    public async Task<TOut?> RemoteAsync<TOut>(string callerName)
+    public async Task<TOut> RemoteAsync<TOut>(string callerName)
     {
       var cmd = PacketFactory.Create(callerName);
       await Pipe.WriteAsync(cmd);
-      return (TOut?) await GetResponseAsync(cmd);
+      return await GetResponseAsync<TOut>(cmd);
     }
 
-    public async Task<TOut?> RemoteAsync<TOut, TIn>(string callerName, TIn? parameter)
+    public async Task<TOut> RemoteAsync<TIn, TOut>(string callerName, TIn? parameter)
     {
       var cmd = PacketFactory.Create(callerName, parameter);
       await Pipe.WriteAsync(cmd);
-      return (TOut?) await GetResponseAsync(cmd);
+      return await GetResponseAsync<TOut>(cmd);
     }
 
     public async Task RemoteAsync(string callerName)
     {
       var cmd = PacketFactory.Create(callerName);
       await Pipe.WriteAsync(cmd);
-      await GetResponseAsync(cmd);
+      await GetResponseAsync<object?>(cmd);
     }
 
     public async Task RemoteAsync<TIn>(string callerName, TIn? parameter)
     {
       var cmd = PacketFactory.Create(callerName, parameter);
       await Pipe.WriteAsync(cmd);
-      await GetResponseAsync(cmd);
+      await GetResponseAsync<object?>(cmd);
     }
 
-    public TOut? Remote<TOut>(string callerName)
+    public TOut Remote<TOut>(string callerName)
     {
       var cmd = PacketFactory.Create(callerName);
       Pipe.WriteAsync(cmd).Wait();
-      return (TOut?)GetResponse(cmd);
+      return GetResponse<TOut>(cmd);
     }
 
-    public TOut? Remote<TOut, TIn>(string callerName, TIn? parameter)
+    public TOut Remote<TIn, TOut>(string callerName, TIn? parameter)
     {
       var cmd = PacketFactory.Create(callerName, parameter);
       Pipe.WriteAsync(cmd).Wait();
-      return (TOut?)GetResponse(cmd);
+      return GetResponse<TOut>(cmd);
     }
 
     public void Remote(string callerName)
     {
       var cmd = PacketFactory.Create(callerName);
       Pipe.WriteAsync(cmd).Wait();
-      _ = GetResponse(cmd);
+      _ = GetResponse<object?>(cmd);
     }
 
     public void Remote<TIn>(string callerName, TIn? parameter)
     {
       var cmd = PacketFactory.Create(callerName, parameter);
       Pipe.WriteAsync(cmd).Wait();
-      _ = GetResponse(cmd);
+      _ = GetResponse<object?>(cmd);
     }
 
     public void SetFunction(string callerName, Func<object?, object?> function) => _functions[callerName] = function;

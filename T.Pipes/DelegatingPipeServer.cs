@@ -63,7 +63,7 @@ namespace T.Pipes
       await Callback.DisposeAsync();
     }
 
-    public T? InvokeRemote<T>(object? parameters, [CallerMemberName] string callerName = "") => Callback.Remote<T, object>(callerName, parameters);
+    public T? InvokeRemote<T>(object? parameters, [CallerMemberName] string callerName = "") => Callback.Remote<object, T>(callerName, parameters);
 
     public T? InvokeRemote<T>([CallerMemberName] string callerName = "") => Callback.Remote<T>(callerName);
 
@@ -71,7 +71,7 @@ namespace T.Pipes
 
     public void InvokeRemote([CallerMemberName] string callerName = "") => Callback.Remote(callerName);
 
-    public async Task<T?> InvokeRemoteAsync<T>(object? parameters, [CallerMemberName] string callerName = "") => await Callback.RemoteAsync<T, object>(callerName, parameters);
+    public async Task<T?> InvokeRemoteAsync<T>(object? parameters, [CallerMemberName] string callerName = "") => await Callback.RemoteAsync<object, T>(callerName, parameters);
 
     public async Task<T?> InvokeRemoteAsync<T>([CallerMemberName] string callerName = "") => await Callback.RemoteAsync<T>(callerName);
 

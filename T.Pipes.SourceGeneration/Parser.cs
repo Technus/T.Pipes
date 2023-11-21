@@ -35,7 +35,7 @@ namespace T.Pipes.SourceGeneration
         Name = GetHintName(classy),
         Namespace = classy.TryGetParentSyntax<NamespaceDeclarationSyntax>(out var parent) ? parent.Name.ToString() : throw new ArgumentException("Has no Namespace", nameof(classy)),
         TypeList = GetTypeList(classy),
-        UsingList = new() { "System", "System.ComponentModel", "System.Collections.Generic", "System.Threading", "System.Threading.Tasks", "T.Pipes.Abstractions", "T.Pipes" },
+        UsingList = new() { },
         ServeMemberDeclarations = served,
         UsedMemberDeclarations = used,
       };

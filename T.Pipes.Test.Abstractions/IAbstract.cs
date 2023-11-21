@@ -75,8 +75,12 @@
 
     void RefIt(ref int a, ref int b, ref int c);
 
-    T Map<T>(T from);
-    Tea ReMap<T,Tea>(T from);
-    T UnMap<T,Tea>(Tea from);
+    TValue Map<TValue>(TValue from);
+    TOut ReMap<TIn,TOut>(TIn from);
+    TOut UnMap<TOut,TIn>(TIn from);
+
+    int? MaybeInt(int? a);
+
+    string? MaybeString(string? a);
   }
 }

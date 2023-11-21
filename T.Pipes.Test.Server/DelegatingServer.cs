@@ -34,6 +34,11 @@ namespace T.Pipes.Test.Server
     public (string a, string b) GetStrings() => InvokeRemote<(string a, string b)>();
     public void InInt(in int value) => InvokeRemote(value);
     public T Map<T>(T from) => throw new NotImplementedException();
+
+    public int? MaybeInt(int? a) => throw new NotImplementedException();
+
+    public string? MaybeString(string? a) => throw new NotImplementedException();
+
     public void OutInt(out int value) => value = InvokeRemote<int>();
     public void RefInt(ref int value) => value = InvokeRemote<int>(value);
     public void RefIt(ref int a, ref int b, ref int c) => (a, b, c) = InvokeRemote<(int, int, int)>((a, b, c));

@@ -23,6 +23,11 @@ namespace T.Pipes.Test.Server
 
     public void InInt(in int value) => throw new NotImplementedException();
     public T Map<T>(T from) => throw new NotImplementedException();
+
+    public int? MaybeInt(int? a) => throw new NotImplementedException();
+
+    public string? MaybeString(string? a) => throw new NotImplementedException();
+
     public void OutInt(out int value) => throw new NotImplementedException();
 
     public void RefInt(ref int value) => throw new NotImplementedException();

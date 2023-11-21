@@ -65,7 +65,7 @@ namespace T.Pipes
 
     public void EventRemote(string callerName) => Callback.Remote(callerName);
 
-    public T? EventRemote<T>(object? parameters, string callerName) => Callback.Remote<T, object>(callerName, parameters);
+    public T? EventRemote<T>(object? parameters, string callerName) => Callback.Remote<object, T>(callerName, parameters);
 
     public T? EventRemote<T>(string callerName) => Callback.Remote<T>(callerName);
 
@@ -73,7 +73,7 @@ namespace T.Pipes
 
     public async Task EventRemoteAsync(string callerName) => await Callback.RemoteAsync(callerName);
 
-    public async Task<T?> EventRemoteAsync<T>(object? parameters, string callerName) => await Callback.RemoteAsync<T, object>(callerName, parameters);
+    public async Task<T?> EventRemoteAsync<T>(object? parameters, string callerName) => await Callback.RemoteAsync<object, T>(callerName, parameters);
 
     public async Task<T?> EventRemoteAsync<T>(string callerName) => await Callback.RemoteAsync<T>(callerName);
 

@@ -1,6 +1,5 @@
-﻿using System;
-using System.Collections.Immutable;
-using System.Diagnostics;
+﻿using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using CodegenCS;
 using Microsoft.CodeAnalysis;
@@ -27,7 +26,10 @@ namespace T.Pipes.SourceGeneration
       {{() => typeDefinition.UsingList.ForEach(x => RenderUsing(x))}}
       namespace {{typeDefinition.Namespace}}
       {
-      {{() => RenderContent(typeDefinition)}}}
+      #nullable enable
+      {{() => RenderContent(typeDefinition)}}
+      #nullable restore
+      }
       """);
       return (typeDefinition.Name + ".g.cs", writer.ToString());
     }
@@ -74,7 +76,7 @@ namespace T.Pipes.SourceGeneration
     private void RenderMethod(TypeDefinition typeDefinition, IMethodSymbol x, bool served) => writer
       .WriteLine($$"""
       {{() => RenderAttributes(x)}}
-      {{() => RenderSignature(x, served)}}({{() => RenderParameters(x.Parameters)}})
+      {{() => RenderSignature(x, served)}}
       {
       {{() => RenderBody(typeDefinition, x, served)}}
       }
@@ -82,7 +84,7 @@ namespace T.Pipes.SourceGeneration
 
     private void RenderAttributes(IMethodSymbol x)
     {
-      writer.Write("[Description(\"").Write(x.MethodKind).Write("\")]");
+      writer.Write("[System.ComponentModel.Description(\"").Write(x.MethodKind).Write("\")]");
       switch (x.MethodKind)
       {
         case MethodKind.PropertyGet:
@@ -93,7 +95,7 @@ namespace T.Pipes.SourceGeneration
           }
         default:
           {
-            writer.Write("""[Obsolete("Not Generated")]""");
+            writer.Write("""[System.Obsolete("Not Generated")]""");
             break;
           }
       }
@@ -112,7 +114,7 @@ namespace T.Pipes.SourceGeneration
             }
             else
             {
-              writer.Write("throw new NotImplementedException();");
+              writer.Write($$"""return (({{x.ContainingType.ToDisplayString()}}?) Target)!.{{x.Name.Substring(4)}};""");
             }
             break;
           }
@@ -120,25 +122,191 @@ namespace T.Pipes.SourceGeneration
           {
             if (served)
             {
-              writer.Write($$"""Remote<{{x.Parameters[0].Type.ToDisplayString()}}>("{{() => RenderName(x, served)}}",value);""");
+              writer.Write($$"""Remote<{{x.Parameters[0].Type.ToDisplayString()}}>("{{() => RenderName(x, served)}}", value);""");
             }
             else
             {
-              writer.Write("throw new NotImplementedException();");
+              writer.Write($$"""(({{x.ContainingType.ToDisplayString()}}?) Target)!.{{x.Name.Substring(4)}} = value;""");
             }
             break;
           }
         case MethodKind.Ordinary:
           {
+            var (input, output) = GetIO(x);
             if (served)
             {
+              if (!x.ReturnsVoid || output.Count > 0)
+                writer.Write("var result = ");
 
+              writer.Write("Remote");
+
+              if (!x.ReturnsVoid || output.Count > 0 || input.Count > 0)
+              {
+                writer.Write('<');
+
+                if (input.Count > 1)
+                  writer.Write("(");
+                RenderTypeParameters(input.Select(x => x.Type).ToArray());
+                if (input.Count > 1)
+                  writer.Write(")");
+
+                if ((!x.ReturnsVoid || output.Count > 0) && input.Count > 0)
+                  writer.Write(", ");
+
+                if ((!x.ReturnsVoid && output.Count > 0) || output.Count > 1)
+                  writer.Write('(');
+                if (!x.ReturnsVoid)
+                  writer.Write(x.ReturnType.ToDisplayString());
+                RenderTypeParameters(output.Select(x => x.Type).ToArray(), !x.ReturnsVoid);
+                if ((!x.ReturnsVoid && output.Count > 0) || output.Count > 1)
+                  writer.Write(')');
+
+                writer.Write('>');
+              }
+
+              writer.Write("(\"");
+              RenderName(x, served);
+              writer.Write('"');
+              if(input.Count > 0)
+                writer.Write(", ");
+              if(input.Count > 1)
+                writer.Write('(');
+              RenderStrings(input.Select(x => x.Name).ToArray());
+              if (input.Count > 1)
+                writer.Write(')');
+              writer.Write(");");
+
+              if (!x.ReturnsVoid || output.Count > 0)
+                writer.WriteLine();
+
+              if ((!x.ReturnsVoid && output.Count > 0) || output.Count > 1)
+              {
+                for (int i = 0; i < output.Count; i++)
+                {
+                  writer.Write($$"""{{output[i].Name}} = result.Item{{i + (x.ReturnsVoid ? 1 : 2)}};""");
+                }
+              }
+
+              if (x.ReturnsVoid && output.Count == 1)
+              {
+                writer.Write($$"""{{output[0].Name}} = result;""");
+              }
+
+              if (!x.ReturnsVoid)
+              {
+                if (output.Count > 0)
+                  writer.Write("return result.Item1;");
+                else
+                  writer.Write("return result;");
+              }
             }
             else
             {
+              if (!x.ReturnsVoid)
+                writer.Write("var result = ");
 
+              writer.Write($$"""(({{x.ContainingType.ToDisplayString()}}?) Target)!.{{x.Name}}""");
+
+              if(x.TypeParameters.Length > 0)
+              {
+                writer.Write('<');
+                RenderTypeParameters(x.TypeParameters);
+                writer.Write('>');
+              }
+
+              writer.Write('(');
+              for (int i = 0; i < x.Parameters.Length; i++)
+              {
+                var parameter = x.Parameters[i];
+                switch (parameter.RefKind)
+                {
+                  case RefKind.None when input.Count > 1: writer.Write("parameter."); break;
+                  case RefKind.Ref  when input.Count > 1: writer.Write("ref parameter."); break;
+                  case RefKind.Ref: writer.Write("ref "); break;
+                  case RefKind.Out: writer.Write("out var "); break;
+                  case RefKind.In when input.Count > 1:
+                  case RefKind.In + 1 when input.Count > 1: writer.Write("ref parameter."); break;
+                  case RefKind.In:
+                  case RefKind.In + 1: writer.Write("in "); break;
+                }
+                writer.Write(parameter.Name);
+                if (i != x.Parameters.Length - 1)
+                {
+                  writer.Write(", ");
+                }
+              }
+              writer.Write(");");
+
+              if (!x.ReturnsVoid || output.Count > 0)
+              {
+                writer.WriteLine();
+
+                if (!x.ReturnsVoid)
+                {
+                  if (output.Count == 0)
+                    writer.Write("return result;");
+                  else
+                  {
+                    writer.Write("return (result, ");
+                    for (int i = 0; i < output.Count; i++)
+                    {
+                      var parameter = output[i];
+                      switch (parameter.RefKind)
+                      {
+                        case RefKind.None when input.Count > 1:
+                        case RefKind.Ref when input.Count > 1: writer.Write("parameter."); break;
+                        case RefKind.Ref: break;
+                        case RefKind.Out: break;
+                        case RefKind.In when input.Count > 1:
+                        case RefKind.In + 1 when input.Count > 1: writer.Write("parameter."); break;
+                        case RefKind.In:
+                        case RefKind.In + 1: break;
+                      }
+                      writer.Write(parameter.Name);
+                      if (i != output.Count - 1)
+                      {
+                        writer.Write(", ");
+                      }
+                    }
+                    writer.Write(");");
+                  }
+                }
+                else
+                {
+                  if (output.Count == 1)
+                  {
+                    writer.Write("return ");
+                    writer.Write(output[0].Name);
+                    writer.Write(';');
+                  }
+                  else
+                  {
+                    writer.Write("return (");
+                    for (int i = 0; i < output.Count; i++)
+                    {
+                      var parameter = output[i];
+                      switch (parameter.RefKind)
+                      {
+                        case RefKind.None when input.Count > 1:
+                        case RefKind.Ref when input.Count > 1: writer.Write("parameter."); break;
+                        case RefKind.Ref: break;
+                        case RefKind.Out: break;
+                        case RefKind.In when input.Count > 1:
+                        case RefKind.In + 1 when input.Count > 1: writer.Write("parameter."); break;
+                        case RefKind.In:
+                        case RefKind.In + 1: break;
+                      }
+                      writer.Write(parameter.Name);
+                      if (i != output.Count - 1)
+                      {
+                        writer.Write(", ");
+                      }
+                    }
+                    writer.Write(");");
+                  }
+                }
+              }
             }
-            writer.Write("throw new NotImplementedException();");
             break;
           }
         default:
@@ -169,34 +337,136 @@ namespace T.Pipes.SourceGeneration
         writer.Write("static ");
       if (x.IsAsync)
         writer.Write("async ");
-      writer
-        .Write(x.ReturnType.ToDisplayString())
-        .Write(' ');
-      RenderName(x, served);
-      if(x.TypeParameters.Length > 0)
+      if (served)
       {
-        writer.Write('<');
-        for (int i = 0; i < x.TypeParameters.Length; i++)
+        writer
+          .Write(x.ReturnType.ToDisplayString())
+          .Write(' ');
+        RenderName(x, served);
+        if (x.TypeParameters.Length > 0)
         {
-          var para = x.TypeParameters[i];
-          writer.Write(para.ToDisplayString());
-          if(i != x.TypeParameters.Length - 1)
+          writer.Write('<');
+          RenderTypeParameters(x.TypeParameters);
+          writer.Write('>');
+        }
+        writer.Write('(');
+        RenderParameters(x.Parameters);
+        writer.Write(')');
+      }
+      else
+      {
+        var (input, output) = GetIO(x);
+        if(x.ReturnsVoid && output.Count == 0)
+        {
+          writer.Write("void");
+        }
+        else if(x.ReturnsVoid && output.Count == 1)
+        {
+          writer.Write(output[0].Type.ToDisplayString());
+        }
+        else if (!x.ReturnsVoid && output.Count == 0)
+        {
+          writer.Write(x.ReturnType.ToDisplayString());
+        }
+        else
+        {
+          writer.Write('(');
+          if(!x.ReturnsVoid)
+            writer.Write(x.ReturnType.ToDisplayString());
+          if(!x.ReturnsVoid && output.Count > 0)
+            writer.Write(", ");
+          RenderStrings(output.Select(x=>x.Type.ToDisplayString()).ToArray());
+          writer.Write(')');
+        }
+        writer.Write(' ');
+        RenderName(x, served);
+        if (x.TypeParameters.Length > 0)
+        {
+          writer.Write('<');
+          RenderTypeParameters(x.TypeParameters);
+          writer.Write('>');
+        }
+        writer.Write('(');
+        if(input.Count>1)
+          writer.Write('(');
+        for (int i = 0; i < input.Count; i++)
+        {
+          var parameter = input[i];
+          writer.Write(parameter.Type.ToDisplayString());
+          writer.Write(' ');
+          writer.Write(parameter.Name);
+          if (i != input.Count - 1)
           {
             writer.Write(", ");
           }
         }
-        writer.Write('>');
+        if (input.Count > 1)
+          writer.Write(") parameter");
+        writer.Write(')');
       }
     }
 
-    private void RenderParameters(ImmutableArray<IParameterSymbol> parameters)
+    private (List<IParameterSymbol> input, List<IParameterSymbol> output) GetIO(IMethodSymbol x)
     {
+      var input = new List<IParameterSymbol>();
+      var output = new List<IParameterSymbol>();
 
-      for (int i = 0; i < parameters.Length; i++)
+      foreach (var parameter in x.Parameters)
       {
-        IParameterSymbol? parameter = parameters[i];
+        switch (parameter.RefKind)
+        {
+          case RefKind.None: input.Add(parameter); break;
+          case RefKind.Ref: input.Add(parameter); output.Add(parameter); break;
+          case RefKind.Out: output.Add(parameter); break;
+          case RefKind.In:
+          case RefKind.In + 1: input.Add(parameter); break;
+        }
+      }
+      return (input, output);
+    }
+
+    private void RenderTypeParameters(IReadOnlyList<ISymbol> symbols, bool leadingComma = false)
+    {
+      if (symbols.Count > 0 && leadingComma)
+        writer.Write(", ");
+
+      for (int i = 0; i < symbols.Count; i++)
+      {
+        var symbol = symbols[i];
+        writer.Write(symbol.ToDisplayString());
+        if (i != symbols.Count - 1)
+        {
+          writer.Write(", ");
+        }
+      }
+    }
+
+    private void RenderStrings(IReadOnlyList<string> parameters, bool leadingComma = false)
+    {
+      if (parameters.Count > 0 && leadingComma)
+        writer.Write(", ");
+
+      for (int i = 0; i < parameters.Count; i++)
+      {
+        var parameter = parameters[i];
+        writer.Write(parameter);
+        if (i != parameters.Count - 1)
+        {
+          writer.Write(", ");
+        }
+      }
+    }
+
+    private void RenderParameters(IReadOnlyList<ISymbol> parameters, bool leadingComma = false)
+    {
+      if(parameters.Count > 0 && leadingComma)
+        writer.Write(", ");
+
+      for (int i = 0; i < parameters.Count; i++)
+      {
+        var parameter = parameters[i];
         writer.Write(parameter.ToDisplayString());
-        if(i != parameters.Length-1)
+        if(i != parameters.Count - 1)
         {
           writer.Write(", ");
         }

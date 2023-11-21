@@ -31,6 +31,11 @@ namespace T.Pipes.Test.Client
 
     public void InInt(in int value) => i = value;
     public T Map<T>(T from) => from;
+
+    public int? MaybeInt(int? a) => a;
+
+    public string? MaybeString(string? a) => a;
+
     public void OutInt(out int value) => value = i;
 
     public void RefInt(ref int value) => value *= 2;
