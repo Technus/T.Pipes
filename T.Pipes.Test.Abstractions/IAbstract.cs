@@ -72,5 +72,7 @@
     void InInt(in int value);
 
     int DoIt(int a, int b, int c, out int d, out int e);
+
+    void RefIt(ref int a, ref int b, ref int c);
   }
 }

@@ -11,14 +11,9 @@ namespace T.Pipes
     where TPacket : IPipeMessage
     where TPacketFactory : IPipeMessageFactory<TPacket>
   {
-    public TTarget Target { get; }
-    private readonly Type _type;
-
     public DelegatingPipeClientCallback(TPacketFactory packetFactory, TTarget target, IPipeClient<TPacket> pipe)
       : base(pipe, packetFactory)
     {
-      Target = target;
-      _type = target?.GetType() ?? typeof(TTarget);
     }
   }
 }

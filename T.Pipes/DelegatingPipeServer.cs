@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
 using H.Pipes;
 using T.Pipes.Abstractions;
@@ -41,9 +42,21 @@ namespace T.Pipes
 
     public void InvokeRemote([CallerMemberName] string callerName = "") => Callback.Remote(callerName);
 
+    public async Task<T?> InvokeRemoteAsync<T>(object? parameters, [CallerMemberName] string callerName = "") => await Callback.RemoteAsync<T, object>(callerName, parameters);
+
+    public async Task<T?> InvokeRemoteAsync<T>([CallerMemberName] string callerName = "") => await Callback.RemoteAsync<T>(callerName);
+
+    public async Task InvokeRemoteAsync(object? parameters, [CallerMemberName] string callerName = "") => await Callback.RemoteAsync(callerName, parameters);
+
+    public async Task InvokeRemoteAsync([CallerMemberName] string callerName = "") => await Callback.RemoteAsync(callerName);
+
     public T? GetRemote<T>([CallerMemberName] string callerName = "") => Callback.Remote<T>(callerName);
 
     public void SetRemote<T>(T? value, [CallerMemberName] string callerName = "") => Callback.Remote(callerName, value);
+
+    public async Task<T?> GetRemoteAsync<T>([CallerMemberName] string callerName = "") => await Callback.RemoteAsync<T>(callerName);
+
+    public async Task SetRemoteAsync<T>(T? value, [CallerMemberName] string callerName = "") => await Callback.RemoteAsync(callerName, value);
 
     public void SetFunctionRemote(Func<object?, object?> function, string callerName) => Callback.SetFunction(callerName, function);
 
