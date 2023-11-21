@@ -33,12 +33,12 @@ namespace T.Pipes
       }
     }
 
-    public DelegatingPipeServer(string pipeName, TPacketFactory packetFactory, TTarget? target = default)
+    public DelegatingPipeServer(string pipeName, TPacketFactory packetFactory, TTarget? target)
       : this(new PipeServer<TPacket>(pipeName), packetFactory, target)
     {
     }
 
-    public DelegatingPipeServer(IPipeServer<TPacket> pipe, TPacketFactory packetFactory, TTarget? target = default)
+    public DelegatingPipeServer(IPipeServer<TPacket> pipe, TPacketFactory packetFactory, TTarget? target)
       : base(pipe, new(pipe, packetFactory, target))
     {
     }

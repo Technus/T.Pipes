@@ -3,8 +3,7 @@ using T.Pipes.Test.Abstractions;
 
 namespace T.Pipes.Test.Server
 {
-  internal class DelegatingServerAuto<TTarget> : DelegatingPipeServer<PipeMessage, PipeMessageFactory, TTarget>, IAbstract
-    where TTarget : IAbstract
+  internal class DelegatingServerAuto : DelegatingPipeServer<PipeMessage, PipeMessageFactory, DelegatingServerAuto>, IAbstract
   {
     public DelegatingServerAuto(string pipeName) : this(new PipeServer<PipeMessage>(pipeName))
     {

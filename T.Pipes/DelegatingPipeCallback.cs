@@ -25,7 +25,7 @@ namespace T.Pipes
       set
       {
         _target = value;
-        Type = Target?.GetType() ?? typeof(TTarget);
+        Type = value?.GetType() ?? typeof(TTarget);
       }
     }
 
