@@ -33,47 +33,17 @@ namespace T.Pipes
       await Callback.DisposeAsync();
     }
 
-    public T? InvokeRemote<T>(object? parameters, [CallerMemberName] string callerName = "")
-    {
-      var cmd = PacketFactory.Create(callerName, parameters);
-      Pipe.WriteAsync(cmd).Wait();
-      return (T?)Callback.GetResponse(cmd);
-    }
+    public T? InvokeRemote<T>(object? parameters, [CallerMemberName] string callerName = "") => Callback.Remote<T, object>(callerName, parameters);
 
-    public T? InvokeRemote<T>([CallerMemberName] string callerName = "")
-    {
-      var cmd = PacketFactory.Create(callerName);
-      Pipe.WriteAsync(cmd).Wait();
-      return (T?)Callback.GetResponse(cmd);
-    }
+    public T? InvokeRemote<T>([CallerMemberName] string callerName = "") => Callback.Remote<T>(callerName);
 
-    public void InvokeRemote(object? parameters, [CallerMemberName] string callerName = "")
-    {
-      var cmd = PacketFactory.Create(callerName, parameters);
-      Pipe.WriteAsync(cmd).Wait();
-      _ = Callback.GetResponse(cmd);
-    }
+    public void InvokeRemote(object? parameters, [CallerMemberName] string callerName = "") => Callback.Remote(callerName, parameters);
 
-    public void InvokeRemote([CallerMemberName] string callerName = "")
-    {
-      var cmd = PacketFactory.Create(callerName);
-      Pipe.WriteAsync(cmd).Wait();
-      _ = Callback.GetResponse(cmd);
-    }
+    public void InvokeRemote([CallerMemberName] string callerName = "") => Callback.Remote(callerName);
 
-    public T? GetRemote<T>([CallerMemberName] string callerName = "")
-    {
-      var cmd = PacketFactory.Create("get_" + callerName);
-      Pipe.WriteAsync(cmd).Wait();
-      return (T?)Callback.GetResponse(cmd);
-    }
+    public T? GetRemote<T>([CallerMemberName] string callerName = "") => Callback.Remote<T>(callerName);
 
-    public void SetRemote<T>(T? value, [CallerMemberName] string callerName = "")
-    {
-      var cmd = PacketFactory.Create("set_" + callerName, value);
-      Pipe.WriteAsync(cmd).Wait();
-      _ = Callback.GetResponse(cmd);
-    }
+    public void SetRemote<T>(T? value, [CallerMemberName] string callerName = "") => Callback.Remote(callerName, value);
 
     public void SetFunctionRemote(Func<object?, object?> function, string callerName) => Callback.SetFunction(callerName, function);
 
