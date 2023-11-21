@@ -16,7 +16,7 @@ namespace T.Pipes.Test.Server
       SetFunctionRemote(x => { Get?.Invoke(x as string ?? string.Empty); return default; }, nameof(IAbstract.Get));
     }
 
-    public Func<int, int>? Tea { get => GetRemote<Func<int, int>?>(); set => SetRemote<Func<int, int>?>(value); }
+    public Func<int, int>? Tea { get => GetRemote<Func<int, int>?>(); set => SetRemote(value); }
     public int Int { get => GetRemote<int>(); set => SetRemote(value); }
 
     public event Action? Act;
@@ -33,10 +33,13 @@ namespace T.Pipes.Test.Server
     public int[] GetInts() => InvokeRemote<int[]>() ?? Array.Empty<int>();
     public (string a, string b) GetStrings() => InvokeRemote<(string a, string b)>();
     public void InInt(in int value) => InvokeRemote(value);
+    public T Map<T>(T from) => throw new NotImplementedException();
     public void OutInt(out int value) => value = InvokeRemote<int>();
     public void RefInt(ref int value) => value = InvokeRemote<int>(value);
     public void RefIt(ref int a, ref int b, ref int c) => (a, b, c) = InvokeRemote<(int, int, int)>((a, b, c));
+    public Tea ReMap<T, Tea>(T from) => throw new NotImplementedException();
     public void SetInt(int value) => InvokeRemote(value);
     public void SetInts(int[] a) => InvokeRemote(a);
+    public T UnMap<T, Tea>(Tea from) => throw new NotImplementedException();
   }
 }

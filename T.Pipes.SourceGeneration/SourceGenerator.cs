@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
@@ -10,10 +11,10 @@ namespace T.Pipes.SourceGeneration
   [Generator(LanguageNames.CSharp)]
   public class SourceGenerator : IIncrementalGenerator
   {
-    private static DiagnosticDescriptor Descriptor { get; } = new("T_Pipes_SourceGeneration", "File Generated", "File Generated: {0}", "Files", DiagnosticSeverity.Info, true);
+    private static DiagnosticDescriptor GeneretedFileDescriptor { get; } = new("T_Pipes_SourceGeneration", "File Generated", "File Generated: {0}", "Files", DiagnosticSeverity.Info, true);
 
-    private const string PipeServeAttribute = "T.Pipes.Abstractions.PipeServeAttribute";
-    private const string PipeClientAttribute = "T.Pipes.Abstractions.PipeClientAttribute";
+    internal const string PipeServeAttribute = "T.Pipes.Abstractions.PipeServeAttribute";
+    internal const string PipeUseAttribute = "T.Pipes.Abstractions.PipeUseAttribute";
 
     public void Initialize(IncrementalGeneratorInitializationContext ctx)
     {
@@ -45,7 +46,7 @@ namespace T.Pipes.SourceGeneration
         {
           var typeDefinition = p.GenerateType(item!);
           var (hintName, source) = e.EmitType(typeDefinition);
-          context.ReportDiagnostic(Diagnostic.Create(Descriptor, null, hintName));
+          context.ReportDiagnostic(Diagnostic.Create(GeneretedFileDescriptor, null, hintName));
           context.AddSource(hintName, SourceText.From(source, Encoding.UTF8));
         }
       }
@@ -73,10 +74,10 @@ namespace T.Pipes.SourceGeneration
           var attributeContainingTypeSymbol = attributeSymbol.ContainingType;
           var fullName = attributeContainingTypeSymbol.ToDisplayString();
 
-          if (fullName == PipeServeAttribute || fullName == PipeClientAttribute)
+          if (fullName == PipeServeAttribute || fullName == PipeUseAttribute)
           {
             // return the parent class of the method
-            return memberDeclarationSyntax.Parent as TypeDeclarationSyntax;
+            return memberDeclarationSyntax is TypeDeclarationSyntax type ? type : memberDeclarationSyntax.Parent as TypeDeclarationSyntax;
           }
         }
       }

@@ -6,8 +6,8 @@
     <LangVersion>latest</LangVersion>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-	<EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
-	<CompilerGeneratedFilesOutputPath>Generated</CompilerGeneratedFilesOutputPath>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <CompilerGeneratedFilesOutputPath>obj/Generated</CompilerGeneratedFilesOutputPath>
   </PropertyGroup>
 
   <ItemGroup>
@@ -20,10 +20,8 @@
     <ProjectReference Include="..\T.Pipes\T.Pipes.csproj" />
   </ItemGroup>
 
-	<ItemGroup>
-		<ProjectReference Include="..\T.Pipes.SourceGeneration\T.Pipes.SourceGeneration.csproj"
-						  OutputItemType="Analyzer"
-						  ReferenceOutputAssembly="false"/>
-	</ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\T.Pipes.SourceGeneration\T.Pipes.SourceGeneration.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false"/>
+  </ItemGroup>
 
 </Project>

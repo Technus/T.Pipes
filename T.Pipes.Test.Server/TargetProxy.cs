@@ -22,15 +22,16 @@ namespace T.Pipes.Test.Server
     public (string a, string b) GetStrings() => throw new NotImplementedException();
 
     public void InInt(in int value) => throw new NotImplementedException();
-
+    public T Map<T>(T from) => throw new NotImplementedException();
     public void OutInt(out int value) => throw new NotImplementedException();
 
     public void RefInt(ref int value) => throw new NotImplementedException();
 
     public void RefIt(ref int a, ref int b, ref int c) => throw new NotImplementedException();
-
+    public Tea ReMap<T, Tea>(T from) => throw new NotImplementedException();
     public void SetInt(int value) => throw new NotImplementedException();
 
     public void SetInts(int[] a) => throw new NotImplementedException();
+    public T UnMap<T, Tea>(Tea from) => throw new NotImplementedException();
   }
 }

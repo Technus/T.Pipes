@@ -1,5 +1,9 @@
-﻿using System.Threading;
+﻿using System;
+using System.Collections.Immutable;
+using System.Diagnostics;
+using System.Threading;
 using CodegenCS;
+using Microsoft.CodeAnalysis;
 
 namespace T.Pipes.SourceGeneration
 {
@@ -51,6 +55,152 @@ namespace T.Pipes.SourceGeneration
       """)
       .DecreaseIndent();
 
-    private void RenderInnerContent(TypeDefinition typeDefinition) => writer.WriteLine("//Nog");
+    private void RenderInnerContent(TypeDefinition typeDefinition)
+    {
+      writer.IncreaseIndent();
+      typeDefinition.ServeMemberDeclarations.ForEach(symbol => RenderSymbol(typeDefinition, symbol, true));
+      typeDefinition.UsedMemberDeclarations.ForEach(symbol => RenderSymbol(typeDefinition, symbol, false));
+      writer.DecreaseIndent();
+    }
+
+    private void RenderSymbol(TypeDefinition typeDefinition, ISymbol symbol, bool served)
+    {
+      switch (symbol)
+      {
+        case IMethodSymbol methodSymbol: RenderMethod(typeDefinition, methodSymbol, served); break;
+      }
+    }
+
+    private void RenderMethod(TypeDefinition typeDefinition, IMethodSymbol x, bool served) => writer
+      .WriteLine($$"""
+      {{() => RenderAttributes(x)}}
+      {{() => RenderSignature(x, served)}}({{() => RenderParameters(x.Parameters)}})
+      {
+      {{() => RenderBody(typeDefinition, x, served)}}
+      }
+      """);
+
+    private void RenderAttributes(IMethodSymbol x)
+    {
+      writer.Write("[Description(\"").Write(x.MethodKind).Write("\")]");
+      switch (x.MethodKind)
+      {
+        case MethodKind.PropertyGet:
+        case MethodKind.PropertySet:
+        case MethodKind.Ordinary:
+          {
+            break;
+          }
+        default:
+          {
+            writer.Write("""[Obsolete("Not Generated")]""");
+            break;
+          }
+      }
+    }
+
+    private void RenderBody(TypeDefinition typeDefinition, IMethodSymbol x, bool served)
+    {
+      writer.IncreaseIndent();
+      switch (x.MethodKind)
+      {
+        case MethodKind.PropertyGet:
+          {
+            if (served)
+            {
+              writer.Write($$"""return Remote<{{x.ReturnType.ToDisplayString()}}>("{{()=> RenderName(x,served)}}");""");
+            }
+            else
+            {
+              writer.Write("throw new NotImplementedException();");
+            }
+            break;
+          }
+        case MethodKind.PropertySet:
+          {
+            if (served)
+            {
+              writer.Write($$"""Remote<{{x.Parameters[0].Type.ToDisplayString()}}>("{{() => RenderName(x, served)}}",value);""");
+            }
+            else
+            {
+              writer.Write("throw new NotImplementedException();");
+            }
+            break;
+          }
+        case MethodKind.Ordinary:
+          {
+            if (served)
+            {
+
+            }
+            else
+            {
+
+            }
+            writer.Write("throw new NotImplementedException();");
+            break;
+          }
+        default:
+          {
+            writer.Write("throw new NotImplementedException();");
+            break;
+          }
+      }
+      writer.DecreaseIndent();
+    }
+
+    private void RenderName(IMethodSymbol x, bool served)
+    {
+      writer
+        //.Write(served?"Serve_":"Using_")
+        .Write(x.ContainingType.Name);
+      if (x.ContainingType.Arity > 0)
+        writer.Write(x.ContainingType.Arity);
+      writer
+        .Write('_')
+        .Write(x.Name);
+    }
+
+    private void RenderSignature(IMethodSymbol x, bool served)
+    {
+      writer.Write("internal ");
+      if (x.IsStatic)
+        writer.Write("static ");
+      if (x.IsAsync)
+        writer.Write("async ");
+      writer
+        .Write(x.ReturnType.ToDisplayString())
+        .Write(' ');
+      RenderName(x, served);
+      if(x.TypeParameters.Length > 0)
+      {
+        writer.Write('<');
+        for (int i = 0; i < x.TypeParameters.Length; i++)
+        {
+          var para = x.TypeParameters[i];
+          writer.Write(para.ToDisplayString());
+          if(i != x.TypeParameters.Length - 1)
+          {
+            writer.Write(", ");
+          }
+        }
+        writer.Write('>');
+      }
+    }
+
+    private void RenderParameters(ImmutableArray<IParameterSymbol> parameters)
+    {
+
+      for (int i = 0; i < parameters.Length; i++)
+      {
+        IParameterSymbol? parameter = parameters[i];
+        writer.Write(parameter.ToDisplayString());
+        if(i != parameters.Length-1)
+        {
+          writer.Write(", ");
+        }
+      }
+    }
   }
 }

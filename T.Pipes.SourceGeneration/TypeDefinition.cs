@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace T.Pipes.SourceGeneration
@@ -30,6 +31,11 @@ namespace T.Pipes.SourceGeneration
     /// <summary>
     /// Members in the type to write
     /// </summary>
-    public List<MemberDeclarationSyntax> MemberDeclarations { get; set; }
+    public List<ISymbol> ServeMemberDeclarations { get; set; }
+
+    /// <summary>
+    /// Members in the type to write
+    /// </summary>
+    public List<ISymbol> UsedMemberDeclarations { get; set; }
   }
 }

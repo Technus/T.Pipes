@@ -30,15 +30,17 @@ namespace T.Pipes.Test.Client
     public (string a, string b) GetStrings() => ("John", "Paul");
 
     public void InInt(in int value) => i = value;
-
+    public T Map<T>(T from) => from;
     public void OutInt(out int value) => value = i;
 
     public void RefInt(ref int value) => value *= 2;
 
     public void RefIt(ref int a, ref int b, ref int c) { a = 21; b = 37; c = 2137; }
 
+    public Tea ReMap<T, Tea>(T from) => throw new NotImplementedException();
     public void SetInt(int value) => i = value;
 
     public void SetInts(int[] a) => j = a;
+    public T UnMap<T, Tea>(Tea from) => throw new NotImplementedException();
   }
 }

@@ -57,5 +57,9 @@
     /// </summary>
     /// <param name="value"></param>
     void InT(in T value);
+
+    Tea ReMap<Tea>(T from);
+
+    T UnMap<Tea>(Tea from);
   }
 }

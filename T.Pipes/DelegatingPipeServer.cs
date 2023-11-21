@@ -7,11 +7,8 @@ using T.Pipes.Abstractions;
 
 namespace T.Pipes
 {
-  /// <summary>
-  /// IPC helper for remote interface consumer side
-  /// </summary>
   public class DelegatingPipeServer<TPacket, TPacketFactory, TTarget> 
-    : PipeServer<TPacket, DelegatingPipeCallback<IPipeServer<TPacket>, TPacket, TPacketFactory, TTarget>> 
+    : DelegatingPipeServer<TPacket, TPacketFactory, TTarget, DelegatingPipeCallback<IPipeServer<TPacket>, TPacket, TPacketFactory, TTarget>>
     where TPacket : IPipeMessage
     where TPacketFactory : IPipeMessageFactory<TPacket>
   {
@@ -42,13 +39,20 @@ namespace T.Pipes
       : base(pipe, new(pipe, packetFactory, target))
     {
     }
+  }
 
-    public DelegatingPipeServer(string pipeName, DelegatingPipeCallback<IPipeServer<TPacket>, TPacket, TPacketFactory, TTarget> callback)
+  public class DelegatingPipeServer<TPacket, TPacketFactory, TTarget, TCallback> 
+    : PipeServer<TPacket, TCallback> 
+    where TPacket : IPipeMessage
+    where TPacketFactory : IPipeMessageFactory<TPacket>
+    where TCallback : DelegatingPipeCallback<IPipeServer<TPacket>, TPacket, TPacketFactory, TTarget>
+  {
+    public DelegatingPipeServer(string pipeName, TCallback callback)
       : this(new PipeServer<TPacket>(pipeName), callback)
     {
     }
 
-    public DelegatingPipeServer(IPipeServer<TPacket> pipe, DelegatingPipeCallback<IPipeServer<TPacket>, TPacket, TPacketFactory, TTarget> callback)
+    public DelegatingPipeServer(IPipeServer<TPacket> pipe, TCallback callback)
       : base(pipe, callback)
     {
     }

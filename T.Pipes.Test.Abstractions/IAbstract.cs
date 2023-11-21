@@ -74,5 +74,9 @@
     int DoIt(int a, int b, int c, out int d, out int e);
 
     void RefIt(ref int a, ref int b, ref int c);
+
+    T Map<T>(T from);
+    Tea ReMap<T,Tea>(T from);
+    T UnMap<T,Tea>(Tea from);
   }
 }

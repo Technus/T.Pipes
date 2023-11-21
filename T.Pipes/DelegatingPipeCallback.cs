@@ -6,6 +6,14 @@ using T.Pipes.Abstractions;
 
 namespace T.Pipes
 {
+  public class DelegatingPipeMessageCallback<TPipe, TTarget> : DelegatingPipeCallback<TPipe, PipeMessage, PipeMessageFactory, TTarget>
+    where TPipe : H.Pipes.IPipeConnection<PipeMessage>
+  {
+    public DelegatingPipeMessageCallback(TPipe pipe, TTarget? target = default) : base(pipe, new(), target)
+    {
+    }
+  }
+
   public class DelegatingPipeCallback<TPipe, TPacket, TPacketFactory, TTarget> 
     : IPipeCallback<TPacket>
     where TPipe : H.Pipes.IPipeConnection<TPacket>

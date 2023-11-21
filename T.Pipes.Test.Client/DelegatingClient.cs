@@ -1,15 +1,16 @@
 ﻿using H.Pipes;
+using T.Pipes.Abstractions;
 using T.Pipes.Test.Abstractions;
 
 namespace T.Pipes.Test.Client
 {
-  internal class DelegatingClient<TTarget> : DelegatingPipeClient<PipeMessage, PipeMessageFactory, TTarget> where TTarget : IAbstract
+  internal class DelegatingClient : DelegatingPipeClient<PipeMessage, PipeMessageFactory, Target>
   {
-    public DelegatingClient(string pipeName, TTarget target) : this(new PipeClient<PipeMessage>(pipeName), target)
+    public DelegatingClient(string pipeName, Target target) : this(new PipeClient<PipeMessage>(pipeName), target)
     {
     }
 
-    public DelegatingClient(IPipeClient<PipeMessage> pipe, TTarget target) : base(pipe, new PipeMessageFactory(), target)
+    public DelegatingClient(IPipeClient<PipeMessage> pipe, Target target) : base(pipe, new PipeMessageFactory(), target)
     {
       Callback.Target.Act += Target_Act;
       Callback.Target.Set += Target_Set;

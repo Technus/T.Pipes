@@ -6,14 +6,14 @@ using T.Pipes.Abstractions;
 namespace T.Pipes
 {
   public class DelegatingPipeClient<TPacket, TPacketFactory, TTarget> 
-    : PipeClient<TPacket, DelegatingPipeCallback<IPipeClient<TPacket>, TPacket, TPacketFactory, TTarget>> 
+    : DelegatingPipeClient<TPacket, TPacketFactory, TTarget, DelegatingPipeCallback<IPipeClient<TPacket>, TPacket, TPacketFactory, TTarget>>
     where TPacket : IPipeMessage
     where TPacketFactory : IPipeMessageFactory<TPacket>
   {
     public DelegatingPipeClient(string pipeName, TPacketFactory packetFactory)
       : this(new PipeClient<TPacket>(pipeName), packetFactory, default)
     {
-      if(this is TTarget target)
+      if (this is TTarget target)
       {
         Callback.Target = target;
       }
@@ -28,7 +28,7 @@ namespace T.Pipes
       }
     }
 
-    public DelegatingPipeClient(string pipeName, TPacketFactory packetFactory, TTarget? target) 
+    public DelegatingPipeClient(string pipeName, TPacketFactory packetFactory, TTarget? target)
       : this(new PipeClient<TPacket>(pipeName), packetFactory, target)
     {
     }
@@ -37,13 +37,20 @@ namespace T.Pipes
       : base(pipe, new(pipe, packetFactory, target))
     {
     }
+  }
 
-    public DelegatingPipeClient(string pipeName, DelegatingPipeCallback<IPipeClient<TPacket>, TPacket, TPacketFactory, TTarget> callback)
+  public class DelegatingPipeClient<TPacket, TPacketFactory, TTarget, TCallback> 
+    : PipeClient<TPacket, TCallback> 
+    where TPacket : IPipeMessage
+    where TPacketFactory : IPipeMessageFactory<TPacket>
+    where TCallback : DelegatingPipeCallback<IPipeClient<TPacket>, TPacket, TPacketFactory, TTarget>
+  {
+    public DelegatingPipeClient(string pipeName, TCallback callback)
       : this(new PipeClient<TPacket>(pipeName), callback)
     {
     }
 
-    public DelegatingPipeClient(IPipeClient<TPacket> pipe, DelegatingPipeCallback<IPipeClient<TPacket>, TPacket, TPacketFactory, TTarget> callback)
+    public DelegatingPipeClient(IPipeClient<TPacket> pipe, TCallback callback)
       : base(pipe, callback)
     {
     }

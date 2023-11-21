@@ -4,12 +4,17 @@ using System.Diagnostics;
 using System.Text;
 using System.Threading;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace T.Pipes.SourceGeneration
 {
   internal class Parser
   {
+    private static DiagnosticDescriptor MissingParametersDescriptor { get; } = new("T_Pipes_MissingParameters", "Missing Parameters", "Missing Parameters", "Attributes", DiagnosticSeverity.Error, true);
+    private static DiagnosticDescriptor InvalidParametersDescriptor { get; } = new("T_Pipes_InvalidParameters", "Invalid Parameters", "Invalid Parameters", "Attributes", DiagnosticSeverity.Error, true);
+    private static DiagnosticDescriptor NoSymbolDescriptor { get; } = new("T_Pipes_NoSymbol", "No Symbol", "No Symbol", "Attributes", DiagnosticSeverity.Error, true);
+
     private readonly Compilation compilation;
     private readonly Action<Diagnostic> reportDiagnostic;
     private CancellationToken cancellationToken;
@@ -21,29 +26,138 @@ namespace T.Pipes.SourceGeneration
       this.cancellationToken = cancellationToken;
     }
 
-    internal TypeDefinition GenerateType(TypeDeclarationSyntax classy) => new()
+    internal TypeDefinition GenerateType(TypeDeclarationSyntax classy)
     {
-      TypeDeclarationSyntax = classy,
-      Name = GetHintName(classy),
-      Namespace = classy.TryGetParentSyntax<NamespaceDeclarationSyntax>(out var parent) ? parent.Name.ToString() : throw new ArgumentException("Has no Namespace", nameof(classy)),
-      TypeList = GetTypeList(classy),
-      UsingList = new(){ "System", "System.Collections.Generic", "System.Threading", "System.Threading.Tasks", "T.Pipes.Abstractions", "T.Pipes"},
-      MemberDeclarations = GetMembers(classy),
-    };
+      var (served, used) = GetMembers(classy);
+      return new()
+      {
+        TypeDeclarationSyntax = classy,
+        Name = GetHintName(classy),
+        Namespace = classy.TryGetParentSyntax<NamespaceDeclarationSyntax>(out var parent) ? parent.Name.ToString() : throw new ArgumentException("Has no Namespace", nameof(classy)),
+        TypeList = GetTypeList(classy),
+        UsingList = new() { "System", "System.ComponentModel", "System.Collections.Generic", "System.Threading", "System.Threading.Tasks", "T.Pipes.Abstractions", "T.Pipes" },
+        ServeMemberDeclarations = served,
+        UsedMemberDeclarations = used,
+      };
+    }
 
-    private List<MemberDeclarationSyntax> GetMembers(TypeDeclarationSyntax classy)
+    private (List<ISymbol> served, List<ISymbol> used) GetMembers(TypeDeclarationSyntax classy)
     {
-      var members = new List<MemberDeclarationSyntax>();
-
-      Debugger.Launch();
+      var served = new List<ISymbol>();
+      var used = new List<ISymbol>();
 
       foreach (var item in classy.Members)
       {
-        var semantics = compilation.GetSemanticModel(item);
+        foreach (var attributeListSyntax in item.AttributeLists)
+        {
+          foreach (var attributeSyntax in attributeListSyntax.Attributes)
+          {
+            var attributeSymbol = compilation.GetSemanticModel(attributeSyntax).GetSymbolInfo(attributeSyntax).Symbol;
+            if (attributeSymbol == null)
+            {
+              // weird, we couldn't get the symbol, ignore it
+              continue;
+            }
 
+            var attributeContainingTypeSymbol = attributeSymbol.ContainingType;
+            var fullName = attributeContainingTypeSymbol.ToDisplayString();
+
+            if (fullName == SourceGenerator.PipeServeAttribute)
+            {
+              // return the parent class of the method
+              served.Add(MakeMember(item));
+            }
+            if (fullName == SourceGenerator.PipeUseAttribute)
+            {
+              // return the parent class of the method
+              used.Add(MakeMember(item));
+            }
+          }
+        }
       }
 
-      return members;
+      foreach (var attributeListSyntax in classy.AttributeLists)
+      {
+        foreach (var attributeSyntax in attributeListSyntax.Attributes)
+        {
+          var attributeSymbol = compilation.GetSemanticModel(attributeSyntax).GetSymbolInfo(attributeSyntax).Symbol;
+          if (attributeSymbol == null)
+          {
+            // weird, we couldn't get the symbol, ignore it
+            continue;
+          }
+
+          var attributeContainingTypeSymbol = attributeSymbol.ContainingType;
+          var fullName = attributeContainingTypeSymbol.ToDisplayString();
+
+          if (fullName == SourceGenerator.PipeServeAttribute)
+          {
+            // return the parent class of the method
+            served.AddRange(MakeMembers(attributeSyntax));
+          }
+          if (fullName == SourceGenerator.PipeUseAttribute)
+          {
+            // return the parent class of the method
+            used.AddRange(MakeMembers(attributeSyntax));
+          }
+        }
+      }
+
+      return (served, used);
+    }
+
+    private ISymbol MakeMember(MemberDeclarationSyntax member)
+    {
+      var semantic = compilation.GetSemanticModel(member);
+      var typeDef = semantic.GetSymbolInfo(member).Symbol;
+      if(typeDef is null)
+      {
+        reportDiagnostic(Diagnostic.Create(NoSymbolDescriptor,member.GetLocation()));
+        throw new InvalidOperationException();
+      }
+      return typeDef;
+    }
+
+    private IEnumerable<ISymbol> MakeMembers(AttributeSyntax attribute)
+    {
+      if(attribute.ArgumentList is null)
+      {
+        reportDiagnostic(Diagnostic.Create(MissingParametersDescriptor,attribute.GetLocation()));
+        yield break;
+      }
+
+      foreach (var item in attribute.ArgumentList.Arguments)
+      {
+        switch (item.Expression.Kind())
+        {
+          case SyntaxKind.TypeOfExpression:
+            {
+              var type = ((TypeOfExpressionSyntax)item.Expression).Type;
+              var semantic = compilation.GetSemanticModel(type);
+              var typeDef = semantic.GetSymbolInfo(type).Symbol as INamedTypeSymbol;
+              if(typeDef != null)
+              {
+                foreach(var member in typeDef.GetMembers())
+                {
+                  yield return member;
+                }
+              }
+              break;
+            }
+          case SyntaxKind.StringLiteralExpression:
+            {
+              //TODO
+              reportDiagnostic(Diagnostic.Create(InvalidParametersDescriptor, attribute.GetLocation()));
+              yield break;
+            }
+          default:
+            {
+              reportDiagnostic(Diagnostic.Create(InvalidParametersDescriptor, attribute.GetLocation()));
+              yield break;
+            }
+        }
+      }
+
     }
 
     private static List<string> GetTypeList(TypeDeclarationSyntax classy)
