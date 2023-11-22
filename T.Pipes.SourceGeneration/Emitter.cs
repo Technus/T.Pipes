@@ -83,9 +83,13 @@ namespace T.Pipes.SourceGeneration
 
     private void RenderEvent(TypeDefinition typeDefinition, IEventSymbol x, bool served)
     {
-      writer.WriteLine($$"""//{{x.Kind}} {{x.Type.ToDisplayString()}} {{x.Name}}""");
-      //if (eventSymbol.RaiseMethod != null) VB stuff
-      //  RenderMethod(typeDefinition, eventSymbol.RaiseMethod, served);
+      writer.WriteLine($$"""
+        {{() => RenderAttributes(x)}}
+        {{() => RenderSignature(x, served)}}
+        {
+        {{() => RenderBody(typeDefinition, x, served)}}
+        }
+        """);
     }
 
     private void RenderMethod(TypeDefinition typeDefinition, IMethodSymbol x, bool served) => writer
@@ -96,6 +100,11 @@ namespace T.Pipes.SourceGeneration
       {{() => RenderBody(typeDefinition, x, served)}}
       }
       """);
+
+    private void RenderAttributes(IEventSymbol x)
+    {
+      writer.Write("[System.ComponentModel.Description(\"").Write(MethodKind.EventRaise).Write("\")]");
+    }
 
     private void RenderAttributes(IMethodSymbol x)
     {
@@ -116,6 +125,10 @@ namespace T.Pipes.SourceGeneration
             break;
           }
       }
+    }
+    private void RenderBody(TypeDefinition typeDefinition, IEventSymbol x, bool served)
+    {
+
     }
 
     private void RenderBody(TypeDefinition typeDefinition, IMethodSymbol x, bool served)
@@ -345,7 +358,7 @@ namespace T.Pipes.SourceGeneration
       writer.DecreaseIndent();
     }
 
-    private void RenderName(IMethodSymbol x, bool served)
+    private void RenderName(ISymbol x, bool served, string prefix = "")
     {
       writer
         //.Write(served?"Serve_":"Using_")
@@ -354,7 +367,22 @@ namespace T.Pipes.SourceGeneration
         writer.Write(x.ContainingType.Arity);
       writer
         .Write('_')
+        .Write(prefix)
         .Write(x.Name);
+    }
+
+    private void RenderSignature(IEventSymbol x, bool served)
+    {
+      writer.Write("internal ");
+      if (x.IsStatic)
+        writer.Write("static ");
+      writer
+        .Write(x.Type.ToDisplayString())//todo actual return type of event
+        .Write(' ');
+      RenderName(x, served, "raise_");
+      writer.Write('(');
+      //todo actual parameters of event
+      writer.Write(')');
     }
 
     private void RenderSignature(IMethodSymbol x, bool served)
