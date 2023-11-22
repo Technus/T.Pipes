@@ -5,7 +5,7 @@ namespace T.Pipes.Test.Client
 {
   internal class Client : IDisposable, IAsyncDisposable
   {
-    private PipeClient<PipeMessage, Callback> Pipe { get; }
+    private PipeClient<Callback> Pipe { get; }
 
     public Client() => Pipe = new("T.Pipes.Test", new Callback(this));
 

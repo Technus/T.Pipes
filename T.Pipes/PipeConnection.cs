@@ -1,11 +1,12 @@
-﻿using System.Threading;
+﻿using H.Pipes.Args;
+using System.Threading;
 using System.Threading.Tasks;
-using H.Pipes.Args;
 using T.Pipes.Abstractions;
 
 namespace T.Pipes
 {
-  public abstract class PipeConnection<TPipe, TPacket, TCallback> : IPipeConnection<TPacket>
+  public abstract class PipeConnection<TPipe, TPacket, TCallback>
+    : IPipeConnection<TPacket>
     where TPipe : H.Pipes.IPipeConnection<TPacket>
     where TCallback : IPipeCallback<TPacket>
   {
@@ -24,9 +25,15 @@ namespace T.Pipes
       Pipe.MessageReceived += OnMessageReceived;
     }
 
-    private void OnMessageReceived(object? sender, ConnectionMessageEventArgs<TPacket?> e) => Callback.OnMessageReceived(e.Message);
+    private void OnMessageReceived(object? sender, ConnectionMessageEventArgs<TPacket?> e)
+    {
+      Callback.OnMessageReceived(e.Message);
+    }
 
-    private void OnExceptionOccurred(object? sender, ExceptionEventArgs e) => Callback.OnExceptionOccurred(e.Exception);
+    private void OnExceptionOccurred(object? sender, ExceptionEventArgs e)
+    {
+      Callback.OnExceptionOccurred(e.Exception);
+    }
 
     public virtual async ValueTask DisposeAsync()
     {
@@ -35,7 +42,10 @@ namespace T.Pipes
       Pipe.ExceptionOccurred -= OnExceptionOccurred;
     }
 
-    public void Dispose() => DisposeAsync().AsTask().Wait();
+    public void Dispose()
+    {
+      DisposeAsync().AsTask().Wait();
+    }
 
     public async Task WriteAsync(TPacket value, CancellationToken cancellationToken = default)
     {

@@ -30,6 +30,10 @@ namespace T.Pipes.Test.Client
 
     public void Action() { }
 
+    public void Dispose()
+    {
+    }
+
     public int DoIt(int a, int b, int c, out int d, out int e)
     {
       d = a;

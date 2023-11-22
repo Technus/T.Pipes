@@ -1,6 +1,6 @@
 ﻿namespace T.Pipes.Test.Abstractions
 {
-  public interface IAbstract
+  public interface IAbstract : IDisposable
   {
     event Action? Act;
     event Func<int>? Set;

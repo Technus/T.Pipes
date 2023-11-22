@@ -7,7 +7,7 @@ namespace T.Pipes.Test.Server
   internal class Server
   {
     private readonly Process _process = new() { StartInfo = new ProcessStartInfo("T.Pipes.Test.Client.exe") };
-    private PipeServer<PipeMessage, Callback> Pipe { get; }
+    private PipeServer<Callback> Pipe { get; }
 
     public Server() => Pipe = new("T.Pipes.Test", new Callback(this));
 

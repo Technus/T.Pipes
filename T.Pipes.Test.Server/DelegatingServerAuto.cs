@@ -6,22 +6,20 @@ namespace T.Pipes.Test.Server
 {
   [PipeServe(typeof(IAbstract))]
   [PipeServe(typeof(IAbstract<int>))]
-  internal partial class Callback
-    : DelegatingPipeMessageCallback<IPipeServer<PipeMessage>, DelegatingServerAuto>
+  internal partial class Callback : DelegatingPipeServerCallback<Callback>
   {
-    public Callback(IPipeServer<PipeMessage> pipe) : base(pipe)
+    public Callback(H.Pipes.PipeServer<PipeMessage> pipe) : base(pipe)
     {
     }
   }
 
-  internal class DelegatingServerAuto 
-    : DelegatingPipeServer<PipeMessage, PipeMessageFactory, DelegatingServerAuto, Callback>
+  internal class DelegatingServerAuto : DelegatingPipeServer<Callback>
   {
-    public DelegatingServerAuto(string pipeName) : this(new PipeServer<PipeMessage>(pipeName))
+    public DelegatingServerAuto(string pipe, DelegatingPipeServerCallback<Callback> callback) : base(pipe, callback)
     {
     }
 
-    public DelegatingServerAuto(IPipeServer<PipeMessage> pipe) : base(pipe, new(pipe))
+    public DelegatingServerAuto(H.Pipes.PipeServer<PipeMessage> pipe, DelegatingPipeServerCallback<Callback> callback) : base(pipe, callback)
     {
     }
   }

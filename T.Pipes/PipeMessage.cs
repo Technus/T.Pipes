@@ -13,6 +13,9 @@ namespace T.Pipes
     public string Command { get; set; }
     public object? Parameter { get; set; }
 
-    public override string ToString() => $"{Id} / {Command} / {Parameter}";
+    public override string ToString()
+    {
+      return $"{Id} / {Command} / {Parameter}";
+    }
   }
 }
