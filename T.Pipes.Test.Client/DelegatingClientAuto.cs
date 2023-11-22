@@ -21,28 +21,17 @@ namespace T.Pipes.Test.Client
 
     public DelegatingClientAuto(IPipeClient<PipeMessage> pipe, TTarget target) : base(pipe, new(pipe, target))
     {
-      Callback.Target.Act += Target_Act;
-      Callback.Target.Set += Target_Set;
-      Callback.Target.Get += Target_Get;
-      SetFunctionRemote(x =>
-      {
-        var (a, b, c) = ((int, int, int))x!;
-        (int ret, int d, int e) ret = default;
-        ret.ret = Callback.Target.DoIt(a, b, c, out ret.d, out ret.e);
-        return ret;
-      }, nameof(IAbstract.DoIt));
+      Callback.Target.Act += Callback.IAbstract_invoke_Act;
+      Callback.Target.Set += Callback.IAbstract_invoke_Set;
+      Callback.Target.Get += Callback.IAbstract_invoke_Get;
     }
 
     public async override ValueTask DisposeAsync()
     {
       await base.DisposeAsync();
-      Callback.Target.Act -= Target_Act;
-      Callback.Target.Set -= Target_Set;
-      Callback.Target.Get -= Target_Get;
+      Callback.Target.Act -= Callback.IAbstract_invoke_Act;
+      Callback.Target.Set -= Callback.IAbstract_invoke_Set;
+      Callback.Target.Get -= Callback.IAbstract_invoke_Get;
     }
-
-    private void Target_Get(string obj) => EventRemote(obj, nameof(IAbstract.Get));
-    private int Target_Set() => EventRemote<int>(nameof(IAbstract.Set));
-    private void Target_Act() => EventRemote(nameof(IAbstract.Act));
   }
 }

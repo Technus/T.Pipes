@@ -114,17 +114,27 @@ namespace T.Pipes
         _responses.Remove(message.Id);
         _semaphore.Release();
       }
-      else if(_functions.TryGetValue(message.Command, out var function))
-      {
-        Pipe.WriteAsync(PacketFactory.CreateResponse(message, function.Invoke(message.Parameter)));
-      }
       else 
       {
-        OnUnknownMessage(message);
+        OnCommandReceived(message);
       }
     }
 
-    protected virtual void OnUnknownMessage(TPacket message) => throw new ArgumentException($"Message is unknown: {message}", nameof(message));
+    protected virtual void OnCommandReceived(TPacket message)
+    {
+      if (_functions.TryGetValue(message.Command, out var function))
+      {
+        Pipe.WriteAsync(PacketFactory.CreateResponse(message, function.Invoke(message.Parameter)));
+      }
+      else if(OnAutoCommand(message))
+      {
+        return;
+      }
+      OnUnknownCommand(message);
+    }
+
+    protected virtual bool OnAutoCommand(TPacket message) => false;
+    protected virtual void OnUnknownCommand(TPacket message) => throw new ArgumentException($"Message is unknown: {message}", nameof(message));
 
     public virtual void OnMessageSent(TPacket? message) { }
 
@@ -147,6 +157,30 @@ namespace T.Pipes
       return (T) await tcs.Task;
     }
 #nullable restore
+
+    public void SendResponse(TPacket message)
+    {
+      var response = PacketFactory.CreateResponse(message);
+      Pipe.WriteAsync(response).Wait();
+    }
+
+    public async Task SendResponseAsync(TPacket message)
+    {
+      var response = PacketFactory.CreateResponse(message);
+      await Pipe.WriteAsync(response);
+    }
+
+    public void SendResponse<T>(TPacket message, T parameter)
+    {
+      var response = PacketFactory.CreateResponse(message, parameter);
+      Pipe.WriteAsync(response).Wait();
+    }
+
+    public async Task SendResponseAsync<T>(TPacket message, T parameter)
+    {
+      var response = PacketFactory.CreateResponse(message, parameter);
+      await Pipe.WriteAsync(response);
+    }
 
     public async Task<TOut> RemoteAsync<TOut>(string callerName)
     {

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using Microsoft.CodeAnalysis;
@@ -38,6 +39,7 @@ namespace T.Pipes.SourceGeneration
         UsingList = new() { },
         ServeMemberDeclarations = served,
         UsedMemberDeclarations = used,
+        Commands = new() { },
       };
     }
 

@@ -37,5 +37,7 @@ namespace T.Pipes.SourceGeneration
     /// Members in the type to write
     /// </summary>
     public List<ISymbol> UsedMemberDeclarations { get; set; }
+
+    public Dictionary<string, (ISymbol method, IMethodSymbol invoke)> Commands { get; set; }
   }
 }

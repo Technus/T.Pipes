@@ -75,10 +75,6 @@
 
     void RefIt(ref int a, ref int b, ref int c);
 
-    TValue Map<TValue>(TValue from);
-    TOut ReMap<TIn,TOut>(TIn from);
-    TOut UnMap<TOut,TIn>(TIn from);
-
     int? MaybeInt(int? a);
 
     string? MaybeString(string? a);

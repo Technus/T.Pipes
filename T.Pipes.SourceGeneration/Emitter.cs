@@ -1,9 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Diagnostics;
 using System.Linq;
+using System.Text;
 using System.Threading;
+using System.Xml.Linq;
 using CodegenCS;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace T.Pipes.SourceGeneration
 {
@@ -63,7 +68,141 @@ namespace T.Pipes.SourceGeneration
       writer.IncreaseIndent();
       typeDefinition.ServeMemberDeclarations.ForEach(symbol => RenderSymbol(typeDefinition, symbol, true));
       typeDefinition.UsedMemberDeclarations.ForEach(symbol => RenderSymbol(typeDefinition, symbol, false));
+      RenderSelector(typeDefinition);
       writer.DecreaseIndent();
+    }
+
+    private void RenderSelector(TypeDefinition typeDefinition) => writer
+      .Write($$"""
+      [System.ComponentModel.Description("CommandSelector")]
+      protected override bool OnAutoCommand(T.Pipes.PipeMessage message)
+      {{() => RenderSelectorBody(typeDefinition)}}
+      """);
+
+    private void RenderSelectorBody(TypeDefinition typeDefinition)
+    {
+      writer.WriteLine('{');
+      writer.IncreaseIndent();
+      writer.WriteLine($$"""
+        var parameter = message.Parameter;
+        switch(message.Command){
+          {{() => RenderCases(typeDefinition)}}
+          default: return false;
+        }
+        """);
+      writer.DecreaseIndent();
+      writer.WriteLine();
+      writer.WriteLine('}');
+    }
+
+    private void RenderCases(TypeDefinition typeDefinition)
+    {
+      foreach (var item in typeDefinition.Commands)
+      {
+        writer.Write("case \"");
+        writer.Write(item.Key).Write("\": ");
+
+
+        if (item.Value.method is IMethodSymbol x)
+        {
+          var (input, output) = GetIO(x);
+
+          if (!item.Value.invoke.ReturnsVoid || output.Count>0)
+          {
+            writer.Write("SendResponse(message, ");
+          }
+
+          //if(!x.ReturnsVoid && output.Count == 0)
+          //{
+          //  writer.Write("_ = ");//todo
+          //  writer.Write('(');
+          //  writer.Write(x.ReturnType.ToDisplayString());
+          //  writer.Write(')');
+          //}
+          //else if (x.ReturnsVoid && output.Count == 1)
+          //{
+          //  writer.Write("_ = ");//todo
+          //  writer.Write('(');
+          //  writer.Write(output[0].Type.ToDisplayString());
+          //  writer.Write(')');
+          //}
+          //else if(!x.ReturnsVoid || output.Count > 0)
+          //{
+          //  writer.Write("_ = ");//todo
+          //  writer.Write('(');
+          //  writer.Write('(');
+          //  if(!x.ReturnsVoid)
+          //    writer.Write(x.ReturnType.ToDisplayString());
+          //  if(!x.ReturnsVoid && output.Count>0)
+          //    writer.Write(", ");
+          //  RenderStrings(output.Select(x=>x.Type.ToDisplayString()).ToArray());
+          //  writer.Write(')');
+          //  writer.Write(')');
+          //}
+
+          writer.Write(item.Key).Write('(');
+          if (input.Count > 0)
+          {
+            writer.Write('(');
+            if (input.Count > 1)
+              writer.Write('(');
+            RenderStrings(input.Select(x=>x.Type.ToDisplayString()).ToArray());
+            if (input.Count > 1)
+              writer.Write(')');
+            writer.Write(")parameter");
+          }
+
+          if (!item.Value.invoke.ReturnsVoid || output.Count>0)
+          {
+            writer.Write(")");
+          }
+
+          writer.Write(");");
+
+          if (item.Value.invoke.ReturnsVoid && output.Count ==0)
+          {
+            writer.Write(" SendResponse(message);");
+          }
+        }
+        else if (item.Value.method is IEventSymbol e)
+        {
+          if (!item.Value.invoke.ReturnsVoid)
+          {
+            writer.Write("SendResponse(message, ");
+          }
+
+          //if (!item.Value.invoke.ReturnsVoid)
+          //{
+          //  writer.Write("_ = ");//todo
+          //  writer.Write('(');
+          //  writer.Write(item.Value.invoke.ReturnType.ToDisplayString());
+          //  writer.Write(')');
+          //}
+
+            writer.Write(item.Key).Write('(');
+          if (item.Value.invoke.Parameters.Length > 0)
+          {
+            writer.Write('(');
+            RenderStrings(item.Value.invoke.Parameters.Select(x => x.Type.ToDisplayString()).ToArray());
+            writer.Write(")parameter");
+          }
+
+          if (!item.Value.invoke.ReturnsVoid)
+          {
+            writer.Write(")");
+          }
+
+          writer.Write(");");
+
+          if (item.Value.invoke.ReturnsVoid)
+          {
+            writer.Write(" SendResponse(message);");
+          }
+        }
+
+        writer.Write(" return true;");
+        writer.WriteLine();
+      }
     }
 
     private void RenderSymbol(TypeDefinition typeDefinition, ISymbol symbol, bool served)
@@ -76,37 +215,29 @@ namespace T.Pipes.SourceGeneration
       }
     }
 
-    private void RenderProperty(TypeDefinition typeDefinition, IPropertySymbol x, bool served)
-    {
-      writer.WriteLine($$"""//{{x.Kind}} {{x.Type.ToDisplayString()}} {{x.Name}}""");
-    }
+    private void RenderProperty(TypeDefinition typeDefinition, IPropertySymbol x, bool served) => writer
+      .WriteLine($$"""//There was {{x.Kind}} {{x.Type.ToDisplayString()}} {{x.Name}}""").WriteLine();
 
-    private void RenderEvent(TypeDefinition typeDefinition, IEventSymbol x, bool served)
-    {
-      writer.WriteLine($$"""
-        {{() => RenderAttributes(x)}}
-        {{() => RenderSignature(x, served)}}
-        {
-        {{() => RenderBody(typeDefinition, x, served)}}
-        }
-        """);
-    }
+    private void RenderEvent(TypeDefinition typeDefinition, IEventSymbol x, bool served) => writer
+      .WriteLine($$"""
+      {{() => RenderAttributes(x, served)}}
+      {{() => RenderSignature(typeDefinition,  x, served)}}
+      {{() => RenderBody(typeDefinition, x, served)}}
+      """);
 
     private void RenderMethod(TypeDefinition typeDefinition, IMethodSymbol x, bool served) => writer
       .WriteLine($$"""
-      {{() => RenderAttributes(x)}}
-      {{() => RenderSignature(x, served)}}
-      {
+      {{() => RenderAttributes(x, served)}}
+      {{() => RenderSignature(typeDefinition, x, served)}}
       {{() => RenderBody(typeDefinition, x, served)}}
-      }
       """);
 
-    private void RenderAttributes(IEventSymbol x)
-    {
-      writer.Write("[System.ComponentModel.Description(\"").Write(MethodKind.EventRaise).Write("\")]");
-    }
+    private void RenderAttributes(IEventSymbol x, bool served = false) => writer
+      .Write("[System.ComponentModel.Description(\"")
+      .Write(MethodKind.EventRaise)
+      .Write("\")]");
 
-    private void RenderAttributes(IMethodSymbol x)
+    private void RenderAttributes(IMethodSymbol x, bool served = false)
     {
       writer.Write("[System.ComponentModel.Description(\"").Write(x.MethodKind).Write("\")]");
       switch (x.MethodKind)
@@ -126,13 +257,95 @@ namespace T.Pipes.SourceGeneration
           }
       }
     }
-    private void RenderBody(TypeDefinition typeDefinition, IEventSymbol x, bool served)
+    
+    private void RenderBody(TypeDefinition typeDefinition, IEventSymbol eventSymbol, bool served)
     {
+      if (served)
+      {
+        writer.WriteLine(';');
+      }
+      else
+      {
+        writer.WriteLine('{');
+        writer.IncreaseIndent();
 
+        var x = (IMethodSymbol)eventSymbol.Type.GetMembers().Where(x => x.Name == "Invoke").First();
+
+        var (input, output) = GetIO(x);
+
+        if (!x.ReturnsVoid || output.Count > 0)
+          writer.Write("var result = ");
+
+        writer.Write("Remote");
+
+        if (!x.ReturnsVoid || output.Count > 0 || input.Count > 0)
+        {
+          writer.Write('<');
+
+          if (input.Count > 1)
+            writer.Write("(");
+          RenderTypeParameters(input.Select(x => x.Type).ToArray());
+          if (input.Count > 1)
+            writer.Write(")");
+
+          if ((!x.ReturnsVoid || output.Count > 0) && input.Count > 0)
+            writer.Write(", ");
+
+          if ((!x.ReturnsVoid && output.Count > 0) || output.Count > 1)
+            writer.Write('(');
+          if (!x.ReturnsVoid)
+            writer.Write(x.ReturnType.ToDisplayString());
+          RenderTypeParameters(output.Select(x => x.Type).ToArray(), !x.ReturnsVoid);
+          if ((!x.ReturnsVoid && output.Count > 0) || output.Count > 1)
+            writer.Write(')');
+
+          writer.Write('>');
+        }
+
+        writer.Write("(\"");
+        RenderName(eventSymbol, served, "invoke_");
+        writer.Write('"');
+        if (input.Count > 0)
+          writer.Write(", ");
+        if (input.Count > 1)
+          writer.Write('(');
+        RenderStrings(input.Select(x => x.Name).ToArray());
+        if (input.Count > 1)
+          writer.Write(')');
+        writer.Write(");");
+
+        if (!x.ReturnsVoid || output.Count > 0)
+          writer.WriteLine();
+
+        if ((!x.ReturnsVoid && output.Count > 0) || output.Count > 1)
+        {
+          for (int i = output.Count - 1; i >= 0; i--)
+          {
+            writer.Write($$"""{{output[i].Name}} = result.Item{{i + (x.ReturnsVoid ? 1 : 2)}};""");
+          }
+        }
+
+        if (x.ReturnsVoid && output.Count == 1)
+        {
+          writer.Write($$"""{{output[0].Name}} = result;""");
+        }
+
+        if (!x.ReturnsVoid)
+        {
+          if (output.Count > 0)
+            writer.Write("return result.Item1;");
+          else
+            writer.Write("return result;");
+        }
+        writer.DecreaseIndent();
+        writer.WriteLine();
+        writer.WriteLine('}');
+      }
     }
 
     private void RenderBody(TypeDefinition typeDefinition, IMethodSymbol x, bool served)
     {
+      writer.WriteLine('{');
       writer.IncreaseIndent();
       switch (x.MethodKind)
       {
@@ -356,6 +569,8 @@ namespace T.Pipes.SourceGeneration
           }
       }
       writer.DecreaseIndent();
+      writer.WriteLine();
+      writer.WriteLine('}');
     }
 
     private void RenderName(ISymbol x, bool served, string prefix = "")
@@ -371,27 +586,49 @@ namespace T.Pipes.SourceGeneration
         .Write(x.Name);
     }
 
-    private void RenderSignature(IEventSymbol x, bool served)
+    private string GetName(ISymbol x, bool served, string prefix = "")
+    {
+      var sb = new StringBuilder();
+      sb.Append(x.ContainingType.Name);
+      if (x.ContainingType.Arity > 0)
+        sb.Append(x.ContainingType.Arity);
+      sb.Append('_');
+      sb.Append(prefix);
+      sb.Append(x.Name);
+      return sb.ToString();
+    }
+
+    private void RenderSignature(TypeDefinition typeDefinition, IEventSymbol x, bool served)
     {
       writer.Write("internal ");
       if (x.IsStatic)
         writer.Write("static ");
+      if (served)
+        writer.Write("partial ");
+
+      var invoke = (IMethodSymbol)x.Type.GetMembers().Where(x => x.Name == "Invoke").First();
+      //var beginInvoke = (IMethodSymbol)x.Type.GetMembers().Where(x => x.Name == "BeginInvoke").First();
+
       writer
-        .Write(x.Type.ToDisplayString())//todo actual return type of event
+        .Write(invoke.ReturnType.ToDisplayString())//todo actual return type of event
         .Write(' ');
-      RenderName(x, served, "raise_");
+      RenderName(x, served, "invoke_");
       writer.Write('(');
-      //todo actual parameters of event
+      RenderParameters(invoke.Parameters);
       writer.Write(')');
+
+      if(served)
+        typeDefinition.Commands[GetName(x, served, "invoke_")] = (x,invoke);
     }
 
-    private void RenderSignature(IMethodSymbol x, bool served)
+    private void RenderSignature(TypeDefinition typeDefinition, IMethodSymbol x, bool served)
     {
       writer.Write("internal ");
       if (x.IsStatic)
         writer.Write("static ");
       if (x.IsAsync)
         writer.Write("async ");
+
       if (served)
       {
         writer
@@ -458,6 +695,9 @@ namespace T.Pipes.SourceGeneration
         if (input.Count > 1)
           writer.Write(") parameter");
         writer.Write(')');
+
+        if (x.TypeParameters.Length == 0)
+          typeDefinition.Commands[GetName(x, served)] = (x, x);
       }
     }
 
