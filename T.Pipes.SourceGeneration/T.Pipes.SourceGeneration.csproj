@@ -9,10 +9,10 @@
     <PackFolder>analyzers\cs</PackFolder>
     <DebugType>embedded</DebugType>
     <DebugSymbols>true</DebugSymbols>
-    <IncludeBuildOutput>false</IncludeBuildOutput>
-    <!-- Do not include the generator as a lib dependency -->
+    <IncludeBuildOutput>false</IncludeBuildOutput> <!-- Do not include the generator as a lib dependency -->
     <GetTargetPathDependsOn>$(GetTargetPathDependsOn);GetDependencyTargetPaths</GetTargetPathDependsOn>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking> <!-- Silence NuGet warning -->
 
     <IsPackable>true</IsPackable>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
