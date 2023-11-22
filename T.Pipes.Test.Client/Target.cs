@@ -4,9 +4,19 @@ namespace T.Pipes.Test.Client
 {
   internal class Target : IAbstract, IAbstract<short>
   {
+
+
     private int i = 2137;
     private int[] j = [69, 420, 1337, 2137];
     private short[] s = [69, 420, 1337, 2137];
+
+    public Target()
+    {
+      Act?.Invoke();
+      Set?.Invoke();
+      Get?.Invoke("");
+      Map?.Invoke(2137);
+    }
 
     public Func<int, int>? Tea { get; set; }
     public int Int { get; set; } = 1337;
