@@ -46,55 +46,5 @@ namespace T.Pipes
       await base.DisposeAsync();
       await Callback.DisposeAsync();
     }
-
-    public void EventRemote(object? parameters, string callerName)
-    {
-      Callback.Remote(callerName, parameters);
-    }
-
-    public void EventRemote(string callerName)
-    {
-      Callback.Remote(callerName);
-    }
-
-    public T? EventRemote<T>(object? parameters, string callerName)
-    {
-      return Callback.Remote<object, T>(callerName, parameters);
-    }
-
-    public T? EventRemote<T>(string callerName)
-    {
-      return Callback.Remote<T>(callerName);
-    }
-
-    public async Task EventRemoteAsync(object? parameters, string callerName)
-    {
-      await Callback.RemoteAsync(callerName, parameters);
-    }
-
-    public async Task EventRemoteAsync(string callerName)
-    {
-      await Callback.RemoteAsync(callerName);
-    }
-
-    public async Task<T?> EventRemoteAsync<T>(object? parameters, string callerName)
-    {
-      return await Callback.RemoteAsync<object, T>(callerName, parameters);
-    }
-
-    public async Task<T?> EventRemoteAsync<T>(string callerName)
-    {
-      return await Callback.RemoteAsync<T>(callerName);
-    }
-
-    public void SetFunctionRemote(Func<object?, object?> function, string callerName)
-    {
-      Callback.SetFunction(callerName, function);
-    }
-
-    public void RemoveFunctionRemote(string callerName)
-    {
-      Callback.RemoveFunction(callerName);
-    }
   }
 }
