@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using CodegenCS;
@@ -70,7 +71,21 @@ namespace T.Pipes.SourceGeneration
       switch (symbol)
       {
         case IMethodSymbol methodSymbol: RenderMethod(typeDefinition, methodSymbol, served); break;
+        case IEventSymbol eventSymbol: RenderEvent(typeDefinition, eventSymbol, served); break;
+        case IPropertySymbol propertySymbol: RenderProperty(typeDefinition, propertySymbol, served); break;
       }
+    }
+
+    private void RenderProperty(TypeDefinition typeDefinition, IPropertySymbol x, bool served)
+    {
+      writer.WriteLine($$"""//{{x.Kind}} {{x.Type.ToDisplayString()}} {{x.Name}}""");
+    }
+
+    private void RenderEvent(TypeDefinition typeDefinition, IEventSymbol x, bool served)
+    {
+      writer.WriteLine($$"""//{{x.Kind}} {{x.Type.ToDisplayString()}} {{x.Name}}""");
+      //if (eventSymbol.RaiseMethod != null) VB stuff
+      //  RenderMethod(typeDefinition, eventSymbol.RaiseMethod, served);
     }
 
     private void RenderMethod(TypeDefinition typeDefinition, IMethodSymbol x, bool served) => writer
@@ -87,6 +102,8 @@ namespace T.Pipes.SourceGeneration
       writer.Write("[System.ComponentModel.Description(\"").Write(x.MethodKind).Write("\")]");
       switch (x.MethodKind)
       {
+        case MethodKind.EventAdd:
+        case MethodKind.EventRemove:
         case MethodKind.PropertyGet:
         case MethodKind.PropertySet:
         case MethodKind.Ordinary:
@@ -106,6 +123,16 @@ namespace T.Pipes.SourceGeneration
       writer.IncreaseIndent();
       switch (x.MethodKind)
       {
+        case MethodKind.EventAdd:
+          {
+            writer.Write($$"""(({{x.ContainingType.ToDisplayString()}}?) Target)!.{{x.Name.Substring(4)}} += value;""");
+            break;
+          }
+        case MethodKind.EventRemove:
+          {
+            writer.Write($$"""(({{x.ContainingType.ToDisplayString()}}?) Target)!.{{x.Name.Substring(7)}} -= value;""");
+            break;
+          }
         case MethodKind.PropertyGet:
           {
             if (served)
