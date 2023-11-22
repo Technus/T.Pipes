@@ -181,7 +181,7 @@ namespace T.Pipes.SourceGeneration
 
               if ((!x.ReturnsVoid && output.Count > 0) || output.Count > 1)
               {
-                for (int i = 0; i < output.Count; i++)
+                for (int i = output.Count - 1; i >= 0; i--)
                 {
                   writer.Write($$"""{{output[i].Name}} = result.Item{{i + (x.ReturnsVoid ? 1 : 2)}};""");
                 }
