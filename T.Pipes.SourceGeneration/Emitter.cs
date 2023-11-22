@@ -191,16 +191,12 @@ namespace T.Pipes.SourceGeneration
       writer.IncreaseIndent();
       writer.WriteLine($$"""
         var parameter = message.Parameter;
-        #pragma warning disable CS8600
-        #pragma warning disable CS8604
-        #pragma warning disable CS8605
+        #pragma warning disable CS8600, CS8604, CS8605
         switch(message.Command){
           {{() => RenderCases(typeDefinition)}}
           default: return base.OnCommandReceivedAuto(message);
         }
-        #pragma warning restore CS8600
-        #pragma warning restore CS8604
-        #pragma warning restore CS8605
+        #pragma warning restore CS8600, CS8604, CS8605
         """);
       writer.DecreaseIndent();
       writer.WriteLine();
