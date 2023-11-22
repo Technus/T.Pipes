@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace T.Pipes.Abstractions
+﻿namespace T.Pipes.Abstractions
 {
   public interface IPipeMessageFactory<T> where T : IPipeMessage
   {

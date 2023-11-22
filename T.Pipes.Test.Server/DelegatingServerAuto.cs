@@ -1,5 +1,4 @@
-﻿using H.Pipes;
-using T.Pipes.Abstractions;
+﻿using T.Pipes.Abstractions;
 using T.Pipes.Test.Abstractions;
 
 namespace T.Pipes.Test.Server
