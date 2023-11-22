@@ -3,55 +3,96 @@ using T.Pipes.Abstractions;
 
 namespace T.Pipes
 {
-  public class DelegatingPipeServer<TTarget>
+  /// <inheritdoc/>
+  public  class DelegatingPipeServer<TTarget>
     : DelegatingPipeServer<TTarget, DelegatingPipeServerCallback<TTarget>>
   {
-    public DelegatingPipeServer(string pipe, DelegatingPipeServerCallback<TTarget> callback) : base(pipe, callback)
+    /// <summary>
+    /// Creates the pipe server with a specified callback and pipe
+    /// </summary>
+    /// <param name="pipe">pipe to use</param>
+    /// <param name="callback">callback to use</param>
+    protected DelegatingPipeServer(string pipe, DelegatingPipeServerCallback<TTarget> callback) : base(pipe, callback)
     {
     }
 
-    public DelegatingPipeServer(H.Pipes.PipeServer<PipeMessage> pipe, DelegatingPipeServerCallback<TTarget> callback) : base(pipe, callback)
+    /// <summary>
+    /// Creates the pipe server with a specified callback and pipe
+    /// </summary>
+    /// <param name="pipe">pipe to use</param>
+    /// <param name="callback">callback to use</param>
+    protected DelegatingPipeServer(H.Pipes.PipeServer<PipeMessage> pipe, DelegatingPipeServerCallback<TTarget> callback) : base(pipe, callback)
     {
     }
   }
 
-  public class DelegatingPipeServer<TTarget, TCallback>
+  /// <inheritdoc/>
+  public abstract class DelegatingPipeServer<TTarget, TCallback>
     : DelegatingPipeServer<H.Pipes.PipeServer<PipeMessage>, TTarget, TCallback>
     where TCallback : DelegatingPipeCallback<H.Pipes.PipeServer<PipeMessage>, PipeMessage, PipeMessageFactory, TTarget>
   {
-    public DelegatingPipeServer(string pipe, TCallback callback) : base(new(pipe), callback)
+    /// <summary>
+    /// Creates the pipe server with a specified callback and pipe
+    /// </summary>
+    /// <param name="pipe">pipe to use</param>
+    /// <param name="callback">callback to use</param>
+    protected DelegatingPipeServer(string pipe, TCallback callback) : base(new(pipe), callback)
     {
     }
 
-    public DelegatingPipeServer(H.Pipes.PipeServer<PipeMessage> pipe, TCallback callback) : base(pipe, callback)
+    /// <summary>
+    /// Creates the pipe server with a specified callback and pipe
+    /// </summary>
+    /// <param name="pipe">pipe to use</param>
+    /// <param name="callback">callback to use</param>
+    protected DelegatingPipeServer(H.Pipes.PipeServer<PipeMessage> pipe, TCallback callback) : base(pipe, callback)
     {
     }
   }
 
-  public class DelegatingPipeServer<TPipe, TTarget, TCallback>
+  /// <inheritdoc/>
+  public abstract class DelegatingPipeServer<TPipe, TTarget, TCallback>
     : DelegatingPipeServer<TPipe, PipeMessage, PipeMessageFactory, TTarget, TCallback>
     where TPipe : H.Pipes.IPipeServer<PipeMessage>
     where TCallback : DelegatingPipeCallback<TPipe, PipeMessage, PipeMessageFactory, TTarget>
   {
-    public DelegatingPipeServer(TPipe pipe, TCallback callback) : base(pipe, callback)
+    /// <summary>
+    /// Creates the pipe server with a specified callback and pipe
+    /// </summary>
+    /// <param name="pipe">pipe to use</param>
+    /// <param name="callback">callback to use</param>
+    protected DelegatingPipeServer(TPipe pipe, TCallback callback) : base(pipe, callback)
     {
     }
   }
 
-  public class DelegatingPipeServer<TPipe, TPacket, TPacketFactory, TTarget, TCallback>
+  /// <inheritdoc/>
+  public abstract class DelegatingPipeServer<TPipe, TPacket, TPacketFactory, TTarget, TCallback>
     : PipeServer<TPipe, TPacket, TCallback>
     where TPipe : H.Pipes.IPipeServer<TPacket>
     where TPacket : IPipeMessage
     where TPacketFactory : IPipeMessageFactory<TPacket>
     where TCallback : DelegatingPipeCallback<TPipe, TPacket, TPacketFactory, TTarget>
   {
+    /// <summary>
+    /// <see cref="DelegatingPipeCallback{TPipe, TPacket, TPacketFactory, TTarget}.Target"/>
+    /// </summary>
     public TTarget Target => Callback.Target;
 
-    public DelegatingPipeServer(TPipe pipe, TCallback callback)
+    /// <summary>
+    /// Creates the pipe server with a specified callback and pipe
+    /// </summary>
+    /// <param name="pipe">pipe to use</param>
+    /// <param name="callback">callback to use</param>
+    protected DelegatingPipeServer(TPipe pipe, TCallback callback)
       : base(pipe, callback)
     {
     }
 
+    /// <summary>
+    /// Disposes <see cref="PipeConnection{TPipe, TPacket, TCallback}.Pipe"/> and <see cref="PipeConnection{TPipe, TPacket, TCallback}.Callback"/>
+    /// </summary>
+    /// <returns></returns>
     public override async ValueTask DisposeAsync()
     {
       await base.DisposeAsync();

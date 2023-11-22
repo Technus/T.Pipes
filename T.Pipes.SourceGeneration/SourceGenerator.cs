@@ -7,6 +7,9 @@ using Microsoft.CodeAnalysis.Text;
 
 namespace T.Pipes.SourceGeneration
 {
+  /// <summary>
+  /// The T.Pipes Source Generator
+  /// </summary>
   [Generator(LanguageNames.CSharp)]
   public class SourceGenerator : IIncrementalGenerator
   {
@@ -15,6 +18,10 @@ namespace T.Pipes.SourceGeneration
     internal const string PipeServeAttribute = "T.Pipes.Abstractions.PipeServeAttribute";
     internal const string PipeUseAttribute = "T.Pipes.Abstractions.PipeUseAttribute";
 
+    /// <summary>
+    /// Initializes the source generator
+    /// </summary>
+    /// <param name="ctx"></param>
     public void Initialize(IncrementalGeneratorInitializationContext ctx)
     {
       var classDeclarations = ctx.SyntaxProvider.CreateSyntaxProvider(

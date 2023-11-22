@@ -3,23 +3,21 @@ using System.ComponentModel;
 
 namespace T.Pipes.Abstractions
 {
+  /// <summary>
+  /// Use to decorate Server side Interface host so proxy implementation
+  /// </summary>
   [Description("Used by T.Pipes.SourceGeneration")]
-  [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Property | AttributeTargets.Event | AttributeTargets.Class, AllowMultiple = true)]
+  [AttributeUsage(AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Event | AttributeTargets.Class, AllowMultiple = true)]
   public class PipeServeAttribute : Attribute
   {
-    public PipeServeAttribute() { }
-
-    public PipeServeAttribute(string name) => Name = name;
+    /// <summary>
+    /// Use to decorate Server side Interface host so proxy implementation
+    /// </summary>
+    /// <param name="type">type to implement should be an interface without generic members</param>
     public PipeServeAttribute(Type type) => Type = type;
 
     /// <summary>
-    /// Fully qualified names to write helpers for
-    /// </summary>
-    public string Name { get; } = string.Empty;
-
-
-    /// <summary>
-    /// The Type to write helpers for
+    /// type to implement
     /// </summary>
     public Type Type { get; } = typeof(void);
   }

@@ -17,6 +17,15 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "T.Pipes.Test.Server", "T.Pi
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "T.Pipes.Test.Abstractions", "T.Pipes.Test.Abstractions\T.Pipes.Test.Abstractions.csproj", "{B0975DCB-7500-41CC-A667-7C413290D70B}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SolutionItems", "SolutionItems", "{F2EF6D60-F95A-4DEC-9315-5FFB42FDCE87}"
+	ProjectSection(SolutionItems) = preProject
+		.gitignore = .gitignore
+		Directory.Build.props = Directory.Build.props
+		LICENSE.txt = LICENSE.txt
+		Neith_spacepedia.png = Neith_spacepedia.png
+		README.md = README.md
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
