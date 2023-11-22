@@ -2,7 +2,7 @@
 {
   public interface IAbstract<T>
   {
-    event Func<T, T> Map;
+    event Func<T, T>? Map;
 
     /// <summary>
     /// T GetT();

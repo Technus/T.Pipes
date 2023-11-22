@@ -1,14 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Diagnostics;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
-using System.Xml.Linq;
 using CodegenCS;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace T.Pipes.SourceGeneration
 {
@@ -69,26 +64,125 @@ namespace T.Pipes.SourceGeneration
       typeDefinition.ServeMemberDeclarations.ForEach(symbol => RenderSymbol(typeDefinition, symbol, true));
       typeDefinition.UsedMemberDeclarations.ForEach(symbol => RenderSymbol(typeDefinition, symbol, false));
       RenderSelector(typeDefinition);
+      RenderTargetHandling(typeDefinition);
+      RenderImplementation(typeDefinition);
       writer.DecreaseIndent();
+    }
+
+    private void RenderImplementation(TypeDefinition typeDefinition) 
+      => typeDefinition.ServeMemberDeclarations.ForEach(RenderImplementation);
+
+    private void RenderImplementation(ISymbol x)
+    {
+      switch (x)
+      {
+        case IPropertySymbol propertySymbol: RenderNewProperty(propertySymbol); break;
+        case IEventSymbol eventSymbol: RenderNewEvent(eventSymbol); break;
+        case IMethodSymbol methodSymbol when methodSymbol.MethodKind == MethodKind.Ordinary: RenderNewMethod(methodSymbol); break;
+        default: writer.Write("//").WriteLine(x.Name); break;
+      }
+    }
+
+    private void RenderNewMethod(IMethodSymbol methodSymbol) => writer
+      .WriteLine($$"""
+      {{methodSymbol.ReturnType.ToDisplayString()}} {{methodSymbol.ContainingType.ToDisplayString()}}.{{methodSymbol.Name}}({{()=>RenderParameters(methodSymbol.Parameters)}})
+        => {{()=>RenderName(methodSymbol,true)}}({{()=>RenderStrings(methodSymbol.Parameters.Select(x=> Prefix(x) + x.Name).ToArray())}});
+      """);
+
+    private string Prefix(IParameterSymbol parameterSymbol)
+    {
+      switch(parameterSymbol.RefKind)
+      {
+        case RefKind.Ref: return "ref ";
+        case RefKind.Out: return "out ";
+        case RefKind.In:
+        case RefKind.In + 1: return "in ";
+        default: return "";
+      }
+    }
+
+    private void RenderNewEvent(IEventSymbol eventSymbol) => writer
+      .WriteLine($$"""
+      internal {{eventSymbol.Type.ToDisplayString()}} {{() => RenderName(eventSymbol, true,"event_")}};
+      event {{eventSymbol.Type.ToDisplayString()}} {{eventSymbol.ContainingType.ToDisplayString()}}.{{eventSymbol.Name}}
+      { 
+        add => {{() => RenderName(eventSymbol, true, "event_")}} += value;
+        remove => {{() => RenderName(eventSymbol, true, "event_")}} -= value;
+      }
+
+      """);
+
+    private void RenderNewProperty(IPropertySymbol propertySymbol) => writer
+      .WriteLine($$"""
+      {{propertySymbol.Type.ToDisplayString()}} {{propertySymbol.ContainingType.ToDisplayString()}}.{{propertySymbol.Name}}
+      { 
+        get => {{()=>RenderName(propertySymbol,true,"get_")}}(); 
+        set => {{() => RenderName(propertySymbol, true, "set_")}}(value); 
+      }
+      """);
+
+    private void RenderTargetHandling(TypeDefinition typeDefinition) => writer
+      .WriteLine($$"""
+
+      [System.ComponentModel.Description("TargetInit")]
+      protected override void TargetInitAuto()
+      {
+        base.TargetInitAuto();
+      {{() => RenderEventHandling(typeDefinition.UsedMemberDeclarations.Where(x => x is IEventSymbol).Cast<IEventSymbol>().ToArray(), true)}}
+      }
+      
+      [System.ComponentModel.Description("TargetDeInit")]
+      protected override void TargetDeInitAuto()
+      {
+        base.TargetDeInitAuto();
+      {{() => RenderEventHandling(typeDefinition.UsedMemberDeclarations.Where(x => x is IEventSymbol).Cast<IEventSymbol>().ToArray(), false)}}
+      }
+
+      """);
+
+    private void RenderEventHandling(IReadOnlyList<IEventSymbol> symbols, bool v)
+    {
+      writer.IncreaseIndent();
+
+      foreach (var item in symbols)
+      {
+        RenderEventHandling(item, v);
+      }
+
+      writer.DecreaseIndent();
+    }
+
+    private void RenderEventHandling(IEventSymbol x, bool v)
+    {
+      writer.Write($$"""(({{x.ContainingType.ToDisplayString()}}?) Target)!.{{x.Name}}""");
+      writer.Write(v ? " += ": " -= ");
+      RenderName(x, false, "invoke_");
+      writer.WriteLine(';');
     }
 
     private void RenderSelector(TypeDefinition typeDefinition) => writer
       .Write($$"""
       [System.ComponentModel.Description("CommandSelector")]
-      protected override bool OnAutoCommand(T.Pipes.PipeMessage message)
+      protected override bool OnCommandReceivedAuto(T.Pipes.PipeMessage message)
       {{() => RenderSelectorBody(typeDefinition)}}
       """);
-
+    
     private void RenderSelectorBody(TypeDefinition typeDefinition)
     {
       writer.WriteLine('{');
       writer.IncreaseIndent();
       writer.WriteLine($$"""
         var parameter = message.Parameter;
+        #pragma warning disable CS8600
+        #pragma warning disable CS8604
+        #pragma warning disable CS8605
         switch(message.Command){
           {{() => RenderCases(typeDefinition)}}
-          default: return false;
+          default: return base.OnCommandReceivedAuto(message);
         }
+        #pragma warning restore CS8600
+        #pragma warning restore CS8604
+        #pragma warning restore CS8605
         """);
       writer.DecreaseIndent();
       writer.WriteLine();
@@ -260,17 +354,23 @@ namespace T.Pipes.SourceGeneration
     
     private void RenderBody(TypeDefinition typeDefinition, IEventSymbol eventSymbol, bool served)
     {
+      var x = (IMethodSymbol)eventSymbol.Type.GetMembers().Where(x => x.Name == "Invoke").First();
+
+      writer.WriteLine('{');
+      writer.IncreaseIndent();
       if (served)
       {
-        writer.WriteLine(';');
+        if (x.ReturnsVoid)
+        {
+          writer.Write($$"""{{() => RenderName(eventSymbol, true, "event_")}}?.Invoke({{()=>RenderStrings(x.Parameters.Select(x=>x.Name).ToArray())}});""");
+        }
+        else
+        {
+          writer.Write($$"""return {{() => RenderName(eventSymbol, true, "event_")}}?.Invoke({{() => RenderStrings(x.Parameters.Select(x => x.Name).ToArray())}}) ?? default;""");
+        }
       }
       else
       {
-        writer.WriteLine('{');
-        writer.IncreaseIndent();
-
-        var x = (IMethodSymbol)eventSymbol.Type.GetMembers().Where(x => x.Name == "Invoke").First();
-
         var (input, output) = GetIO(x);
 
         if (!x.ReturnsVoid || output.Count > 0)
@@ -337,10 +437,10 @@ namespace T.Pipes.SourceGeneration
           else
             writer.Write("return result;");
         }
-        writer.DecreaseIndent();
-        writer.WriteLine();
-        writer.WriteLine('}');
       }
+      writer.DecreaseIndent();
+      writer.WriteLine();
+      writer.WriteLine('}');
     }
 
     private void RenderBody(TypeDefinition typeDefinition, IMethodSymbol x, bool served)
@@ -603,8 +703,6 @@ namespace T.Pipes.SourceGeneration
       writer.Write("internal ");
       if (x.IsStatic)
         writer.Write("static ");
-      if (served)
-        writer.Write("partial ");
 
       var invoke = (IMethodSymbol)x.Type.GetMembers().Where(x => x.Name == "Invoke").First();
       //var beginInvoke = (IMethodSymbol)x.Type.GetMembers().Where(x => x.Name == "BeginInvoke").First();

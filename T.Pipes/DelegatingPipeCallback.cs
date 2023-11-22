@@ -32,10 +32,29 @@ namespace T.Pipes
       get => _target;
       set
       {
+        if (_target is not null)
+        {
+          TargetDeInitAuto();
+          TargetDeInit(_target);
+        }
+        
         _target = value;
         Type = value?.GetType() ?? typeof(TTarget);
+        if(_target is not null)
+        {
+          TargetInitAuto();
+          TargetInit(_target);
+        }
       }
     }
+
+    protected virtual void TargetInit(TTarget target) { }
+
+    protected virtual void TargetDeInit(TTarget target) { }
+
+    protected virtual void TargetInitAuto() { }
+
+    protected virtual void TargetDeInitAuto() { }
 
     public Type Type { get; private set; }
 
@@ -76,6 +95,11 @@ namespace T.Pipes
         item.Value.TrySetCanceled();
       }
       _responses.Clear();
+      if (_target is not null)
+      {
+        TargetDeInitAuto();
+        TargetDeInit(_target);
+      }
       _functions.Clear();
       _failedOnce.TrySetCanceled();
       _connectedOnce.TrySetCanceled();
@@ -126,14 +150,14 @@ namespace T.Pipes
       {
         Pipe.WriteAsync(PacketFactory.CreateResponse(message, function.Invoke(message.Parameter)));
       }
-      else if(OnAutoCommand(message))
+      else if(OnCommandReceivedAuto(message))
       {
         return;
       }
       OnUnknownCommand(message);
     }
 
-    protected virtual bool OnAutoCommand(TPacket message) => false;
+    protected virtual bool OnCommandReceivedAuto(TPacket message) => false;
     protected virtual void OnUnknownCommand(TPacket message) => throw new ArgumentException($"Message is unknown: {message}", nameof(message));
 
     public virtual void OnMessageSent(TPacket? message) { }

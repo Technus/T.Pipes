@@ -23,6 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\T.Pipes.Test.Abstractions\T.Pipes.Test.Abstractions.csproj" />
     <ProjectReference Include="..\T.Pipes\T.Pipes.csproj" />
   </ItemGroup>
 </Project>
