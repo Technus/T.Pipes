@@ -39,5 +39,7 @@ namespace T.Pipes.SourceGeneration
     public List<ISymbol> UsedMemberDeclarations { get; set; }
 
     public Dictionary<string, (ISymbol method, IMethodSymbol invoke)> Commands { get; set; }
+
+    public List<ISymbol> ImplementingTypes { get; set; }
   }
 }

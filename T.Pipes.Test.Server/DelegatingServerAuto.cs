@@ -7,7 +7,7 @@ namespace T.Pipes.Test.Server
   [PipeServe(typeof(IAbstract))]
   [PipeServe(typeof(IAbstract<int>))]
   internal partial class Callback
-    : DelegatingPipeMessageCallback<IPipeServer<PipeMessage>, DelegatingServerAuto>, IAbstract, IAbstract<int>
+    : DelegatingPipeMessageCallback<IPipeServer<PipeMessage>, DelegatingServerAuto>
   {
     public Callback(IPipeServer<PipeMessage> pipe) : base(pipe)
     {

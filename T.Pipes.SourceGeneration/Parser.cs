@@ -29,7 +29,7 @@ namespace T.Pipes.SourceGeneration
 
     internal TypeDefinition GenerateType(TypeDeclarationSyntax classy)
     {
-      var (served, used) = GetMembers(classy);
+      var (served, used, implementing) = GetMembers(classy);
       return new()
       {
         TypeDeclarationSyntax = classy,
@@ -40,13 +40,15 @@ namespace T.Pipes.SourceGeneration
         ServeMemberDeclarations = served,
         UsedMemberDeclarations = used,
         Commands = new() { },
+        ImplementingTypes = implementing,
       };
     }
 
-    private (List<ISymbol> served, List<ISymbol> used) GetMembers(TypeDeclarationSyntax classy)
+    private (List<ISymbol> served, List<ISymbol> used, List<ISymbol> implementing) GetMembers(TypeDeclarationSyntax classy)
     {
       var served = new List<ISymbol>();
       var used = new List<ISymbol>();
+      var implementing = new List<ISymbol>();
 
       foreach (var item in classy.Members)
       {
@@ -96,6 +98,7 @@ namespace T.Pipes.SourceGeneration
           {
             // return the parent class of the method
             served.AddRange(MakeMembers(attributeSyntax));
+            implementing.AddRange(MakeImplementedTypes(attributeSyntax));
           }
           if (fullName == SourceGenerator.PipeUseAttribute)
           {
@@ -105,7 +108,7 @@ namespace T.Pipes.SourceGeneration
         }
       }
 
-      return (served, used);
+      return (served, used, implementing);
     }
 
     private ISymbol MakeMember(MemberDeclarationSyntax member)
@@ -118,6 +121,45 @@ namespace T.Pipes.SourceGeneration
         throw new InvalidOperationException();
       }
       return typeDef;
+    }
+
+    private IEnumerable<ISymbol> MakeImplementedTypes(AttributeSyntax attribute)
+    {
+      if (attribute.ArgumentList is null)
+      {
+        reportDiagnostic(Diagnostic.Create(MissingParametersDescriptor, attribute.GetLocation()));
+        yield break;
+      }
+
+      foreach (var item in attribute.ArgumentList.Arguments)
+      {
+        switch (item.Expression.Kind())
+        {
+          case SyntaxKind.TypeOfExpression:
+            {
+              var type = ((TypeOfExpressionSyntax)item.Expression).Type;
+              var semantic = compilation.GetSemanticModel(type);
+              var typeDef = semantic.GetSymbolInfo(type).Symbol as INamedTypeSymbol;
+              if (typeDef != null)
+              {
+                yield return typeDef;
+              }
+              break;
+            }
+          case SyntaxKind.StringLiteralExpression:
+            {
+              //TODO
+              reportDiagnostic(Diagnostic.Create(InvalidParametersDescriptor, attribute.GetLocation()));
+              yield break;
+            }
+          default:
+            {
+              reportDiagnostic(Diagnostic.Create(InvalidParametersDescriptor, attribute.GetLocation()));
+              yield break;
+            }
+        }
+      }
+
     }
 
     private IEnumerable<ISymbol> MakeMembers(AttributeSyntax attribute)
@@ -139,6 +181,7 @@ namespace T.Pipes.SourceGeneration
               var typeDef = semantic.GetSymbolInfo(type).Symbol as INamedTypeSymbol;
               if(typeDef != null)
               {
+                
                 foreach(var member in typeDef.GetMembers())
                 {
                   yield return member;

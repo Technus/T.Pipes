@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -40,17 +41,34 @@ namespace T.Pipes.SourceGeneration
       """);
 
     private void RenderContent(TypeDefinition typeDefinition) => writer.Write($$"""
-      {{() => typeDefinition.TypeList.ForEach(x => RenderTypeStart(x))}}
+      {{() => RenderTypeStarts(typeDefinition)}}
       {{() => RenderInnerContent(typeDefinition)}}
       {{() => typeDefinition.TypeList.ForEach(x => RenderTypeEnd())}}
       """);
 
-    private void RenderTypeStart(string typeDefinition) => writer
+    private void RenderTypeStarts(TypeDefinition typeDefinition)
+    {
+      for (int i = 0; i < typeDefinition.TypeList.Count; i++)
+      {
+        RenderTypeStart(typeDefinition, typeDefinition.TypeList[i], i == typeDefinition.TypeList.Count-1);
+      }
+    }
+
+    private void RenderTypeStart(TypeDefinition typeDefinition, string name, bool isTarget) => writer
       .IncreaseIndent()
       .WriteLine($$"""
-      {{typeDefinition}}
+      {{name}}{{()=>RenderBaseTypes(typeDefinition.ImplementingTypes, isTarget)}}
       {
       """);
+
+    private void RenderBaseTypes(IReadOnlyList<ISymbol> implementingTypes, bool isTarget)
+    {
+      if (implementingTypes.Count == 0)
+        return;
+
+      writer.Write(" : ");
+      RenderStrings(implementingTypes.Select(x => x.ToDisplayString()).ToArray());
+    }
 
     private void RenderTypeEnd() => writer
       .WriteLine($$"""
