@@ -17,11 +17,11 @@ namespace T.Pipes.Test.Client
   internal class DelegatingClientAuto<TTarget> : DelegatingPipeClient<TTarget, Callback<TTarget>>
     where TTarget : IAbstract, IAbstract<short>
   {
-    public DelegatingClientAuto(string pipe, Callback<TTarget> callback) : base(pipe, callback)
+    public DelegatingClientAuto(string pipe, TTarget target) : this(new H.Pipes.PipeClient<PipeMessage>(pipe), target)
     {
     }
 
-    public DelegatingClientAuto(H.Pipes.PipeClient<PipeMessage> pipe, Callback<TTarget> callback) : base(pipe, callback)
+    public DelegatingClientAuto(H.Pipes.PipeClient<PipeMessage> pipe, TTarget target) : base(pipe, new(pipe,target))
     {
     }
   }

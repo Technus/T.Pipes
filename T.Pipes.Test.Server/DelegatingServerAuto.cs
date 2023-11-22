@@ -12,13 +12,13 @@ namespace T.Pipes.Test.Server
     }
   }
 
-  internal class DelegatingServerAuto : DelegatingPipeServer<Callback>
+  internal class DelegatingServerAuto : DelegatingPipeServer<Callback, Callback>
   {
-    public DelegatingServerAuto(string pipe, DelegatingPipeServerCallback<Callback> callback) : base(pipe, callback)
+    public DelegatingServerAuto(string pipe) : this(new H.Pipes.PipeServer<PipeMessage>(pipe))
     {
     }
 
-    public DelegatingServerAuto(H.Pipes.PipeServer<PipeMessage> pipe, DelegatingPipeServerCallback<Callback> callback) : base(pipe, callback)
+    public DelegatingServerAuto(H.Pipes.PipeServer<PipeMessage> pipe) : base(pipe, new(pipe))
     {
     }
   }
