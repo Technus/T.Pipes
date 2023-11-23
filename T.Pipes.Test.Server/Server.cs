@@ -9,7 +9,7 @@ namespace T.Pipes.Test.Server
     private readonly Process _process = new() { StartInfo = new ProcessStartInfo("T.Pipes.Test.Client.exe") };
     private PipeServer<Callback> Pipe { get; }
 
-    public Server() => Pipe = new("T.Pipes.Test", new Callback(this));
+    public Server() => Pipe = new("T.Pipes.Test", new(this));
 
     public void Dispose() => DisposeAsync().AsTask().Wait();
 

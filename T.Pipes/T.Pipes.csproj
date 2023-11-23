@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net6.0;net4.8;net7.0;netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>net6.0;net48;net7.0;netstandard2.0</TargetFrameworks>
     <Nullable>enable</Nullable>
     <OutputType>Library</OutputType>
     <LangVersion>latest</LangVersion>
@@ -14,6 +14,7 @@
     <IncludeSymbols>true</IncludeSymbols>
     <DebugType>Embedded</DebugType>
     <DebugSymbols>true</DebugSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <IncludeContentInPack>true</IncludeContentInPack>
 
     <Title>T.Pipes</Title>

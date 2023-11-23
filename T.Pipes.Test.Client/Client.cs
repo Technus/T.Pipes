@@ -7,7 +7,7 @@ namespace T.Pipes.Test.Client
   {
     private PipeClient<Callback> Pipe { get; }
 
-    public Client() => Pipe = new("T.Pipes.Test", new Callback(this));
+    public Client() => Pipe = new("T.Pipes.Test", new(this));
 
     public void Dispose() => DisposeAsync().AsTask().Wait();
 

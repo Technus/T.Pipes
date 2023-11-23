@@ -23,7 +23,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SolutionItems", "SolutionIt
 		Directory.Build.props = Directory.Build.props
 		LICENSE.txt = LICENSE.txt
 		Neith_spacepedia.png = Neith_spacepedia.png
+		pushNugetsTemplate.ps1 = pushNugetsTemplate.ps1
 		README.md = README.md
+		pushNugets.ps1 = pushNugets.ps1
 	EndProjectSection
 EndProject
 Global
