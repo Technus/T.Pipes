@@ -35,6 +35,8 @@ namespace T.Pipes
     /// <inheritdoc/>
     public abstract string ServerName { get; }
 
+    IPipeCallback<TPacket> IPipeConnection<TPacket>.Callback => Callback;
+
     /// <summary>
     /// Creates the base pipe implementation
     /// </summary>

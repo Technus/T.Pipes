@@ -13,6 +13,7 @@ namespace T.Pipes
   /// <typeparam name="TTarget">The target type implementing <typeparamref name="TTarget"/></typeparam>
   public class DelegatingPipeClientCallback<TTarget>
     : DelegatingPipeCallback<H.Pipes.PipeClient<PipeMessage>, TTarget>
+    where TTarget : IDisposable
   {
     /// <summary>
     /// 
@@ -31,6 +32,7 @@ namespace T.Pipes
   /// <typeparam name="TTarget"></typeparam>
   public class DelegatingPipeServerCallback<TTarget>
     : DelegatingPipeCallback<H.Pipes.PipeServer<PipeMessage>, TTarget>
+    where TTarget : IDisposable
   {
     /// <summary>
     /// 
@@ -44,6 +46,7 @@ namespace T.Pipes
   /// <inheritdoc/>
   public class DelegatingPipeCallback<TPipe, TTarget>
     : DelegatingPipeCallback<TPipe, PipeMessage, PipeMessageFactory, TTarget>
+    where TTarget : IDisposable
     where TPipe : H.Pipes.IPipeConnection<PipeMessage>
   {
     /// <summary>
@@ -74,7 +77,8 @@ namespace T.Pipes
   /// <typeparam name="TPacketFactory"><see cref="IPipeMessageFactory{TPacket}"/></typeparam>
   /// <typeparam name="TTarget"></typeparam>
   public class DelegatingPipeCallback<TPipe, TPacket, TPacketFactory, TTarget>
-    : IPipeCallback<TPacket>
+    : IPipeDelegatingCallback<TPacket>
+    where TTarget : IDisposable
     where TPipe : H.Pipes.IPipeConnection<TPacket>
     where TPacket : IPipeMessage
     where TPacketFactory : IPipeMessageFactory<TPacket>
@@ -154,6 +158,8 @@ namespace T.Pipes
       }
     }
 
+    IDisposable IPipeDelegatingCallback<TPacket>.Target => Target;
+
     /// <summary>
     /// Initialization logic for new target
     /// </summary>
@@ -195,6 +201,9 @@ namespace T.Pipes
     /// Use to check if connection was failed at least once
     /// </summary>
     public Task FailedOnce => _failedOnce.Task;
+
+    /// <inheritdoc/>
+    public int ResponseTimeout { get; set; } = default;
 
     /// <inheritdoc/>
     public virtual void Connected(string connection)
@@ -338,6 +347,14 @@ namespace T.Pipes
 
 #nullable disable
 
+    private void Timeout(TaskCompletionSource<object> tcs)
+    {
+      if (ResponseTimeout > 0 && ResponseTimeout != int.MaxValue)
+      {
+        Task.Delay(ResponseTimeout).ContinueWith(x => tcs.TrySetCanceled());
+      }
+    }
+
     /// <summary>
     /// Awaits Response using <see cref="TaskCompletionSource{TResult}"/>
     /// </summary>
@@ -350,6 +367,7 @@ namespace T.Pipes
       _semaphore.Wait();
       _responses.Add(command.Id, tcs);
       _ = _semaphore.Release();
+      Timeout(tcs);
       return (T)tcs.Task.Result;
     }
 
@@ -365,6 +383,7 @@ namespace T.Pipes
       await _semaphore.WaitAsync();
       _responses.Add(command.Id, tcs);
       _ = _semaphore.Release();
+      Timeout(tcs);
       return (T)await tcs.Task;
     }
 

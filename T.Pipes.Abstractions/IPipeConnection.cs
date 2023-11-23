@@ -11,6 +11,11 @@ namespace T.Pipes.Abstractions
   public interface IPipeConnection<TMessage> : IAsyncDisposable, IDisposable
   {
     /// <summary>
+    /// The Pipe Callback
+    /// </summary>
+    IPipeCallback<TMessage> Callback { get; }
+
+    /// <summary>
     /// Writes the packet to pipe
     /// </summary>
     /// <param name="value">packet to write</param>

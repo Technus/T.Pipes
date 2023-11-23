@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using T.Pipes.Abstractions;
 
 namespace T.Pipes
@@ -6,6 +7,7 @@ namespace T.Pipes
   /// <inheritdoc/>
   public abstract class DelegatingPipeClient<TTarget, TCallback>
       : DelegatingPipeClient<H.Pipes.PipeClient<PipeMessage>, TTarget, TCallback>
+    where TTarget : IDisposable
     where TCallback : DelegatingPipeCallback<H.Pipes.PipeClient<PipeMessage>, PipeMessage, PipeMessageFactory, TTarget>
   {
     /// <summary>
@@ -31,6 +33,7 @@ namespace T.Pipes
   public abstract class DelegatingPipeClient<TPipe, TTarget, TCallback>
     : DelegatingPipeClient<TPipe, PipeMessage, PipeMessageFactory, TTarget, TCallback>
     where TPipe : H.Pipes.IPipeClient<PipeMessage>
+    where TTarget : IDisposable
     where TCallback : DelegatingPipeCallback<TPipe, PipeMessage, PipeMessageFactory, TTarget>
   {
     /// <summary>
@@ -52,16 +55,19 @@ namespace T.Pipes
   /// <typeparam name="TTarget"></typeparam>
   /// <typeparam name="TCallback"></typeparam>
   public abstract class DelegatingPipeClient<TPipe, TPacket, TPacketFactory, TTarget, TCallback>
-    : PipeClient<TPipe, TPacket, TCallback>
+    : PipeClient<TPipe, TPacket, TCallback>, IPipeDelegatingConnection<TPacket>
     where TPipe : H.Pipes.IPipeClient<TPacket>
     where TPacket : IPipeMessage
     where TPacketFactory : IPipeMessageFactory<TPacket>
+    where TTarget : IDisposable
     where TCallback : DelegatingPipeCallback<TPipe, TPacket, TPacketFactory, TTarget>
   {
     /// <summary>
     /// The actual <typeparamref name="TTarget"/> implementaion
     /// </summary>
     public TTarget Target => Callback.Target;
+
+    IPipeDelegatingCallback<TPacket> IPipeDelegatingConnection<TPacket>.Callback => Callback;
 
     /// <summary>
     /// Creates the pipe client with a specified callback and pipe

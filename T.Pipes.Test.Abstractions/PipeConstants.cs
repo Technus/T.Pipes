@@ -13,5 +13,7 @@ namespace T.Pipes.Test.Abstractions
     public const string ServerDisplayName = "T.Pipes.Test.Server";
     public const string ClientExeName = "T.Pipes.Test.Client.exe";
     public const int ConnectionAwaitTimeMs = 10000;
+
+    public const string Create = "T.Pipes.Create";
   }
 }

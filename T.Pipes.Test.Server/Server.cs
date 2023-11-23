@@ -11,6 +11,8 @@ namespace T.Pipes.Test.Server
   internal class Server : IDisposable, IAsyncDisposable
   {
     private readonly Process _process = new() { StartInfo = new ProcessStartInfo(PipeConstants.ClientExeName) };
+    private readonly Dictionary<string, IPipeDelegatingConnection<PipeMessage>> _mapping = new();
+
     private PipeServer<Callback> Pipe { get; }
 
     public Server() => Pipe = new(PipeConstants.ServerName, new(this));
@@ -21,6 +23,11 @@ namespace T.Pipes.Test.Server
     {
       await Pipe.DisposeAsync();
       await Pipe.Callback.DisposeAsync();
+      foreach (var server in _mapping.Values)
+      {
+        await server.DisposeAsync();
+      }
+      _mapping.Clear();
       _process.Close();
       _process.Dispose();
     }
@@ -39,44 +46,51 @@ namespace T.Pipes.Test.Server
       throw new InvalidOperationException($"Either the client was not started or connection was impossible");
     }
 
+    public void Clear()
+    {
+      foreach (var server in _mapping.Values)
+      {
+        server.Dispose();
+      }
+      _mapping.Clear();
+    }
+
     internal class Callback : IPipeCallback<PipeMessage>
     {
       private readonly TaskCompletionSource<object?> _connectedOnce = new();
-      private readonly Server server;
+      private readonly Server _server;
 
-      public Callback(Server server) => this.server = server;
+      public Callback(Server server) => _server = server;
 
       public Task ConnectedOnce => _connectedOnce.Task;
 
       public ValueTask DisposeAsync()
       {
         _connectedOnce.TrySetCanceled();
-        return new ValueTask();
+        return default;
       }
 
       public void Dispose() => DisposeAsync().AsTask().Wait();
 
       public void Connected(string connection)
       {
+        _server.Clear();
         _connectedOnce.TrySetResult(null);
-        server.Pipe.WriteAsync(new() { Id = Guid.NewGuid(), Command = "Egg", Parameter = new IntPtr(-1) }).Wait();
-        server.Pipe.WriteAsync(new() { Id = Guid.NewGuid(), Command = "Egg", Parameter = new IntPtr(-10) }).Wait();
-        server.Pipe.WriteAsync(new() { Id = Guid.NewGuid(), Command = "Egg", Parameter = new IntPtr(1) }).Wait();
-        server.Pipe.WriteAsync(new() { Id = Guid.NewGuid(), Command = "Egg", Parameter = new IntPtr(10) }).Wait();
-        server.Pipe.WriteAsync(new() { Id = Guid.NewGuid(), Command = "Egg", Parameter = new IntPtr(0) }).Wait();
-        server.Pipe.WriteAsync(new() { Id = Guid.NewGuid(), Command = "Egg", Parameter = new IntPtr(((long)int.MinValue)) }).Wait();
-        server.Pipe.WriteAsync(new() { Id = Guid.NewGuid(), Command = "Egg", Parameter = new IntPtr(((long)int.MaxValue)) }).Wait();
-        //server.Pipe.WriteAsync(new("Egg", new IntPtr(((long)int.MinValue)-1))).Wait();//All fine will crash since client is forced to be x86
-        //server.Pipe.WriteAsync(new("Egg", new IntPtr(((long)int.MaxValue)+1))).Wait();//All fine will crash since client is forced to be x86
       }
 
-      public void Disconnected(string connection) => _connectedOnce.TrySetCanceled();
+      public void Disconnected(string connection)
+      {
+        _server.Clear();
+        _connectedOnce.TrySetCanceled();
+      }
 
       public void OnExceptionOccurred(Exception e)
       {
         Console.WriteLine(e.ToString()?.Pastel(ConsoleColor.Cyan));
+        _server.Clear();
         _connectedOnce.TrySetException(e);
       }
+
       public void OnMessageReceived(PipeMessage message)
       {
         Console.WriteLine(message.ToString()?.Pastel(ConsoleColor.DarkYellow));

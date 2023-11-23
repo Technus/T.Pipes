@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using T.Pipes.Abstractions;
 
 namespace T.Pipes
@@ -6,6 +7,7 @@ namespace T.Pipes
   /// <inheritdoc/>
   public  class DelegatingPipeServer<TTarget>
     : DelegatingPipeServer<TTarget, DelegatingPipeServerCallback<TTarget>>
+    where TTarget : IDisposable
   {
     /// <summary>
     /// Creates the pipe server with a specified callback and pipe
@@ -29,6 +31,7 @@ namespace T.Pipes
   /// <inheritdoc/>
   public abstract class DelegatingPipeServer<TTarget, TCallback>
     : DelegatingPipeServer<H.Pipes.PipeServer<PipeMessage>, TTarget, TCallback>
+    where TTarget : IDisposable
     where TCallback : DelegatingPipeCallback<H.Pipes.PipeServer<PipeMessage>, PipeMessage, PipeMessageFactory, TTarget>
   {
     /// <summary>
@@ -54,6 +57,7 @@ namespace T.Pipes
   public abstract class DelegatingPipeServer<TPipe, TTarget, TCallback>
     : DelegatingPipeServer<TPipe, PipeMessage, PipeMessageFactory, TTarget, TCallback>
     where TPipe : H.Pipes.IPipeServer<PipeMessage>
+    where TTarget : IDisposable
     where TCallback : DelegatingPipeCallback<TPipe, PipeMessage, PipeMessageFactory, TTarget>
   {
     /// <summary>
@@ -68,9 +72,10 @@ namespace T.Pipes
 
   /// <inheritdoc/>
   public abstract class DelegatingPipeServer<TPipe, TPacket, TPacketFactory, TTarget, TCallback>
-    : PipeServer<TPipe, TPacket, TCallback>
+    : PipeServer<TPipe, TPacket, TCallback>, IPipeDelegatingConnection<TPacket>
     where TPipe : H.Pipes.IPipeServer<TPacket>
     where TPacket : IPipeMessage
+    where TTarget : IDisposable
     where TPacketFactory : IPipeMessageFactory<TPacket>
     where TCallback : DelegatingPipeCallback<TPipe, TPacket, TPacketFactory, TTarget>
   {
@@ -78,6 +83,8 @@ namespace T.Pipes
     /// <see cref="DelegatingPipeCallback{TPipe, TPacket, TPacketFactory, TTarget}.Target"/>
     /// </summary>
     public TTarget Target => Callback.Target;
+
+    IPipeDelegatingCallback<TPacket> IPipeDelegatingConnection<TPacket>.Callback => Callback;
 
     /// <summary>
     /// Creates the pipe server with a specified callback and pipe
