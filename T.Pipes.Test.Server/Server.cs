@@ -15,6 +15,8 @@ namespace T.Pipes.Test.Server
 
     private PipeServer<Callback> Pipe { get; }
 
+    private PipeMessageFactory PipeMessageFactory { get; } = new PipeMessageFactory();
+
     public Server() => Pipe = new(PipeConstants.ServerName, new(this));
 
     public void Dispose() => DisposeAsync().AsTask().Wait();
@@ -34,16 +36,17 @@ namespace T.Pipes.Test.Server
 
     public async Task StartAsync()
     {
-      Console.WriteLine(PipeConstants.ServerDisplayName.Pastel(ConsoleColor.Cyan));
+      Console.WriteLine((PipeConstants.ServerDisplayName+" Start").Pastel(ConsoleColor.Cyan));
       Pipe.StartAsync().Wait();
       _process.Start();
       if (Pipe.Callback.ConnectedOnce.Wait(PipeConstants.ConnectionAwaitTimeMs))
       {
+        Console.WriteLine((PipeConstants.ServerDisplayName+" Connected").Pastel(ConsoleColor.Cyan));
         return;
       }
       _process.Close();
       await Pipe.StopAsync();
-      throw new InvalidOperationException($"Either the client was not started or connection was impossible");
+      throw new InvalidOperationException($"Either the client was not started or connection was impossible".Pastel(ConsoleColor.DarkCyan));
     }
 
     public void Clear()
@@ -54,6 +57,30 @@ namespace T.Pipes.Test.Server
       }
       _mapping.Clear();
     }
+
+    private async Task<T> CreateInternal<T>(string command, T implementationServer) 
+      where T : IPipeDelegatingConnection<PipeMessage>
+    {
+      _ = implementationServer.Callback.FailedOnce.ContinueWith(async x =>
+      {
+        _mapping.Remove(implementationServer.ServerName);
+        await implementationServer.DisposeAsync();
+      }, TaskContinuationOptions.OnlyOnRanToCompletion);
+      await implementationServer.StartAsync();
+      await Pipe.WriteAsync(PipeMessageFactory.Create(command, implementationServer.ServerName));
+      if (implementationServer.Callback.ConnectedOnce.Wait(PipeConstants.ConnectionAwaitTimeMs))
+      {
+        _mapping.Add(implementationServer.ServerName, implementationServer);
+        return implementationServer;
+      }
+      await implementationServer.DisposeAsync();
+      throw new InvalidOperationException($"The {nameof(command)}: {command}, could not be performed, connection timed out.".Pastel(ConsoleColor.DarkCyan));
+    }
+
+    public Task<DelegatingServerAuto> CreateAsync() =>
+      CreateInternal(PipeConstants.Create, new DelegatingServerAuto(Guid.NewGuid().ToString()));
+
+    public DelegatingServerAuto Create() => CreateAsync().Result;
 
     internal class Callback : IPipeCallback<PipeMessage>
     {
@@ -86,19 +113,19 @@ namespace T.Pipes.Test.Server
 
       public void OnExceptionOccurred(Exception e)
       {
-        Console.WriteLine(e.ToString()?.Pastel(ConsoleColor.Cyan));
+        Console.WriteLine(e.ToString()?.Pastel(ConsoleColor.DarkCyan));
         _server.Clear();
         _connectedOnce.TrySetException(e);
       }
 
       public void OnMessageReceived(PipeMessage message)
       {
-        Console.WriteLine(message.ToString()?.Pastel(ConsoleColor.DarkYellow));
+        Console.WriteLine(("I: " + message.ToString()).Pastel(ConsoleColor.Cyan));
       }
 
       public void OnMessageSent(PipeMessage message)
       {
-        Console.WriteLine(message.ToString()?.Pastel(ConsoleColor.Cyan));
+        Console.WriteLine(("O: " + message.ToString()).Pastel(ConsoleColor.Cyan));
       }
     }
   }

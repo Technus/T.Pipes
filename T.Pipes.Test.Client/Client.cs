@@ -23,14 +23,14 @@ namespace T.Pipes.Test.Client
 
     public async Task StartAsync()
     {
-      Console.WriteLine(PipeConstants.ClientDisplayName.Pastel(ConsoleColor.Yellow));
+      Console.WriteLine((PipeConstants.ClientDisplayName + " Start").Pastel(ConsoleColor.Yellow));
       if (Pipe.StartAsync().Wait(PipeConstants.ConnectionAwaitTimeMs))
       {
-        //Connection ok
+        Console.WriteLine((PipeConstants.ClientDisplayName+" Connected").Pastel(ConsoleColor.Yellow));
         return;
       }
       await Pipe.StopAsync();
-      throw new InvalidOperationException($"Either the server was not started or connection was impossible");
+      throw new InvalidOperationException($"Either the server was not started or connection was impossible".Pastel(ConsoleColor.DarkYellow));
     }
 
     private class Callback : IPipeCallback<PipeMessage>
@@ -42,7 +42,7 @@ namespace T.Pipes.Test.Client
       public void Disconnected(string connection)
       {
         Clear();
-        throw new InvalidOperationException("Disconnected occurred in PipeClient");
+        throw new InvalidOperationException(("Disconnected occurred in "+PipeConstants.ClientDisplayName).Pastel(ConsoleColor.DarkYellow));
       }
 
       private void Clear()
@@ -64,19 +64,19 @@ namespace T.Pipes.Test.Client
 
       public void OnExceptionOccurred(Exception e)
       {
-        Console.WriteLine(e.ToString().Pastel(ConsoleColor.Yellow));
+        Console.WriteLine(e.ToString().Pastel(ConsoleColor.DarkYellow));
         Clear();
       }
 
-      public void OnMessageReceived(PipeMessage message)
+      public void OnMessageReceived(PipeMessage command)
       {
-        Console.WriteLine(message.ToString().Pastel(ConsoleColor.DarkCyan));
+        Console.WriteLine(("I: "+command.ToString()).Pastel(ConsoleColor.Yellow));
         //if (message is null)
         //{
         //  return;
         //}
 
-        var proxy = CreateRequestedObjectProxy(message.Command);
+        var proxy = CreateRequestedObjectProxy(command);
 
         Task.Run(() => proxy.Callback.FailedOnce).ContinueWith(async x =>
         {
@@ -86,21 +86,21 @@ namespace T.Pipes.Test.Client
         }, TaskContinuationOptions.OnlyOnRanToCompletion);
         if (proxy.StartAsync().Wait(PipeConstants.ConnectionAwaitTimeMs))
         {
-          _mapping.Add(message.Parameter!.ToString()!, proxy);
+          _mapping.Add(command.Parameter!.ToString()!, proxy);
           return;
         }
         proxy.Dispose();
         proxy.Callback.Target.Dispose();
-        throw new InvalidOperationException($"The {nameof(message)}: {message.Command}, could not be performed, connection timed out.");
+        throw new InvalidOperationException($"The {nameof(command)}: {command.Command}, could not be performed, connection timed out.".Pastel(ConsoleColor.DarkYellow));
       }
 
-      public static IPipeDelegatingConnection<PipeMessage> CreateRequestedObjectProxy(string command) => command switch
+      public static IPipeDelegatingConnection<PipeMessage> CreateRequestedObjectProxy(PipeMessage command) => command.Command switch
       {
-        PipeConstants.Create => new DelegatingClientAuto<Target>(Guid.NewGuid().ToString(), new Target()),
-        _ => throw new ArgumentException($"Invalid command: {command}", nameof(command)),
+        PipeConstants.Create => new DelegatingClientAuto<Target>(command.Parameter!.ToString()!, new Target()),
+        _ => throw new ArgumentException($"Invalid command: {command}".Pastel(ConsoleColor.DarkYellow), nameof(command)),
       };
 
-      public void OnMessageSent(PipeMessage message) => Console.WriteLine(message.ToString().Pastel(ConsoleColor.Yellow));
+      public void OnMessageSent(PipeMessage message) => Console.WriteLine(("O: " + message.ToString()).Pastel(ConsoleColor.Yellow));
     }
   }
 }
