@@ -24,7 +24,8 @@ namespace T.Pipes.Test.Client
     public async Task StartAsync()
     {
       Console.WriteLine((PipeConstants.ClientDisplayName + " Start").Pastel(ConsoleColor.Yellow));
-      if (Pipe.StartAsync().Wait(PipeConstants.ConnectionAwaitTimeMs))
+      var startTask = Pipe.StartAsync();
+      if (await Task.WhenAny(startTask, Task.Delay(PipeConstants.ConnectionAwaitTimeMs)) == startTask)
       {
         Console.WriteLine((PipeConstants.ClientDisplayName+" Connected").Pastel(ConsoleColor.Yellow));
         return;
@@ -68,7 +69,7 @@ namespace T.Pipes.Test.Client
         Clear();
       }
 
-      public void OnMessageReceived(PipeMessage command)
+      public async void OnMessageReceived(PipeMessage command)
       {
         Console.WriteLine(("I: "+command.ToString()).Pastel(ConsoleColor.Yellow));
         //if (message is null)
@@ -78,13 +79,14 @@ namespace T.Pipes.Test.Client
 
         var proxy = CreateRequestedObjectProxy(command);
 
-        Task.Run(() => proxy.Callback.FailedOnce).ContinueWith(async x =>
+        _ = proxy.Callback.FailedOnce.ContinueWith(async x =>
         {
           _mapping.Remove(proxy.ServerName);
           await proxy.DisposeAsync();
           proxy.Callback.Target.Dispose();
         }, TaskContinuationOptions.OnlyOnRanToCompletion);
-        if (proxy.StartAsync().Wait(PipeConstants.ConnectionAwaitTimeMs))
+        var startTask = proxy.StartAsync();
+        if (await Task.WhenAny(startTask, Task.Delay(PipeConstants.ConnectionAwaitTimeMs)) == startTask)
         {
           _mapping.Add(command.Parameter!.ToString()!, proxy);
           return;

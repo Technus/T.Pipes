@@ -37,9 +37,10 @@ namespace T.Pipes.Test.Server
     public async Task StartAsync()
     {
       Console.WriteLine((PipeConstants.ServerDisplayName+" Start").Pastel(ConsoleColor.Cyan));
-      Pipe.StartAsync().Wait();
+      await Pipe.StartAsync();
       _process.Start();
-      if (Pipe.Callback.ConnectedOnce.Wait(PipeConstants.ConnectionAwaitTimeMs))
+      var connectedTask = Pipe.Callback.ConnectedOnce;
+      if (await Task.WhenAny(connectedTask, Task.Delay(PipeConstants.ConnectionAwaitTimeMs)) == connectedTask)
       {
         Console.WriteLine((PipeConstants.ServerDisplayName+" Connected").Pastel(ConsoleColor.Cyan));
         return;
@@ -68,7 +69,8 @@ namespace T.Pipes.Test.Server
       }, TaskContinuationOptions.OnlyOnRanToCompletion);
       await implementationServer.StartAsync();
       await Pipe.WriteAsync(PipeMessageFactory.Create(command, implementationServer.ServerName));
-      if (implementationServer.Callback.ConnectedOnce.Wait(PipeConstants.ConnectionAwaitTimeMs))
+      var connectedTask = implementationServer.Callback.ConnectedOnce;
+      if (await Task.WhenAny(connectedTask, Task.Delay(PipeConstants.ConnectionAwaitTimeMs)) == connectedTask)
       {
         _mapping.Add(implementationServer.ServerName, implementationServer);
         return implementationServer;
