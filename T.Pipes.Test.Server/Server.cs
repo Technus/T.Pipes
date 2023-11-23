@@ -1,15 +1,19 @@
 ﻿using System.Diagnostics;
 using Pastel;
 using T.Pipes.Abstractions;
+using T.Pipes.Test.Abstractions;
 
 namespace T.Pipes.Test.Server
 {
-  internal class Server
+  /// <summary>
+  /// Main server used to control Delegating Server Instances
+  /// </summary>
+  internal class Server : IDisposable, IAsyncDisposable
   {
-    private readonly Process _process = new() { StartInfo = new ProcessStartInfo("T.Pipes.Test.Client.exe") };
+    private readonly Process _process = new() { StartInfo = new ProcessStartInfo(PipeConstants.ClientExeName) };
     private PipeServer<Callback> Pipe { get; }
 
-    public Server() => Pipe = new("T.Pipes.Test", new(this));
+    public Server() => Pipe = new(PipeConstants.ServerName, new(this));
 
     public void Dispose() => DisposeAsync().AsTask().Wait();
 
@@ -23,10 +27,10 @@ namespace T.Pipes.Test.Server
 
     public async Task StartAsync()
     {
-      Console.WriteLine("T.Pipes.Test.Server".Pastel(ConsoleColor.Cyan));
+      Console.WriteLine(PipeConstants.ServerDisplayName.Pastel(ConsoleColor.Cyan));
       Pipe.StartAsync().Wait();
       _process.Start();
-      if (Pipe.Callback.ConnectedOnce.Wait(10000))
+      if (Pipe.Callback.ConnectedOnce.Wait(PipeConstants.ConnectionAwaitTimeMs))
       {
         return;
       }

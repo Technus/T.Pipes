@@ -1,13 +1,17 @@
 ﻿using Pastel;
 using T.Pipes.Abstractions;
+using T.Pipes.Test.Abstractions;
 
 namespace T.Pipes.Test.Client
 {
+  /// <summary>
+  /// Main client used to control Delegating Client instances
+  /// </summary>
   internal class Client : IDisposable, IAsyncDisposable
   {
     private PipeClient<Callback> Pipe { get; }
 
-    public Client() => Pipe = new("T.Pipes.Test", new(this));
+    public Client() => Pipe = new(PipeConstants.ServerName, new(this));
 
     public void Dispose() => DisposeAsync().AsTask().Wait();
 
@@ -19,8 +23,8 @@ namespace T.Pipes.Test.Client
 
     public async Task StartAsync()
     {
-      Console.WriteLine("T.Pipes.Test.Client".Pastel(ConsoleColor.Yellow));
-      if (Pipe.StartAsync().Wait(10000))
+      Console.WriteLine(PipeConstants.ClientDisplayName.Pastel(ConsoleColor.Yellow));
+      if (Pipe.StartAsync().Wait(PipeConstants.ConnectionAwaitTimeMs))
       {
         //Connection ok
         return;

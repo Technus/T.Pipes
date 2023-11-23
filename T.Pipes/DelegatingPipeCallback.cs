@@ -130,7 +130,7 @@ namespace T.Pipes
     }
 
     /// <summary>
-    /// For client an instace of <typeparamref name="TTarget"/>
+    /// For client an instance of <typeparamref name="TTarget"/>
     /// For server returns 'this'
     /// </summary>
     public TTarget Target
