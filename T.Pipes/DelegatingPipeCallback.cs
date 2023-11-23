@@ -6,7 +6,11 @@ using T.Pipes.Abstractions;
 
 namespace T.Pipes
 {
-  /// <inheritdoc/>
+  /// <summary>
+  /// Callback for original implementation of <typeparamref name="TTarget"/> for:<br/>
+  /// <see cref="DelegatingPipeClient{TPipe, TPacket, TPacketFactory, TTarget, TCallback}"/>
+  /// </summary>
+  /// <typeparam name="TTarget">The target type implementing <typeparamref name="TTarget"/></typeparam>
   public class DelegatingPipeClientCallback<TTarget>
     : DelegatingPipeCallback<H.Pipes.PipeClient<PipeMessage>, TTarget>
   {
@@ -20,7 +24,11 @@ namespace T.Pipes
     }
   }
 
-  /// <inheritdoc/>
+  /// <summary>
+  /// Callback and proxy implementation of <typeparamref name="TTarget"/> for:<br/>
+  /// <see cref="DelegatingPipeServer{TPipe, TPacket, TPacketFactory, TTarget, TCallback}"/>
+  /// </summary>
+  /// <typeparam name="TTarget"></typeparam>
   public class DelegatingPipeServerCallback<TTarget>
     : DelegatingPipeCallback<H.Pipes.PipeServer<PipeMessage>, TTarget>
   {
