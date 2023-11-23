@@ -203,7 +203,7 @@ namespace T.Pipes
     public Task FailedOnce => _failedOnce.Task;
 
     /// <inheritdoc/>
-    public int ResponseTimeout { get; set; } = default;
+    public int ResponseTimeoutMs { get; set; } = default;
 
     /// <inheritdoc/>
     public virtual void Connected(string connection)
@@ -347,14 +347,6 @@ namespace T.Pipes
 
 #nullable disable
 
-    private void Timeout(TaskCompletionSource<object> tcs)
-    {
-      if (ResponseTimeout > 0 && ResponseTimeout != int.MaxValue)
-      {
-        Task.Delay(ResponseTimeout).ContinueWith(x => tcs.TrySetCanceled());
-      }
-    }
-
     /// <summary>
     /// Awaits Response using <see cref="TaskCompletionSource{TResult}"/>
     /// </summary>
@@ -367,7 +359,12 @@ namespace T.Pipes
       _semaphore.Wait();
       _responses.Add(command.Id, tcs);
       _ = _semaphore.Release();
-      Timeout(tcs);
+      if (ResponseTimeoutMs > 0)
+        _ = Task.Delay(ResponseTimeoutMs).ContinueWith(x =>
+        {
+          _responses.Remove(command.Id);
+          tcs.TrySetCanceled();
+        });
       return (T)tcs.Task.Result;
     }
 
@@ -383,7 +380,12 @@ namespace T.Pipes
       await _semaphore.WaitAsync();
       _responses.Add(command.Id, tcs);
       _ = _semaphore.Release();
-      Timeout(tcs);
+      if (ResponseTimeoutMs > 0)
+        _ = Task.Delay(ResponseTimeoutMs).ContinueWith(x =>
+        {
+          _responses.Remove(command.Id);
+          tcs.TrySetCanceled();
+        });
       return (T)await tcs.Task;
     }
 

@@ -28,6 +28,6 @@ namespace T.Pipes.Abstractions
     /// <summary>
     /// The response await timeout should happen after that time
     /// </summary>
-    public TimeSpan ResponseTimeout { get; set; }
+    public int ResponseTimeoutMs { get; set; }
   }
 }
