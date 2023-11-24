@@ -40,8 +40,10 @@ namespace T.Pipes.Test.Server
       await Pipe.StartAsync();
       _process.Start();
       var connectedTask = Pipe.Callback.ConnectedOnce;
-      if (await Task.WhenAny(connectedTask, Task.Delay(PipeConstants.ConnectionAwaitTimeMs)) == connectedTask)
+      using var cts = new CancellationTokenSource();
+      if (await Task.WhenAny(connectedTask, Task.Delay(PipeConstants.ConnectionAwaitTimeMs, cts.Token)) == connectedTask)
       {
+        cts.Cancel();
         Console.WriteLine((PipeConstants.ServerDisplayName+" Connected").Pastel(ConsoleColor.Cyan));
         return;
       }
@@ -62,20 +64,22 @@ namespace T.Pipes.Test.Server
     private async Task<T> CreateInternal<T>(string command, T implementationServer) 
       where T : IPipeDelegatingConnection<PipeMessage>
     {
-      _ = implementationServer.Callback.FailedOnce.ContinueWith(async x =>
+      _ = implementationServer.Callback.FailedOnce.ContinueWith(x =>
       {
         _mapping.Remove(implementationServer.ServerName);
-        await implementationServer.DisposeAsync();
+        _ = implementationServer.DisposeAsync();
       }, TaskContinuationOptions.OnlyOnRanToCompletion);
       await implementationServer.StartAsync();
-      await Pipe.WriteAsync(PipeMessageFactory.Create(command, implementationServer.ServerName));
+      _ = Pipe.WriteAsync(PipeMessageFactory.Create(command, implementationServer.ServerName));
       var connectedTask = implementationServer.Callback.ConnectedOnce;
+      using var cts = new CancellationTokenSource();
       if (await Task.WhenAny(connectedTask, Task.Delay(PipeConstants.ConnectionAwaitTimeMs)) == connectedTask)
       {
+        cts.Cancel();
         _mapping.Add(implementationServer.ServerName, implementationServer);
         return implementationServer;
       }
-      await implementationServer.DisposeAsync();
+      _ = implementationServer.DisposeAsync();
       throw new InvalidOperationException($"The {nameof(command)}: {command}, could not be performed, connection timed out.".Pastel(ConsoleColor.DarkCyan));
     }
 

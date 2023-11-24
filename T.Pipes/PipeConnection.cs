@@ -51,15 +51,24 @@ namespace T.Pipes
       Pipe.MessageReceived += OnMessageReceived;
     }
 
-    private void OnMessageReceived(object? sender, ConnectionMessageEventArgs<TPacket?> e)
+    private void OnMessageReceived(object? sender, ConnectionMessageEventArgs<TPacket?> e) 
+      => Callback.OnMessageReceived(e.Message);
+
+    private void OnExceptionOccurred(object? sender, ExceptionEventArgs e) 
+      => Callback.OnExceptionOccurred(e.Exception);
+
+    /// <inheritdoc/>
+    public async Task WriteAsync(TPacket value, CancellationToken cancellationToken = default)
     {
-      Callback.OnMessageReceived(e.Message);
+      Callback.OnMessageSent(value);
+      await Pipe.WriteAsync(value, cancellationToken);
     }
 
-    private void OnExceptionOccurred(object? sender, ExceptionEventArgs e)
-    {
-      Callback.OnExceptionOccurred(e.Exception);
-    }
+    /// <inheritdoc/>
+    public abstract Task StartAsync(CancellationToken cancellationToken = default);
+
+    /// <inheritdoc/>
+    public abstract Task StopAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Disposes <see cref="Pipe"/>
@@ -75,22 +84,6 @@ namespace T.Pipes
     /// <summary>
     /// Disposes <see cref="Pipe"/> and <see cref="Callback"/>
     /// </summary>
-    public void Dispose()
-    {
-      DisposeAsync().AsTask().Wait();
-    }
-
-    /// <inheritdoc/>
-    public async Task WriteAsync(TPacket value, CancellationToken cancellationToken = default)
-    {
-      Callback.OnMessageSent(value);
-      await Pipe.WriteAsync(value, cancellationToken);
-    }
-
-    /// <inheritdoc/>
-    public abstract Task StartAsync(CancellationToken cancellationToken = default);
-
-    /// <inheritdoc/>
-    public abstract Task StopAsync(CancellationToken cancellationToken = default);
+    public void Dispose() => DisposeAsync().GetAwaiter().GetResult();
   }
 }

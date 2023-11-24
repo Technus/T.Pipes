@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using T.Pipes.Test.Abstractions;
 
 namespace T.Pipes.Test.Server
 {
@@ -14,10 +15,17 @@ namespace T.Pipes.Test.Server
 
       AppDomain.CurrentDomain.ProcessExit += (object? sender, EventArgs e) => server.Dispose();
 
-      await server.StartAsync()
-        .ContinueWith(static async x => { await x; Environment.Exit(-1); }, TaskContinuationOptions.NotOnRanToCompletion);
+      var task = server.StartAsync();
+      _ = task.ContinueWith(static x => Environment.Exit(-1), TaskContinuationOptions.NotOnRanToCompletion);
+      await task;
 
       var item = server.Create();
+
+      var target = item.Callback as IAbstract;
+      var target1 = item.Callback as IAbstract<int>;
+
+      var papa = target.GetInt();
+
 
       await item.DisposeAsync();
 

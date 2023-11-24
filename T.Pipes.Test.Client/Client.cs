@@ -25,8 +25,10 @@ namespace T.Pipes.Test.Client
     {
       Console.WriteLine((PipeConstants.ClientDisplayName + " Start").Pastel(ConsoleColor.Yellow));
       var startTask = Pipe.StartAsync();
-      if (await Task.WhenAny(startTask, Task.Delay(PipeConstants.ConnectionAwaitTimeMs)) == startTask)
+      using var cts = new CancellationTokenSource();
+      if (await Task.WhenAny(startTask, Task.Delay(PipeConstants.ConnectionAwaitTimeMs, cts.Token)) == startTask)
       {
+        cts.Cancel();
         Console.WriteLine((PipeConstants.ClientDisplayName+" Connected").Pastel(ConsoleColor.Yellow));
         return;
       }
@@ -86,8 +88,10 @@ namespace T.Pipes.Test.Client
           proxy.Callback.Target.Dispose();
         }, TaskContinuationOptions.OnlyOnRanToCompletion);
         var startTask = proxy.StartAsync();
-        if (await Task.WhenAny(startTask, Task.Delay(PipeConstants.ConnectionAwaitTimeMs)) == startTask)
+        using var cts = new CancellationTokenSource();
+        if (await Task.WhenAny(startTask, Task.Delay(PipeConstants.ConnectionAwaitTimeMs, cts.Token)) == startTask)
         {
+          cts.Cancel();
           _mapping.Add(command.Parameter!.ToString()!, proxy);
           return;
         }

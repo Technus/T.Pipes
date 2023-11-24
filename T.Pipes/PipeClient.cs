@@ -89,15 +89,19 @@ namespace T.Pipes
       Pipe.Connected += OnConnected;
     }
 
-    private void OnDisconnected(object? sender, ConnectionEventArgs<TPacket> e)
-    {
-      Callback?.Disconnected(e.Connection.PipeName);
-    }
+    private void OnDisconnected(object? sender, ConnectionEventArgs<TPacket> e) 
+      => Callback?.Disconnected(e.Connection.PipeName);
 
-    private void OnConnected(object? sender, ConnectionEventArgs<TPacket> e)
-    {
-      Callback?.Connected(e.Connection.PipeName);
-    }
+    private void OnConnected(object? sender, ConnectionEventArgs<TPacket> e) 
+      => Callback?.Connected(e.Connection.PipeName);
+
+    /// <inheritdoc/>
+    public override async Task StartAsync(CancellationToken cancellationToken = default)
+      => await Pipe.ConnectAsync(cancellationToken);
+
+    /// <inheritdoc/>
+    public override async Task StopAsync(CancellationToken cancellationToken = default)
+      => await Pipe.DisconnectAsync(cancellationToken);
 
     /// <inheritdoc/>
     public override async ValueTask DisposeAsync()
@@ -105,18 +109,6 @@ namespace T.Pipes
       await base.DisposeAsync();
       Pipe.Disconnected -= OnDisconnected;
       Pipe.Connected -= OnConnected;
-    }
-
-    /// <inheritdoc/>
-    public override async Task StartAsync(CancellationToken cancellationToken = default)
-    {
-      await Pipe.ConnectAsync(cancellationToken);
-    }
-
-    /// <inheritdoc/>
-    public override async Task StopAsync(CancellationToken cancellationToken = default)
-    {
-      await Pipe.DisconnectAsync(cancellationToken);
     }
   }
 }

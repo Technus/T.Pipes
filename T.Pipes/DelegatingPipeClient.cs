@@ -63,7 +63,7 @@ namespace T.Pipes
     where TCallback : DelegatingPipeCallback<TPipe, TPacket, TPacketFactory, TTarget>
   {
     /// <summary>
-    /// The actual <typeparamref name="TTarget"/> implementaion
+    /// The actual <typeparamref name="TTarget"/> implementation
     /// </summary>
     public TTarget Target => Callback.Target;
 

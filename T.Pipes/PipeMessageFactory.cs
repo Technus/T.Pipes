@@ -9,27 +9,19 @@ namespace T.Pipes
   public class PipeMessageFactory : IPipeMessageFactory<PipeMessage>
   {
     /// <inheritdoc/>
-    public PipeMessage Create(string command)
-    {
-      return new() { Command = command, Id = Guid.NewGuid() };
-    }
+    public PipeMessage Create(string command) 
+      => new() { Command = command, Id = Guid.NewGuid() };
 
     /// <inheritdoc/>
-    public PipeMessage Create(string command, object? parameter)
-    {
-      return new() { Command = command, Id = Guid.NewGuid(), Parameter = parameter };
-    }
+    public PipeMessage Create(string command, object? parameter) 
+      => new() { Command = command, Id = Guid.NewGuid(), Parameter = parameter };
 
     /// <inheritdoc/>
-    public PipeMessage CreateResponse(PipeMessage commandMessage)
-    {
-      return new() { Command = commandMessage.Command, Id = commandMessage.Id };
-    }
+    public PipeMessage CreateResponse(PipeMessage commandMessage) 
+      => new() { Command = commandMessage.Command, Id = commandMessage.Id };
 
     /// <inheritdoc/>
     public PipeMessage CreateResponse(PipeMessage commandMessage, object? parameter)
-    {
-      return new() { Command = commandMessage.Command, Id = commandMessage.Id, Parameter = parameter };
-    }
+      => new() { Command = commandMessage.Command, Id = commandMessage.Id, Parameter = parameter };
   }
 }

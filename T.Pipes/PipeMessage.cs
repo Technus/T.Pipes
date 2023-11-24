@@ -21,7 +21,7 @@ namespace T.Pipes
     public object? Parameter { get; set; }
 
     /// <summary>
-    /// For convience returns the same thing as debugger display
+    /// For convenience returns the same thing as debugger display
     /// </summary>
     /// <returns>debugger display string</returns>
     public override string ToString() => $"{Id} / {Command} / {Parameter}";

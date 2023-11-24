@@ -14,8 +14,9 @@ namespace T.Pipes.Test.Client
 
       AppDomain.CurrentDomain.ProcessExit += (object? sender, EventArgs e) => client.Dispose();
 
-      await client.StartAsync()
-        .ContinueWith(static async x => { await x; Environment.Exit(-1); }, TaskContinuationOptions.NotOnRanToCompletion); ;
+      var task = client.StartAsync();
+      _ = task.ContinueWith(static x => Environment.Exit(-1), TaskContinuationOptions.NotOnRanToCompletion);
+      await task;
 
       await Task.Delay(Timeout.Infinite);
     }
