@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -83,8 +84,14 @@ namespace T.Pipes.SourceGeneration
       RenderSelector(typeDefinition);
       RenderTargetHandling(typeDefinition);
       RenderImplementation(typeDefinition);
+      typeDefinition.ImplementingTypes?.ForEach(RenderCast);
       writer.DecreaseIndent();
     }
+
+    private void RenderCast(ISymbol symbol) => writer
+      .WriteLine($$"""
+      public {{symbol?.ToDisplayString()}} As{{() => RenderTypeName((INamedTypeSymbol)symbol!,true)}} => ({{symbol?.ToDisplayString()}})Target;
+      """);
 
     private void RenderImplementation(TypeDefinition typeDefinition) 
       => typeDefinition.ServeMemberDeclarations.ForEach(RenderImplementation);
@@ -686,13 +693,18 @@ namespace T.Pipes.SourceGeneration
       writer.WriteLine('}');
     }
 
-    private void RenderName(ISymbol x, bool served, string prefix = "")
+    private void RenderTypeName(INamedTypeSymbol x, bool served)
     {
       writer
         //.Write(served?"Serve_":"Using_")
-        .Write(x.ContainingType.Name);
-      if (x.ContainingType.Arity > 0)
-        writer.Write(x.ContainingType.Arity);
+        .Write(x.Name);
+      if (x.Arity > 0)
+        writer.Write(x.Arity);
+    }
+
+    private void RenderName(ISymbol x, bool served, string prefix = "")
+    {
+      RenderTypeName(x.ContainingType, served);
       writer
         .Write('_')
         .Write(prefix)

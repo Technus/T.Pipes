@@ -64,11 +64,17 @@ namespace T.Pipes.Test.Server
     private async Task<T> CreateInternal<T>(string command, T implementationServer) 
       where T : IPipeDelegatingConnection<PipeMessage>
     {
-      _ = implementationServer.Callback.FailedOnce.ContinueWith(x =>
+      var failedOnce = implementationServer.Callback.FailedOnce;
+
+      _ = failedOnce.ContinueWith(x =>
       {
         _mapping.Remove(implementationServer.ServerName);
         _ = implementationServer.DisposeAsync();
       }, TaskContinuationOptions.OnlyOnRanToCompletion);
+
+      _ = failedOnce.ContinueWith(x =>
+        _mapping.Remove(implementationServer.ServerName), TaskContinuationOptions.OnlyOnCanceled);
+
       await implementationServer.StartAsync();
       _ = Pipe.WriteAsync(PipeMessageFactory.Create(command, implementationServer.ServerName));
       var connectedTask = implementationServer.Callback.ConnectedOnce;

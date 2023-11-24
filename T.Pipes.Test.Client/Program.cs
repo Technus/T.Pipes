@@ -10,15 +10,16 @@ namespace T.Pipes.Test.Client
       //Debugger.Launch();
 #endif
 
-      var client = new Client();
+      using (var client = new Client())
+      {
+        AppDomain.CurrentDomain.ProcessExit += (object? sender, EventArgs e) => client.Dispose();
 
-      AppDomain.CurrentDomain.ProcessExit += (object? sender, EventArgs e) => client.Dispose();
+        var task = client.StartAsync();
+        _ = task.ContinueWith(static x => Environment.Exit(-1), TaskContinuationOptions.NotOnRanToCompletion);
+        await task;
 
-      var task = client.StartAsync();
-      _ = task.ContinueWith(static x => Environment.Exit(-1), TaskContinuationOptions.NotOnRanToCompletion);
-      await task;
-
-      await Task.Delay(Timeout.Infinite);
+        await Task.Delay(Timeout.Infinite);
+      }
     }
   }
 }

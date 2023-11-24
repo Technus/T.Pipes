@@ -177,7 +177,7 @@ namespace T.Pipes
     /// <summary>
     /// DeInitialization logic for old target
     /// </summary>
-    /// <param name="target">the target to deinitialize against</param>
+    /// <param name="target">the target to de-initialize against</param>
     protected virtual void TargetDeInit(TTarget target) { }
 
     /// <summary>
@@ -237,9 +237,8 @@ namespace T.Pipes
     /// Disposes own resources, not the <see cref="Pipe"/> nor the <see cref="Target"/>
     /// </summary>
     /// <returns></returns>
-    public virtual async ValueTask DisposeAsync()
+    public virtual ValueTask DisposeAsync()
     {
-      await _semaphore.WaitAsync();
       _semaphore.Dispose();
       if (_responses.Any())
       {
@@ -260,8 +259,9 @@ namespace T.Pipes
         TargetDeInit(_target);
       }
       _functions.Clear();
-      _ = _failedOnce.TrySetResult(null);
+      _ = _failedOnce.TrySetCanceled();
       _ = _connectedOnce.TrySetCanceled();
+      return default;
     }
 
     /// <summary>
@@ -297,7 +297,7 @@ namespace T.Pipes
     public virtual void OnExceptionOccurred(Exception e)
     {
       Clear(e);
-      _ = _failedOnce.TrySetResult(null);
+      _ = _failedOnce.TrySetException(e);
       _ = _connectedOnce.TrySetException(e);
     }
 

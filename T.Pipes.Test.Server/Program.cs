@@ -1,7 +1,4 @@
-﻿using System.Diagnostics;
-using T.Pipes.Test.Abstractions;
-
-namespace T.Pipes.Test.Server
+﻿namespace T.Pipes.Test.Server
 {
   internal class Program
   {
@@ -11,24 +8,24 @@ namespace T.Pipes.Test.Server
       //Debugger.Launch();
 #endif
 
-      var server = new Server();
+      using (var server = new Server())
+      {
+        AppDomain.CurrentDomain.ProcessExit += (object? sender, EventArgs e) => server.Dispose();
 
-      AppDomain.CurrentDomain.ProcessExit += (object? sender, EventArgs e) => server.Dispose();
+        var task = server.StartAsync();
+        _ = task.ContinueWith(static x => Environment.Exit(-1), TaskContinuationOptions.NotOnRanToCompletion);
+        await task;
 
-      var task = server.StartAsync();
-      _ = task.ContinueWith(static x => Environment.Exit(-1), TaskContinuationOptions.NotOnRanToCompletion);
-      await task;
+        using (var item = server.Create())
+        {
+          var target = item.Callback.AsIAbstract;
+          var target1 = item.Callback.AsIAbstract1;
 
-      var item = server.Create();
-
-      var target = item.Callback as IAbstract;
-      var target1 = item.Callback as IAbstract<int>;
-
-      var papa = target.GetInt();
-
-
-      await item.DisposeAsync();
-
+          var papa = target.GetInt();
+          var papa1 = target1.GetT();
+        }
+        await Task.Delay(1000);
+      }
       await Task.Delay(Timeout.Infinite);
     }
   }

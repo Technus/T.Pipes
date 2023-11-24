@@ -81,12 +81,21 @@ namespace T.Pipes.Test.Client
 
         var proxy = CreateRequestedObjectProxy(command);
 
-        _ = proxy.Callback.FailedOnce.ContinueWith(async x =>
+        var failedOnce = proxy.Callback.FailedOnce;
+
+        _ = failedOnce.ContinueWith(async x =>
         {
           _mapping.Remove(proxy.ServerName);
           await proxy.DisposeAsync();
           proxy.Callback.Target.Dispose();
         }, TaskContinuationOptions.OnlyOnRanToCompletion);
+
+        _ = failedOnce.ContinueWith(x =>
+        {
+          _mapping.Remove(proxy.ServerName);
+          proxy.Callback.Target.Dispose();
+        }, TaskContinuationOptions.OnlyOnCanceled);
+
         var startTask = proxy.StartAsync();
         using var cts = new CancellationTokenSource();
         if (await Task.WhenAny(startTask, Task.Delay(PipeConstants.ConnectionAwaitTimeMs, cts.Token)) == startTask)

@@ -4,7 +4,7 @@ using T.Pipes.Test.Abstractions;
 namespace T.Pipes.Test.Server
 {
   [PipeServe(typeof(IAbstract))]
-  [PipeServe(typeof(IAbstract<int>))]
+  [PipeServe(typeof(IAbstract<short>))]
   internal partial class Callback : DelegatingPipeServerCallback<Callback>
   {
     public Callback(H.Pipes.PipeServer<PipeMessage> pipe) : base(pipe)
