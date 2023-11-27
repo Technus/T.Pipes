@@ -13,7 +13,7 @@ namespace T.Pipes.Test.Client
 
     public Client() => Pipe = new(PipeConstants.ServerName, new());
 
-    public void Dispose() => DisposeAsync().AsTask().Wait();
+    public void Dispose() => DisposeAsync().GetAwaiter().GetResult();
 
     public async ValueTask DisposeAsync()
     {
