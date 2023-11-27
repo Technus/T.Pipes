@@ -187,11 +187,11 @@ namespace T.Pipes.SourceGeneration
     private void RenderStaticSelector(TypeDefinition typeDefinition) => writer
       .Write($$"""
       static {{typeDefinition.TypeDeclarationSyntax.Identifier}}(){
-        RegisterCommandSelectorFunctions();
+        RegisterCommandSelectorFunctionsFor{{()=>RenderTypeSyntaxName(typeDefinition)}}();
       }
 
       [System.ComponentModel.Description("CommandSelector")]
-      static protected void RegisterCommandSelectorFunctions()
+      static protected void RegisterCommandSelectorFunctionsFor{{() => RenderTypeSyntaxName(typeDefinition)}}()
       {{() => RenderStaticSelectorBody(typeDefinition)}}
       """);
 
@@ -794,6 +794,13 @@ namespace T.Pipes.SourceGeneration
         writer.Write(x.Arity);
     }
 
+    private void RenderTypeSyntaxName(TypeDefinition typeDefinition)
+    {
+      writer.Write(typeDefinition.TypeDeclarationSyntax.Identifier);
+      if (typeDefinition.TypeDeclarationSyntax.Arity > 0)
+        writer.Write(typeDefinition.TypeDeclarationSyntax.Arity);
+    }
+
     private void RenderName(TypeDefinition typeDefinition, ISymbol x, bool served, string prefix = "")
     {
       writer
@@ -802,10 +809,8 @@ namespace T.Pipes.SourceGeneration
         .Write('_');
       RenderTypeName(x.ContainingType, served);
       writer
-        .Write('_')
-        .Write(typeDefinition.TypeDeclarationSyntax.Identifier);
-      if (typeDefinition.TypeDeclarationSyntax.Arity > 0)
-        writer.Write(typeDefinition.TypeDeclarationSyntax.Arity);
+        .Write('_');
+      RenderTypeSyntaxName(typeDefinition);
     }
 
     private string GetName(TypeDefinition typeDefinition, ISymbol x, bool served, string prefix = "")
