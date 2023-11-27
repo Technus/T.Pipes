@@ -4,42 +4,56 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace T.Pipes.SourceGeneration
 {
-  internal struct TypeDefinition
+  internal class TypeDefinition
   {
-    public TypeDeclarationSyntax TypeDeclarationSyntax { get; set; }
+    public TypeDefinition(
+      TypeDeclarationSyntax typeDeclarationSyntax, 
+      string name, 
+      string namespaceName,
+      List<string> typeList,
+      List<ISymbol> serveMemberDeclarations,
+      List<ISymbol> usedMemberDeclarations, 
+      List<ITypeSymbol> implementingTypes)
+    {
+      TypeDeclarationSyntax = typeDeclarationSyntax;
+      Name = name;
+      Namespace = namespaceName;
+      TypeList = typeList;
+      ServeMemberDeclarations = serveMemberDeclarations;
+      UsedMemberDeclarations = usedMemberDeclarations;
+      Commands = [];
+      ImplementingTypes = implementingTypes;
+    }
+
+    public TypeDeclarationSyntax TypeDeclarationSyntax { get; }
 
     /// <summary>
     /// The output file name
     /// </summary>
-    public string Name { get; set; }
+    public string Name { get; }
 
     /// <summary>
     /// The namespace
     /// </summary>
-    public string Namespace { get; set; }
-
-    /// <summary>
-    /// The usings to write
-    /// </summary>
-    public List<string> UsingList { get; set; }
+    public string Namespace { get; }
 
     /// <summary>
     /// In case of types rooted in other types
     /// </summary>
-    public List<string> TypeList { get; set; }
+    public List<string> TypeList { get; }
 
     /// <summary>
     /// Members in the type to write
     /// </summary>
-    public List<ISymbol> ServeMemberDeclarations { get; set; }
+    public List<ISymbol> ServeMemberDeclarations { get; }
 
     /// <summary>
     /// Members in the type to write
     /// </summary>
-    public List<ISymbol> UsedMemberDeclarations { get; set; }
+    public List<ISymbol> UsedMemberDeclarations { get; }
 
-    public Dictionary<string, (ISymbol method, IMethodSymbol invoke)> Commands { get; set; }
+    public Dictionary<string, (ISymbol method, IMethodSymbol invoke)> Commands { get; }
 
-    public List<ISymbol> ImplementingTypes { get; set; }
+    public List<ITypeSymbol> ImplementingTypes { get; }
   }
 }

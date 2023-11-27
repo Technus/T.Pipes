@@ -45,13 +45,12 @@ namespace T.Pipes.SourceGeneration
       classes = classes.Where(static x => x is not null).Distinct().ToImmutableArray();
       if (classes.Length > 0)
       {
-
+        var p = new Parser(compilation, context.ReportDiagnostic, context.CancellationToken);
         foreach (var item in classes)
         {
-          var p = new Parser(compilation, context.ReportDiagnostic, context.CancellationToken);
-          var e = new Emitter(context.CancellationToken);
           var typeDefinition = p.GenerateType(item!);
-          var (hintName, source) = e.EmitType(typeDefinition);
+          var e = new Emitter(context.CancellationToken, typeDefinition);
+          var (hintName, source) = e.EmitType();
           context.ReportDiagnostic(Diagnostic.Create(GeneretedFileDescriptor, null, hintName));
           context.AddSource(hintName, SourceText.From(source, Encoding.UTF8));
         }

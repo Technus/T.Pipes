@@ -1,20 +1,32 @@
-﻿using System;
-using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using Microsoft.CodeAnalysis;
 
 namespace T.Pipes.SourceGeneration
 {
   internal static class Extensions
   {
-    private static Lazy<bool> _debuggerLaunch = new(System.Diagnostics.Debugger.Launch);
+    internal static IMethodSymbol InvokeSymbol(this IEventSymbol eventSymbol) 
+      => (IMethodSymbol)eventSymbol.Type.GetMembers().Where(x => x.Name == "Invoke").First();
 
-    [DebuggerStepThrough]
-    public static void Debugger() => _ = _debuggerLaunch.Value;
+    internal static string TypeUse(this ITypeSymbol symbol) 
+      => symbol.ToDisplayString();
 
-    public static SemanticModel GetSemanticModel(this Compilation compilation, SyntaxNode syntaxNode) => compilation.GetSemanticModel(syntaxNode.SyntaxTree);
+    internal static string Prefix(this IParameterSymbol parameterSymbol)
+    {
+      switch (parameterSymbol.RefKind)
+      {
+        case RefKind.Ref: return "ref ";
+        case RefKind.Out: return "out ";
+        case RefKind.In:
+        case RefKind.In + 1: return "in ";
+        default: return "";
+      }
+    }
 
-    public static bool TryGetParentSyntax<T>(this SyntaxNode? syntaxNode, [NotNullWhen(true)] out T? result) where T : SyntaxNode
+    internal static SemanticModel GetSemanticModel(this Compilation compilation, SyntaxNode syntaxNode) => compilation.GetSemanticModel(syntaxNode.SyntaxTree);
+
+    internal static bool TryGetParentSyntax<T>(this SyntaxNode? syntaxNode, [NotNullWhen(true)] out T? result) where T : SyntaxNode
     {
       // set defaults
 

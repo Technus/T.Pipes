@@ -28,25 +28,24 @@ namespace T.Pipes.SourceGeneration
     internal TypeDefinition GenerateType(TypeDeclarationSyntax classy)
     {
       var (served, used, implementing) = GetMembers(classy);
-      return new()
-      {
-        TypeDeclarationSyntax = classy,
-        Name = GetHintName(classy),
-        Namespace = classy.TryGetParentSyntax<NamespaceDeclarationSyntax>(out var parent) ? parent.Name.ToString() : throw new ArgumentException("Has no Namespace", nameof(classy)),
-        TypeList = GetTypeList(classy),
-        UsingList = new() { },
-        ServeMemberDeclarations = served,
-        UsedMemberDeclarations = used,
-        Commands = new() { },
-        ImplementingTypes = implementing,
-      };
+      return new(
+        typeDeclarationSyntax: classy,
+        name: GetHintName(classy),
+        namespaceName: classy.TryGetParentSyntax<NamespaceDeclarationSyntax>(out var parent) 
+          ? parent.Name.ToString() 
+          : throw new ArgumentException("Has no Namespace", nameof(classy)),
+        typeList: GetTypeList(classy),
+        serveMemberDeclarations: served,
+        usedMemberDeclarations: used,
+        implementingTypes: implementing
+      );
     }
 
-    private (List<ISymbol> served, List<ISymbol> used, List<ISymbol> implementing) GetMembers(TypeDeclarationSyntax classy)
+    private (List<ISymbol> served, List<ISymbol> used, List<ITypeSymbol> implementing) GetMembers(TypeDeclarationSyntax classy)
     {
       var served = new List<ISymbol>();
       var used = new List<ISymbol>();
-      var implementing = new List<ISymbol>();
+      var implementing = new List<ITypeSymbol>();
 
       foreach (var item in classy.Members)
       {
@@ -121,7 +120,7 @@ namespace T.Pipes.SourceGeneration
       return typeDef;
     }
 
-    private IEnumerable<ISymbol> MakeImplementedTypes(AttributeSyntax attribute)
+    private IEnumerable<ITypeSymbol> MakeImplementedTypes(AttributeSyntax attribute)
     {
       if (attribute.ArgumentList is null)
       {
