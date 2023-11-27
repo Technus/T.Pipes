@@ -1,6 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Text;
 using System.Threading;
 using CodegenCS;
@@ -94,23 +94,23 @@ namespace T.Pipes.SourceGeneration
       """);
 
     private void RenderImplementation(TypeDefinition typeDefinition) 
-      => typeDefinition.ServeMemberDeclarations.ForEach(RenderImplementation);
+      => typeDefinition.ServeMemberDeclarations.ForEach(x => RenderImplementation(typeDefinition, x));
 
-    private void RenderImplementation(ISymbol x)
+    private void RenderImplementation(TypeDefinition typeDefinition, ISymbol x)
     {
       switch (x)
       {
-        case IPropertySymbol propertySymbol: RenderNewProperty(propertySymbol); break;
-        case IEventSymbol eventSymbol: RenderNewEvent(eventSymbol); break;
-        case IMethodSymbol methodSymbol when methodSymbol.MethodKind == MethodKind.Ordinary: RenderNewMethod(methodSymbol); break;
+        case IPropertySymbol propertySymbol: RenderNewProperty(typeDefinition, propertySymbol); break;
+        case IEventSymbol eventSymbol: RenderNewEvent(typeDefinition, eventSymbol); break;
+        case IMethodSymbol methodSymbol when methodSymbol.MethodKind == MethodKind.Ordinary: RenderNewMethod(typeDefinition, methodSymbol); break;
         default: writer.Write("//").WriteLine(x.Name); break;
       }
     }
 
-    private void RenderNewMethod(IMethodSymbol methodSymbol) => writer
+    private void RenderNewMethod(TypeDefinition typeDefinition, IMethodSymbol methodSymbol) => writer
       .WriteLine($$"""
       {{methodSymbol.ReturnType.ToDisplayString()}} {{methodSymbol.ContainingType.ToDisplayString()}}.{{methodSymbol.Name}}({{()=>RenderParameters(methodSymbol.Parameters)}})
-        => {{()=>RenderName(methodSymbol,true)}}({{()=>RenderStrings(methodSymbol.Parameters.Select(x=> Prefix(x) + x.Name).ToArray())}});
+        => {{()=>RenderName(typeDefinition, methodSymbol, true)}}({{()=>RenderStrings(methodSymbol.Parameters.Select(x=> Prefix(x) + x.Name).ToArray())}});
       """);
 
     private string Prefix(IParameterSymbol parameterSymbol)
@@ -125,23 +125,23 @@ namespace T.Pipes.SourceGeneration
       }
     }
 
-    private void RenderNewEvent(IEventSymbol eventSymbol) => writer
+    private void RenderNewEvent(TypeDefinition typeDefinition, IEventSymbol eventSymbol) => writer
       .WriteLine($$"""
-      internal {{eventSymbol.Type.ToDisplayString()}} {{() => RenderName(eventSymbol, true,"event_")}};
+      internal {{eventSymbol.Type.ToDisplayString()}} {{() => RenderName(typeDefinition, eventSymbol, true,"event_")}};
       event {{eventSymbol.Type.ToDisplayString()}} {{eventSymbol.ContainingType.ToDisplayString()}}.{{eventSymbol.Name}}
       { 
-        add => {{() => RenderName(eventSymbol, true, "event_")}} += value;
-        remove => {{() => RenderName(eventSymbol, true, "event_")}} -= value;
+        add => {{() => RenderName(typeDefinition, eventSymbol, true, "event_")}} += value;
+        remove => {{() => RenderName(typeDefinition, eventSymbol, true, "event_")}} -= value;
       }
 
       """);
 
-    private void RenderNewProperty(IPropertySymbol propertySymbol) => writer
+    private void RenderNewProperty(TypeDefinition typeDefinition, IPropertySymbol propertySymbol) => writer
       .WriteLine($$"""
       {{propertySymbol.Type.ToDisplayString()}} {{propertySymbol.ContainingType.ToDisplayString()}}.{{propertySymbol.Name}}
       { 
-        get => {{()=>RenderName(propertySymbol,true,"get_")}}(); 
-        set => {{() => RenderName(propertySymbol, true, "set_")}}(value); 
+        get => {{()=>RenderName(typeDefinition, propertySymbol,true,"get_")}}(); 
+        set => {{() => RenderName(typeDefinition, propertySymbol, true, "set_")}}(value); 
       }
       """);
 
@@ -152,35 +152,35 @@ namespace T.Pipes.SourceGeneration
       protected override void TargetInitAuto()
       {
         base.TargetInitAuto();
-      {{() => RenderEventHandling(typeDefinition.UsedMemberDeclarations.Where(x => x is IEventSymbol).Cast<IEventSymbol>().ToArray(), true)}}
+      {{() => RenderEventHandling(typeDefinition, typeDefinition.UsedMemberDeclarations.Where(x => x is IEventSymbol).Cast<IEventSymbol>().ToArray(), true)}}
       }
       
       [System.ComponentModel.Description("TargetDeInit")]
       protected override void TargetDeInitAuto()
       {
         base.TargetDeInitAuto();
-      {{() => RenderEventHandling(typeDefinition.UsedMemberDeclarations.Where(x => x is IEventSymbol).Cast<IEventSymbol>().ToArray(), false)}}
+      {{() => RenderEventHandling(typeDefinition, typeDefinition.UsedMemberDeclarations.Where(x => x is IEventSymbol).Cast<IEventSymbol>().ToArray(), false)}}
       }
 
       """);
 
-    private void RenderEventHandling(IReadOnlyList<IEventSymbol> symbols, bool v)
+    private void RenderEventHandling(TypeDefinition typeDefinition, IReadOnlyList<IEventSymbol> symbols, bool v)
     {
       writer.IncreaseIndent();
 
       foreach (var item in symbols)
       {
-        RenderEventHandling(item, v);
+        RenderEventHandling(typeDefinition, item, v);
       }
 
       writer.DecreaseIndent();
     }
 
-    private void RenderEventHandling(IEventSymbol x, bool v)
+    private void RenderEventHandling(TypeDefinition typeDefinition, IEventSymbol x, bool v)
     {
       writer.Write($$"""(({{x.ContainingType.ToDisplayString()}}?) Target)!.{{x.Name}}""");
       writer.Write(v ? " += ": " -= ");
-      RenderName(x, false, "invoke_");
+      RenderName(typeDefinition, x, false, "invoke_");
       writer.WriteLine(';');
     }
 
@@ -474,11 +474,11 @@ namespace T.Pipes.SourceGeneration
       {
         if (x.ReturnsVoid)
         {
-          writer.Write($$"""{{() => RenderName(eventSymbol, true, "event_")}}?.Invoke({{()=>RenderStrings(x.Parameters.Select(x=>x.Name).ToArray())}});""");
+          writer.Write($$"""{{() => RenderName(typeDefinition, eventSymbol, true, "event_")}}?.Invoke({{()=>RenderStrings(x.Parameters.Select(x=>x.Name).ToArray())}});""");
         }
         else
         {
-          writer.Write($$"""return {{() => RenderName(eventSymbol, true, "event_")}}?.Invoke({{() => RenderStrings(x.Parameters.Select(x => x.Name).ToArray())}}) ?? default;""");
+          writer.Write($$"""return {{() => RenderName(typeDefinition, eventSymbol, true, "event_")}}?.Invoke({{() => RenderStrings(x.Parameters.Select(x => x.Name).ToArray())}}) ?? default;""");
         }
       }
       else
@@ -515,7 +515,7 @@ namespace T.Pipes.SourceGeneration
         }
 
         writer.Write("(\"");
-        RenderName(eventSymbol, served, "invoke_");
+        RenderName(typeDefinition, eventSymbol, served, "invoke_");
         writer.Write('"');
         if (input.Count > 0)
           writer.Write(", ");
@@ -575,7 +575,7 @@ namespace T.Pipes.SourceGeneration
           {
             if (served)
             {
-              writer.Write($$"""return Remote<{{x.ReturnType.ToDisplayString()}}>("{{()=> RenderName(x,served)}}");""");
+              writer.Write($$"""return Remote<{{x.ReturnType.ToDisplayString()}}>("{{()=> RenderName(typeDefinition, x,served)}}");""");
             }
             else
             {
@@ -587,7 +587,7 @@ namespace T.Pipes.SourceGeneration
           {
             if (served)
             {
-              writer.Write($$"""Remote<{{x.Parameters[0].Type.ToDisplayString()}}>("{{() => RenderName(x, served)}}", value);""");
+              writer.Write($$"""Remote<{{x.Parameters[0].Type.ToDisplayString()}}>("{{() => RenderName(typeDefinition, x, served)}}", value);""");
             }
             else
             {
@@ -630,7 +630,7 @@ namespace T.Pipes.SourceGeneration
               }
 
               writer.Write("(\"");
-              RenderName(x, served);
+              RenderName(typeDefinition, x, served);
               writer.Write('"');
               if(input.Count > 0)
                 writer.Write(", ");
@@ -794,25 +794,38 @@ namespace T.Pipes.SourceGeneration
         writer.Write(x.Arity);
     }
 
-    private void RenderName(ISymbol x, bool served, string prefix = "")
+    private void RenderName(TypeDefinition typeDefinition, ISymbol x, bool served, string prefix = "")
     {
+      writer
+        .Write(prefix)
+        .Write(x.Name)
+        .Write('_');
       RenderTypeName(x.ContainingType, served);
       writer
         .Write('_')
-        .Write(prefix)
-        .Write(x.Name);
+        .Write(typeDefinition.TypeDeclarationSyntax.Identifier);
+      if (typeDefinition.TypeDeclarationSyntax.Arity > 0)
+        writer.Write(typeDefinition.TypeDeclarationSyntax.Arity);
     }
 
-    private string GetName(ISymbol x, bool served, string prefix = "")
+    private string GetName(TypeDefinition typeDefinition, ISymbol x, bool served, string prefix = "")
     {
-      var sb = new StringBuilder();
-      sb.Append(x.ContainingType.Name);
+      var writer = new StringBuilder();
+      writer
+        .Append(prefix)
+        .Append(x.Name)
+        .Append('_');
+      writer
+        //.Write(served?"Serve_":"Using_")
+        .Append(x.ContainingType.Name);
       if (x.ContainingType.Arity > 0)
-        sb.Append(x.ContainingType.Arity);
-      sb.Append('_');
-      sb.Append(prefix);
-      sb.Append(x.Name);
-      return sb.ToString();
+        writer.Append(x.ContainingType.Arity);
+      writer
+        .Append('_')
+        .Append(typeDefinition.TypeDeclarationSyntax.Identifier);
+      if (typeDefinition.TypeDeclarationSyntax.Arity > 0)
+        writer.Append(typeDefinition.TypeDeclarationSyntax.Arity);
+      return writer.ToString();
     }
 
     private void RenderSignature(TypeDefinition typeDefinition, IEventSymbol x, bool served)
@@ -827,13 +840,13 @@ namespace T.Pipes.SourceGeneration
       writer
         .Write(invoke.ReturnType.ToDisplayString())//todo actual return type of event
         .Write(' ');
-      RenderName(x, served, "invoke_");
+      RenderName(typeDefinition, x, served, "invoke_");
       writer.Write('(');
       RenderParameters(invoke.Parameters);
       writer.Write(')');
 
       if(served)
-        typeDefinition.Commands[GetName(x, served, "invoke_")] = (x,invoke);
+        typeDefinition.Commands[GetName(typeDefinition, x, served, "invoke_")] = (x,invoke);
     }
 
     private void RenderSignature(TypeDefinition typeDefinition, IMethodSymbol x, bool served)
@@ -849,7 +862,7 @@ namespace T.Pipes.SourceGeneration
         writer
           .Write(x.ReturnType.ToDisplayString())
           .Write(' ');
-        RenderName(x, served);
+        RenderName(typeDefinition, x, served);
         if (x.TypeParameters.Length > 0)
         {
           writer.Write('<');
@@ -886,7 +899,7 @@ namespace T.Pipes.SourceGeneration
           writer.Write(')');
         }
         writer.Write(' ');
-        RenderName(x, served);
+        RenderName(typeDefinition, x, served);
         if (x.TypeParameters.Length > 0)
         {
           writer.Write('<');
@@ -912,7 +925,7 @@ namespace T.Pipes.SourceGeneration
         writer.Write(')');
 
         if (x.TypeParameters.Length == 0)
-          typeDefinition.Commands[GetName(x, served)] = (x, x);
+          typeDefinition.Commands[GetName(typeDefinition, x, served)] = (x, x);
       }
     }
 
