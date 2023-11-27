@@ -23,8 +23,8 @@ namespace T.Pipes.Test.Server
           var target = item.Callback.AsIAbstract;
           var target1 = item.Callback.AsIAbstract1;
 
-          Console.WriteLine($"{nameof(target.GetInt)} = {target.GetInt()}".Pastel(ConsoleColor.Green));
-          Console.WriteLine($"{nameof(target1.GetT)} = {target1.GetT()}".Pastel(ConsoleColor.Green));
+          target.GetInt();
+          target1.GetT();
         }
         await Task.Delay(1000);
       }

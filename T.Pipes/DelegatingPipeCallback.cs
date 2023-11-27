@@ -1,11 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net.NetworkInformation;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Timers;
-using H.Pipes;
 using T.Pipes.Abstractions;
 
 namespace T.Pipes
@@ -230,12 +227,12 @@ namespace T.Pipes
     /// <summary>
     /// Used to access data tunnel
     /// </summary>
-    protected TPipe Pipe { get; }
+    public TPipe Pipe { get; }
 
     /// <summary>
     /// Used to create packets
     /// </summary>
-    protected TPacketFactory PacketFactory { get; }
+    public TPacketFactory PacketFactory { get; }
 
     /// <summary>
     /// Use to check if connection was established correctly the first time
@@ -279,8 +276,8 @@ namespace T.Pipes
       _semaphore.Dispose();
       if (_responses.Any())
       {
-        var name = Pipe is IPipeServer<TPacket> server ? $"Server Pipe: {server.PipeName}"
-          : Pipe is IPipeClient<TPacket> client ? $"Server: {client.ServerName}, Pipe: {client.PipeName}"
+        var name = Pipe is H.Pipes.IPipeServer<TPacket> server ? $"Server Pipe: {server.PipeName}"
+          : Pipe is H.Pipes.IPipeClient<TPacket> client ? $"Server: {client.ServerName}, Pipe: {client.PipeName}"
           : "Unknown Pipe";
         var disposingException = new ObjectDisposedException(name);
 
@@ -343,7 +340,7 @@ namespace T.Pipes
     /// Else calls <see cref="OnCommandReceived(TPacket)"/>
     /// </summary>
     /// <param name="message"></param>
-    public void OnMessageReceived(TPacket? message)
+    public virtual void OnMessageReceived(TPacket? message)
     {
       if (message is null)
       {
@@ -460,13 +457,25 @@ namespace T.Pipes
 #nullable restore
 
     /// <summary>
+    /// Writes to the pipe directly and calls the Callback On Write
+    /// </summary>
+    /// <param name="message"></param>
+    /// <returns></returns>
+    /// <remarks>do not write to the pipe directly, use that instead</remarks>
+    public void Write(TPacket message)
+    {
+      OnMessageSent(message);
+      _ = Pipe.WriteAsync(message);
+    }
+
+    /// <summary>
     /// Sends response using <see cref="IPipeMessageFactory{TPacket}.CreateResponse(TPacket)"/>
     /// </summary>
     /// <param name="message"></param>
     public void SendResponse(TPacket message)
     {
       var response = PacketFactory.CreateResponse(message);
-      _ = Pipe.WriteAsync(response);
+      Write(response);
     }
 
     /// <summary>
@@ -478,7 +487,7 @@ namespace T.Pipes
     public void SendResponse<T>(TPacket message, T parameter)
     {
       var response = PacketFactory.CreateResponse(message, parameter);
-      _ = Pipe.WriteAsync(response);
+      Write(response);
     }
 
     /// <summary>
@@ -490,7 +499,7 @@ namespace T.Pipes
     public async Task<TOut> RemoteAsync<TOut>(string callerName)
     {
       var cmd = PacketFactory.Create(callerName);
-      _ = Pipe.WriteAsync(cmd);
+      Write(cmd);
       return await GetResponseAsync<TOut>(cmd);
     }
 
@@ -505,7 +514,7 @@ namespace T.Pipes
     public async Task<TOut> RemoteAsync<TIn, TOut>(string callerName, TIn? parameter)
     {
       var cmd = PacketFactory.Create(callerName, parameter);
-      _ = Pipe.WriteAsync(cmd);
+      Write(cmd);
       return await GetResponseAsync<TOut>(cmd);
     }
 
@@ -517,7 +526,7 @@ namespace T.Pipes
     public async Task RemoteAsync(string callerName)
     {
       var cmd = PacketFactory.Create(callerName);
-      _ = Pipe.WriteAsync(cmd);
+      Write(cmd);
       await GetResponseAsync<object?>(cmd);
     }
 
@@ -531,7 +540,7 @@ namespace T.Pipes
     public async Task RemoteAsync<TIn>(string callerName, TIn? parameter)
     {
       var cmd = PacketFactory.Create(callerName, parameter);
-      _ = Pipe.WriteAsync(cmd);
+      Write(cmd);
       await GetResponseAsync<object?>(cmd);
     }
 
@@ -544,7 +553,7 @@ namespace T.Pipes
     public TOut Remote<TOut>(string callerName)
     {
       var cmd = PacketFactory.Create(callerName);
-      _ = Pipe.WriteAsync(cmd);
+      Write(cmd);
       return GetResponse<TOut>(cmd);
     }
 
@@ -559,7 +568,7 @@ namespace T.Pipes
     public TOut Remote<TIn, TOut>(string callerName, TIn? parameter)
     {
       var cmd = PacketFactory.Create(callerName, parameter);
-      _ = Pipe.WriteAsync(cmd);
+      Write(cmd);
       return GetResponse<TOut>(cmd);
     }
 
@@ -570,7 +579,7 @@ namespace T.Pipes
     public void Remote(string callerName)
     {
       var cmd = PacketFactory.Create(callerName);
-      _ = Pipe.WriteAsync(cmd);
+      Write(cmd);
       GetResponse<object?>(cmd);
     }
 
@@ -583,7 +592,7 @@ namespace T.Pipes
     public void Remote<TIn>(string callerName, TIn? parameter)
     {
       var cmd = PacketFactory.Create(callerName, parameter);
-      _ = Pipe.WriteAsync(cmd);
+      Write(cmd);
       GetResponse<object?>(cmd);
     }
   }

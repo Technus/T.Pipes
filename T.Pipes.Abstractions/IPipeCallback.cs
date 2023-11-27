@@ -24,6 +24,7 @@ namespace T.Pipes.Abstractions
     /// Triggers when receiving
     /// </summary>
     /// <param name="message"></param>
+    /// <remarks>To prevent circular dependencies must also be called inside callback before writing to pure pipe, (not the wrapped pipe)</remarks>
     void OnMessageReceived(TMessage? message);
 
     /// <summary>

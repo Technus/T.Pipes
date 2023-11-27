@@ -1,4 +1,5 @@
-﻿using T.Pipes.Abstractions;
+﻿using Pastel;
+using T.Pipes.Abstractions;
 using T.Pipes.Test.Abstractions;
 
 namespace T.Pipes.Test.Client
@@ -11,6 +12,18 @@ namespace T.Pipes.Test.Client
   {
     public Callback(H.Pipes.PipeClient<PipeMessage> pipe, TTarget target) : base(pipe, target)
     {
+    }
+
+    public override void OnMessageReceived(PipeMessage message)
+    {
+      Console.WriteLine(("I: " + message.ToString()).Pastel(ConsoleColor.Yellow).PastelBg(ConsoleColor.DarkYellow));
+      base.OnMessageReceived(message);
+    }
+
+    public override void OnMessageSent(PipeMessage message)
+    {
+      Console.WriteLine(("O: " + message.ToString()).Pastel(ConsoleColor.Yellow).PastelBg(ConsoleColor.DarkYellow));
+      base.OnMessageSent(message);
     }
   }
 
