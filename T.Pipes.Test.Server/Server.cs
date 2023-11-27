@@ -19,7 +19,7 @@ namespace T.Pipes.Test.Server
 
     public Server() => Pipe = new(PipeConstants.ServerName, new(this));
 
-    public void Dispose() => DisposeAsync().AsTask().Wait();
+    public void Dispose() => DisposeAsync().GetAwaiter().GetResult();
 
     public async ValueTask DisposeAsync()
     {
@@ -109,7 +109,7 @@ namespace T.Pipes.Test.Server
         return default;
       }
 
-      public void Dispose() => DisposeAsync().AsTask().Wait();
+      public void Dispose() => DisposeAsync().GetAwaiter().GetResult();
 
       public void Connected(string connection)
       {

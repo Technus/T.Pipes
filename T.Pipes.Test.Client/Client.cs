@@ -57,7 +57,7 @@ namespace T.Pipes.Test.Client
         _mapping.Clear();
       }
 
-      public void Dispose() => DisposeAsync().AsTask().Wait();
+      public void Dispose() => DisposeAsync().GetAwaiter().GetResult();
 
       public ValueTask DisposeAsync()
       {
