@@ -1,4 +1,6 @@
-﻿namespace T.Pipes.Test.Server
+﻿using Pastel;
+
+namespace T.Pipes.Test.Server
 {
   internal class Program
   {
@@ -21,8 +23,8 @@
           var target = item.Callback.AsIAbstract;
           var target1 = item.Callback.AsIAbstract1;
 
-          var papa = target.GetInt();
-          var papa1 = target1.GetT();
+          Console.WriteLine($"{nameof(target.GetInt)} = {target.GetInt()}".Pastel(ConsoleColor.Green));
+          Console.WriteLine($"{nameof(target1.GetT)} = {target1.GetT()}".Pastel(ConsoleColor.Green));
         }
         await Task.Delay(1000);
       }
