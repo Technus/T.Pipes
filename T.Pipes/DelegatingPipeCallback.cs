@@ -11,6 +11,15 @@ using T.Pipes.Abstractions;
 namespace T.Pipes
 {
   /// <summary>
+  /// A Command function definition
+  /// </summary>
+  /// <typeparam name="TTarget"></typeparam>
+  /// <param name="target">target operated on</param>
+  /// <param name="parameter">parameter/s to pass along</param>
+  /// <returns>return value/s from target</returns>
+  public delegate object? CommandFunction<TTarget>(TTarget target, object? parameter);
+
+  /// <summary>
   /// Callback for original implementation of <typeparamref name="TTarget"/> for:<br/>
   /// <see cref="DelegatingPipeClient{TPipe, TPacket, TPacketFactory, TTarget, TCallback}"/>
   /// </summary>
@@ -91,7 +100,6 @@ namespace T.Pipes
     private readonly TaskCompletionSource<object?> _failedOnce = new();
     private readonly Dictionary<Guid, TaskCompletionSource<object?>> _responses = [];
     private readonly SemaphoreSlim _semaphore = new(1, 1);
-    private readonly Dictionary<string, Func<object?, object?>> _functions = [];
     private TTarget _target;
 
     /// <summary>
@@ -136,6 +144,11 @@ namespace T.Pipes
         throw new InvalidOperationException($"In fact target is not {typeof(TTarget).FullName}");
       }
     }
+
+    /// <summary>
+    /// Static Collection of Command functions
+    /// </summary>
+    public static Dictionary<string, CommandFunction<TTarget>> Functions { get; } = [];
 
     /// <summary>
     /// For client an instance of <typeparamref name="TTarget"/>
@@ -258,7 +271,6 @@ namespace T.Pipes
         TargetDeInitAuto();
         TargetDeInit(_target);
       }
-      _functions.Clear();
       _ = _failedOnce.TrySetCanceled();
       _ = _connectedOnce.TrySetCanceled();
       return default;
@@ -336,9 +348,9 @@ namespace T.Pipes
     /// <param name="command">packet containing command</param>
     protected virtual void OnCommandReceived(TPacket command)
     {
-      if (_functions.TryGetValue(command.Command, out var function))
+      if (Functions.TryGetValue(command.Command, out var function))
       {
-        _ = Pipe.WriteAsync(PacketFactory.CreateResponse(command, function.Invoke(command.Parameter)));
+        _ = Pipe.WriteAsync(PacketFactory.CreateResponse(command, function.Invoke(Target, command.Parameter)));
       }
       else if (OnCommandReceivedAuto(command))
       {
@@ -563,18 +575,5 @@ namespace T.Pipes
       _ = Pipe.WriteAsync(cmd);
       GetResponse<object?>(cmd);
     }
-
-    /// <summary>
-    /// Adds a function call instead of command call
-    /// </summary>
-    /// <param name="callerName"></param>
-    /// <param name="function"></param>
-    public void SetFunction(string callerName, Func<object?, object?> function) => _functions[callerName] = function;
-
-    /// <summary>
-    /// Removes a function call reverting to command call
-    /// </summary>
-    /// <param name="callerName"></param>
-    public void RemoveFunction(string callerName) => _functions.Remove(callerName);
   }
 }

@@ -386,7 +386,7 @@ namespace T.Pipes.SourceGeneration
         }
         else
         {
-          writer.Write($$"""return ({{x.ReturnType.ToDisplayString()}}){{() => RenderName(eventSymbol, true, "event_")}}?.Invoke({{() => RenderStrings(x.Parameters.Select(x => x.Name).ToArray())}});""");
+          writer.Write($$"""return {{() => RenderName(eventSymbol, true, "event_")}}?.Invoke({{() => RenderStrings(x.Parameters.Select(x => x.Name).ToArray())}}) ?? default;""");
         }
       }
       else
