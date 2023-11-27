@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection.Metadata;
 using System.Text;
@@ -90,7 +91,7 @@ namespace T.Pipes.SourceGeneration
 
     private void RenderCast(ISymbol symbol) => writer
       .WriteLine($$"""
-      public {{symbol?.ToDisplayString()}} As{{() => RenderTypeName((INamedTypeSymbol)symbol!,true)}} => ({{symbol?.ToDisplayString()}})Target;
+      public {{symbol?.ToDisplayString()}} As{{() => RenderTypeName((INamedTypeSymbol)symbol!,true)}} => ({{symbol?.ToDisplayString()}})this;
       """);
 
     private void RenderImplementation(TypeDefinition typeDefinition) 
@@ -563,12 +564,26 @@ namespace T.Pipes.SourceGeneration
       {
         case MethodKind.EventAdd:
           {
-            writer.Write($$"""(({{x.ContainingType.ToDisplayString()}}?) Target)!.{{x.Name.Substring(4)}} += value;""");
+            if (served)
+            {
+              writer.Write($$"""(({{x.ContainingType.ToDisplayString()}}?) this)!.{{x.Name.Substring(4)}} += value;""");
+            }
+            else
+            {
+              writer.Write($$"""(({{x.ContainingType.ToDisplayString()}}?) Target)!.{{x.Name.Substring(4)}} += value;""");
+            }
             break;
           }
         case MethodKind.EventRemove:
           {
-            writer.Write($$"""(({{x.ContainingType.ToDisplayString()}}?) Target)!.{{x.Name.Substring(7)}} -= value;""");
+            if (served)
+            {
+              writer.Write($$"""(({{x.ContainingType.ToDisplayString()}}?) this)!.{{x.Name.Substring(7)}} -= value;""");
+            }
+            else
+            {
+              writer.Write($$"""(({{x.ContainingType.ToDisplayString()}}?) Target)!.{{x.Name.Substring(7)}} -= value;""");
+            }
             break;
           }
         case MethodKind.PropertyGet:
@@ -790,15 +805,32 @@ namespace T.Pipes.SourceGeneration
       writer
         //.Write(served?"Serve_":"Using_")
         .Write(x.Name);
-      if (x.Arity > 0)
-        writer.Write(x.Arity);
+      if (x.TypeArguments.Length>0)
+      {
+        writer.Write("_args");
+        foreach (var item in x.TypeArguments)
+        {
+          writer.Write('_').Write(item.Name);
+        }
+        writer.Write("_end_");
+      }
     }
 
     private void RenderTypeSyntaxName(TypeDefinition typeDefinition)
     {
       writer.Write(typeDefinition.TypeDeclarationSyntax.Identifier);
-      if (typeDefinition.TypeDeclarationSyntax.Arity > 0)
-        writer.Write(typeDefinition.TypeDeclarationSyntax.Arity);
+      if(typeDefinition.TypeDeclarationSyntax.TypeParameterList is not null)
+      {
+        if (typeDefinition.TypeDeclarationSyntax.TypeParameterList.Parameters.Count > 0)
+        {
+          writer.Write("_args");
+          foreach (var item in typeDefinition.TypeDeclarationSyntax.TypeParameterList.Parameters)
+          {
+            writer.Write('_').Write(item.Identifier);
+          }
+          writer.Write("_end_");
+        }
+      }
     }
 
     private void RenderName(TypeDefinition typeDefinition, ISymbol x, bool served, string prefix = "")
@@ -808,9 +840,6 @@ namespace T.Pipes.SourceGeneration
         .Write(x.Name)
         .Write('_');
       RenderTypeName(x.ContainingType, served);
-      writer
-        .Write('_');
-      RenderTypeSyntaxName(typeDefinition);
     }
 
     private string GetName(TypeDefinition typeDefinition, ISymbol x, bool served, string prefix = "")
@@ -823,13 +852,15 @@ namespace T.Pipes.SourceGeneration
       writer
         //.Write(served?"Serve_":"Using_")
         .Append(x.ContainingType.Name);
-      if (x.ContainingType.Arity > 0)
-        writer.Append(x.ContainingType.Arity);
-      writer
-        .Append('_')
-        .Append(typeDefinition.TypeDeclarationSyntax.Identifier);
-      if (typeDefinition.TypeDeclarationSyntax.Arity > 0)
-        writer.Append(typeDefinition.TypeDeclarationSyntax.Arity);
+      if(x.ContainingType.TypeArguments.Length > 0)
+      {
+        writer.Append("_args");
+        foreach (var item in x.ContainingType.TypeArguments)
+        {
+          writer.Append('_').Append(item.Name);
+        }
+        writer.Append("_end_");
+      }
       return writer.ToString();
     }
 

@@ -372,7 +372,10 @@ namespace T.Pipes
       {
         function.Invoke((TCallback)this, command);
       }
-      OnUnknownCommand(command);
+      else
+      {
+        OnUnknownCommand(command);
+      }
     }
 
     /// <summary>

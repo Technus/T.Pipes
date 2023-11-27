@@ -7,7 +7,7 @@ namespace T.Pipes.Test.Client
     static async Task Main(string[] args)
     {
 #if DEBUG
-      //Debugger.Launch();
+      Debugger.Launch();
 #endif
 
       using (var client = new Client())

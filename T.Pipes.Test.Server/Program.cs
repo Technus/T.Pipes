@@ -21,7 +21,7 @@ namespace T.Pipes.Test.Server
         using (var item = server.Create())
         {
           var target = item.Callback.AsIAbstract;
-          var target1 = item.Callback.AsIAbstract1;
+          var target1 = item.Callback.AsIAbstract_args_Int16_end_;
 
           target.GetInt();
           target1.GetT();
