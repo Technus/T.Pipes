@@ -8,6 +8,16 @@ namespace T.Pipes
   /// </summary>
   public class PipeMessageFactory : IPipeMessageFactory<PipeMessage>
   {
+    /// <summary>
+    /// Common instance to use
+    /// </summary>
+    public static PipeMessageFactory Instance = new();
+
+    /// <summary>
+    /// Constructor for derived types
+    /// </summary>
+    protected PipeMessageFactory() { }
+
     /// <inheritdoc/>
     public PipeMessage Create(string command) 
       => new() { Command = command, Id = Guid.NewGuid() };

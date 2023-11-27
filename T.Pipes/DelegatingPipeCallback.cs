@@ -11,15 +11,6 @@ using T.Pipes.Abstractions;
 namespace T.Pipes
 {
   /// <summary>
-  /// A Command function definition
-  /// </summary>
-  /// <typeparam name="TTarget"></typeparam>
-  /// <param name="target">target operated on</param>
-  /// <param name="parameter">parameter/s to pass along</param>
-  /// <returns>return value/s from target</returns>
-  public delegate object? CommandFunction<TTarget>(TTarget target, object? parameter);
-
-  /// <summary>
   /// Callback for original implementation of <typeparamref name="TTarget"/> for:<br/>
   /// <see cref="DelegatingPipeClient{TPipe, TPacket, TPacketFactory, TTarget, TCallback}"/>
   /// </summary>
@@ -66,7 +57,7 @@ namespace T.Pipes
     /// Creates the callback, must be done with the same pipe as in the pipe connection holding it.
     /// </summary>
     /// <param name="pipe">the same pipe as in the pipe connection holding it</param>
-    public DelegatingPipeCallback(TPipe pipe) : base(pipe, new())
+    public DelegatingPipeCallback(TPipe pipe) : base(pipe, PipeMessageFactory.Instance)
     {
     }
 
@@ -75,7 +66,7 @@ namespace T.Pipes
     /// </summary>
     /// <param name="pipe">the same pipe as in the pipe connection holding it</param>
     /// <param name="target">the actual implementation of <typeparamref name="TTarget"/></param>
-    public DelegatingPipeCallback(TPipe pipe, TTarget target) : base(pipe, new(), target)
+    public DelegatingPipeCallback(TPipe pipe, TTarget target) : base(pipe, PipeMessageFactory.Instance, target)
     {
     }
   }
@@ -96,6 +87,14 @@ namespace T.Pipes
     where TPacket : IPipeMessage
     where TPacketFactory : IPipeMessageFactory<TPacket>
   {
+    /// <summary>
+    /// A Command function definition
+    /// </summary>
+    /// <param name="callback">associated callback/pipe/packetFactory</param>
+    /// <param name="parameter">parameter/s to pass along</param>
+    /// <returns>return value/s from target</returns>
+    public delegate void CommandFunction(DelegatingPipeCallback<TPipe, TPacket, TPacketFactory, TTarget> callback, object? parameter);
+
     private readonly TaskCompletionSource<object?> _connectedOnce = new();
     private readonly TaskCompletionSource<object?> _failedOnce = new();
     private readonly Dictionary<Guid, TaskCompletionSource<object?>> _responses = [];
@@ -148,7 +147,7 @@ namespace T.Pipes
     /// <summary>
     /// Static Collection of Command functions
     /// </summary>
-    public static Dictionary<string, CommandFunction<TTarget>> Functions { get; } = [];
+    public static Dictionary<string, CommandFunction> Functions { get; } = [];
 
     /// <summary>
     /// For client an instance of <typeparamref name="TTarget"/>
@@ -277,7 +276,7 @@ namespace T.Pipes
     }
 
     /// <summary>
-    /// Clears the response awaiters by <see cref="TaskCompletionSource{TResult}.TrySetCanceled()"/>
+    /// Clears the response awaiting tasks by <see cref="TaskCompletionSource{TResult}.TrySetException(Exception)"/>
     /// </summary>
     /// <param name="e">exception to pass along</param>
     public virtual void Clear(Exception e)
@@ -292,7 +291,7 @@ namespace T.Pipes
     }
 
     /// <summary>
-    /// Clears the response awaiters by <see cref="TaskCompletionSource{TResult}.TrySetCanceled()"/>
+    /// Clears the response awaiting tasks by <see cref="TaskCompletionSource{TResult}.TrySetCanceled()"/>
     /// </summary>
     public virtual void Clear()
     {
@@ -342,30 +341,17 @@ namespace T.Pipes
     /// <summary>
     /// Filtered <see cref="OnMessageReceived(TPacket?)"/> to only fire on commands and not responses<br/>
     /// First tries to check if the <paramref name="command"/> is a function command <br/>
-    /// Else calls <see cref="OnCommandReceivedAuto(TPacket)"/><br/>
-    /// Else call <see cref="OnUnknownCommand(TPacket)"/>
+    /// Else calls <see cref="OnUnknownCommand(TPacket)"/>
     /// </summary>
     /// <param name="command">packet containing command</param>
     protected virtual void OnCommandReceived(TPacket command)
     {
       if (Functions.TryGetValue(command.Command, out var function))
       {
-        _ = Pipe.WriteAsync(PacketFactory.CreateResponse(command, function.Invoke(Target, command.Parameter)));
-      }
-      else if (OnCommandReceivedAuto(command))
-      {
-        return;
+        function.Invoke(this, command.Parameter);
       }
       OnUnknownCommand(command);
     }
-
-    /// <summary>
-    /// Stub for source generator, to write command handling
-    /// </summary>
-    /// <param name="message"></param>
-    /// <returns></returns>
-    protected virtual bool OnCommandReceivedAuto(TPacket message)
-      => false;
 
     /// <summary>
     /// Handler for unhandled commands, should always throw to indicate unknown command

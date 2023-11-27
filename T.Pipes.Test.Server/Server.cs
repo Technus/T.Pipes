@@ -15,8 +15,6 @@ namespace T.Pipes.Test.Server
 
     private PipeServer<Callback> Pipe { get; }
 
-    private PipeMessageFactory PipeMessageFactory { get; } = new PipeMessageFactory();
-
     public Server() => Pipe = new(PipeConstants.ServerName, new(this));
 
     public void Dispose() => DisposeAsync().GetAwaiter().GetResult();
@@ -76,7 +74,7 @@ namespace T.Pipes.Test.Server
         _mapping.Remove(implementationServer.ServerName), TaskContinuationOptions.OnlyOnCanceled);
 
       await implementationServer.StartAsync();
-      _ = Pipe.WriteAsync(PipeMessageFactory.Create(command, implementationServer.ServerName));
+      _ = Pipe.WriteAsync(PipeMessageFactory.Instance.Create(command, implementationServer.ServerName));
       var connectedTask = implementationServer.Callback.ConnectedOnce;
       using var cts = new CancellationTokenSource();
       if (await Task.WhenAny(connectedTask, Task.Delay(PipeConstants.ConnectionAwaitTimeMs)) == connectedTask)
