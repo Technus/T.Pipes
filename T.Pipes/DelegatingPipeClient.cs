@@ -47,13 +47,13 @@ namespace T.Pipes
   }
 
   /// <summary>
-  /// Use in pair with <see cref="DelegatingPipeCallback{TPipe, TPacket, TPacketFactory, TTarget, TCallback}"/>
+  /// Pipe Client for hosting <typeparamref name="TTarget"/> implementation.
   /// </summary>
-  /// <typeparam name="TPipe"></typeparam>
-  /// <typeparam name="TPacket"></typeparam>
-  /// <typeparam name="TPacketFactory"></typeparam>
-  /// <typeparam name="TTarget"></typeparam>
-  /// <typeparam name="TCallback"></typeparam>
+  /// <typeparam name="TPipe">data tunnel</typeparam>
+  /// <typeparam name="TPacket">packet format</typeparam>
+  /// <typeparam name="TPacketFactory">packet factory</typeparam>
+  /// <typeparam name="TTarget">implementation type/interfaces</typeparam>
+  /// <typeparam name="TCallback">response handler</typeparam>
   public abstract class DelegatingPipeClient<TPipe, TPacket, TPacketFactory, TTarget, TCallback>
     : PipeClient<TPipe, TPacket, TCallback>, IPipeDelegatingConnection<TPacket>
     where TPipe : H.Pipes.IPipeClient<TPacket>

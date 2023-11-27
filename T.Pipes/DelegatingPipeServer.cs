@@ -4,8 +4,11 @@ using T.Pipes.Abstractions;
 
 namespace T.Pipes
 {
-  /// <inheritdoc/>
-  public  class DelegatingPipeServer<TTargetAndCallback>
+  /// <summary>
+  /// Creates the pipe server with a specified callback and pipe
+  /// </summary>
+  /// <typeparam name="TTargetAndCallback">both proxy target and callback, this will satisfy that requirement</typeparam>
+  public class DelegatingPipeServer<TTargetAndCallback>
     : DelegatingPipeServer<TTargetAndCallback, TTargetAndCallback>
     where TTargetAndCallback : DelegatingPipeCallback<H.Pipes.PipeServer<PipeMessage>, PipeMessage, PipeMessageFactory, TTargetAndCallback, TTargetAndCallback>, IDisposable
   {
@@ -70,7 +73,14 @@ namespace T.Pipes
     }
   }
 
-  /// <inheritdoc/>
+  /// <summary>
+  /// Pipe Server for accessing remote <typeparamref name="TTarget"/> implementation.
+  /// </summary>
+  /// <typeparam name="TPipe">data tunnel</typeparam>
+  /// <typeparam name="TPacket">packet format</typeparam>
+  /// <typeparam name="TPacketFactory">packet factory</typeparam>
+  /// <typeparam name="TTarget">implementation type/interfaces</typeparam>
+  /// <typeparam name="TCallback">response handler</typeparam>
   public abstract class DelegatingPipeServer<TPipe, TPacket, TPacketFactory, TTarget, TCallback>
     : PipeServer<TPipe, TPacket, TCallback>, IPipeDelegatingConnection<TPacket>
     where TPipe : H.Pipes.IPipeServer<TPacket>

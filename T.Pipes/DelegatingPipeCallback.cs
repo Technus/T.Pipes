@@ -32,11 +32,10 @@ namespace T.Pipes
   }
 
   /// <summary>
-  /// Callback and proxy implementation of <typeparamref name="TTarget"/> for:<br/>
+  /// Callback and proxy implementation of <typeparamref name="TTargetAndCallback"/> for:<br/>
   /// <see cref="DelegatingPipeServer{TPipe, TPacket, TPacketFactory, TTarget, TCallback}"/>
   /// </summary>
-  /// <typeparam name="TTarget">target to operate on</typeparam>
-  /// <typeparam name="TCallback">the final implementing type</typeparam>
+  /// <typeparam name="TTargetAndCallback">target to operate on and the callback at the same time</typeparam>
   public class DelegatingPipeServerCallback<TTargetAndCallback>
     : DelegatingPipeCallback<H.Pipes.PipeServer<PipeMessage>, TTargetAndCallback, TTargetAndCallback>
     where TTargetAndCallback : DelegatingPipeCallback<H.Pipes.PipeServer<PipeMessage>, PipeMessage, PipeMessageFactory, TTargetAndCallback, TTargetAndCallback>, IDisposable
@@ -118,7 +117,6 @@ namespace T.Pipes
     /// </summary>
     /// <param name="callback">associated callback/pipe/packetFactory</param>
     /// <param name="message">message received</param>
-    /// <param name="parameter">parameter/s to pass along</param>
     /// <returns>return value/s from target</returns>
     public delegate void CommandFunction(TCallback callback, TPacket message);
 
