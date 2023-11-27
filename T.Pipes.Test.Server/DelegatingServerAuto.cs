@@ -12,7 +12,7 @@ namespace T.Pipes.Test.Server
     }
   }
 
-  internal class DelegatingServerAuto : DelegatingPipeServer<Callback, Callback>
+  internal class DelegatingServerAuto : DelegatingPipeServer<Callback>
   {
     public DelegatingServerAuto(string pipe) : this(new H.Pipes.PipeServer<PipeMessage>(pipe))
     {

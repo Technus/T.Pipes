@@ -8,7 +8,7 @@ namespace T.Pipes
   public abstract class DelegatingPipeClient<TTarget, TCallback>
       : DelegatingPipeClient<H.Pipes.PipeClient<PipeMessage>, TTarget, TCallback>
     where TTarget : IDisposable
-    where TCallback : DelegatingPipeCallback<H.Pipes.PipeClient<PipeMessage>, PipeMessage, PipeMessageFactory, TTarget>
+    where TCallback : DelegatingPipeCallback<H.Pipes.PipeClient<PipeMessage>, PipeMessage, PipeMessageFactory, TTarget, TCallback>
   {
     /// <summary>
     /// Creates the pipe client with a specified callback and pipe
@@ -34,7 +34,7 @@ namespace T.Pipes
     : DelegatingPipeClient<TPipe, PipeMessage, PipeMessageFactory, TTarget, TCallback>
     where TPipe : H.Pipes.IPipeClient<PipeMessage>
     where TTarget : IDisposable
-    where TCallback : DelegatingPipeCallback<TPipe, PipeMessage, PipeMessageFactory, TTarget>
+    where TCallback : DelegatingPipeCallback<TPipe, PipeMessage, PipeMessageFactory, TTarget, TCallback>
   {
     /// <summary>
     /// Creates the pipe client with a specified callback and pipe
@@ -47,7 +47,7 @@ namespace T.Pipes
   }
 
   /// <summary>
-  /// Use in pair with <see cref="DelegatingPipeCallback{TPipe, TPacket, TPacketFactory, TTarget}"/>
+  /// Use in pair with <see cref="DelegatingPipeCallback{TPipe, TPacket, TPacketFactory, TTarget, TCallback}"/>
   /// </summary>
   /// <typeparam name="TPipe"></typeparam>
   /// <typeparam name="TPacket"></typeparam>
@@ -60,7 +60,7 @@ namespace T.Pipes
     where TPacket : IPipeMessage
     where TPacketFactory : IPipeMessageFactory<TPacket>
     where TTarget : IDisposable
-    where TCallback : DelegatingPipeCallback<TPipe, TPacket, TPacketFactory, TTarget>
+    where TCallback : DelegatingPipeCallback<TPipe, TPacket, TPacketFactory, TTarget, TCallback>
   {
     /// <summary>
     /// The actual <typeparamref name="TTarget"/> implementation

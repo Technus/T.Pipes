@@ -81,7 +81,7 @@ namespace T.Pipes.SourceGeneration
       writer.IncreaseIndent();
       typeDefinition.ServeMemberDeclarations.ForEach(symbol => RenderSymbol(typeDefinition, symbol, true));
       typeDefinition.UsedMemberDeclarations.ForEach(symbol => RenderSymbol(typeDefinition, symbol, false));
-      RenderSelector(typeDefinition);
+      RenderStaticSelector(typeDefinition);
       RenderTargetHandling(typeDefinition);
       RenderImplementation(typeDefinition);
       typeDefinition.ImplementingTypes?.ForEach(RenderCast);
@@ -184,13 +184,105 @@ namespace T.Pipes.SourceGeneration
       writer.WriteLine(';');
     }
 
+    private void RenderStaticSelector(TypeDefinition typeDefinition) => writer
+      .Write($$"""
+      static {{typeDefinition.TypeDeclarationSyntax.Identifier}}(){
+        RegisterCommandSelectorFunctions();
+      }
+
+      [System.ComponentModel.Description("CommandSelector")]
+      static protected void RegisterCommandSelectorFunctions()
+      {{() => RenderStaticSelectorBody(typeDefinition)}}
+      """);
+
+    private void RenderStaticSelectorBody(TypeDefinition typeDefinition)
+    {
+      writer.WriteLine('{');
+      writer.IncreaseIndent();
+      writer.WriteLine("#pragma warning disable CS8600, CS8604, CS8605");
+      foreach(var item in typeDefinition.Commands)
+      {
+        if(item.Value.method is IMethodSymbol x)
+        {
+          var (input, output) = GetIO(x);
+          writer.Write($$"""Functions["{{item.Key}}"] = static (callback, message) => { """);
+
+          if (!item.Value.invoke.ReturnsVoid || output.Count > 0)
+          {
+            writer.Write("callback.SendResponse(message, ");
+          }
+
+          writer.Write("callback.").Write(item.Key).Write('(');
+          if (input.Count > 0)
+          {
+            writer.Write('(');
+            if (input.Count > 1)
+              writer.Write('(');
+            RenderStrings(input.Select(x => x.Type.ToDisplayString()).ToArray());
+            if (input.Count > 1)
+              writer.Write(')');
+            writer.Write(")message.Parameter");
+          }
+
+          if (!item.Value.invoke.ReturnsVoid || output.Count > 0)
+          {
+            writer.Write(")");
+          }
+
+          writer.Write(");");
+
+          if (item.Value.invoke.ReturnsVoid && output.Count == 0)
+          {
+            writer.Write(" callback.SendResponse(message);");
+          }
+
+          writer.WriteLine(" };");
+        }
+        else if(item.Value.method is IEventSymbol e)
+        {
+          writer.Write($$"""Functions["{{item.Key}}"] = static (callback, message) => { """);
+
+          if (!item.Value.invoke.ReturnsVoid)
+          {
+            writer.Write("callback.SendResponse(message, ");
+          }
+
+          writer.Write("callback.").Write(item.Key).Write('(');
+          if (item.Value.invoke.Parameters.Length > 0)
+          {
+            writer.Write('(');
+            RenderStrings(item.Value.invoke.Parameters.Select(x => x.Type.ToDisplayString()).ToArray());
+            writer.Write(")message.Parameter");
+          }
+
+          if (!item.Value.invoke.ReturnsVoid)
+          {
+            writer.Write(")");
+          }
+
+          writer.Write(");");
+
+          if (item.Value.invoke.ReturnsVoid)
+          {
+            writer.Write(" callback.SendResponse(message);");
+          }
+
+          writer.WriteLine(" };");
+        }
+      }
+      writer.WriteLine("#pragma warning restore CS8600, CS8604, CS8605");
+      writer.DecreaseIndent();
+      writer.WriteLine();
+      writer.WriteLine('}');
+    }
+
     private void RenderSelector(TypeDefinition typeDefinition) => writer
       .Write($$"""
       [System.ComponentModel.Description("CommandSelector")]
       protected override bool OnCommandReceivedAuto(T.Pipes.PipeMessage message)
       {{() => RenderSelectorBody(typeDefinition)}}
       """);
-    
+
     private void RenderSelectorBody(TypeDefinition typeDefinition)
     {
       writer.WriteLine('{');

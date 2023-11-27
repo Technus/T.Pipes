@@ -14,10 +14,12 @@ namespace T.Pipes
   /// Callback for original implementation of <typeparamref name="TTarget"/> for:<br/>
   /// <see cref="DelegatingPipeClient{TPipe, TPacket, TPacketFactory, TTarget, TCallback}"/>
   /// </summary>
-  /// <typeparam name="TTarget">The target type implementing <typeparamref name="TTarget"/></typeparam>
-  public class DelegatingPipeClientCallback<TTarget>
-    : DelegatingPipeCallback<H.Pipes.PipeClient<PipeMessage>, TTarget>
+  /// <typeparam name="TTarget">target to operate on</typeparam>
+  /// <typeparam name="TCallback">the final implementing type</typeparam>
+  public class DelegatingPipeClientCallback<TTarget, TCallback>
+    : DelegatingPipeCallback<H.Pipes.PipeClient<PipeMessage>, TTarget, TCallback>
     where TTarget : IDisposable
+    where TCallback : DelegatingPipeClientCallback<TTarget, TCallback>
   {
     /// <summary>
     /// 
@@ -33,10 +35,31 @@ namespace T.Pipes
   /// Callback and proxy implementation of <typeparamref name="TTarget"/> for:<br/>
   /// <see cref="DelegatingPipeServer{TPipe, TPacket, TPacketFactory, TTarget, TCallback}"/>
   /// </summary>
-  /// <typeparam name="TTarget"></typeparam>
-  public class DelegatingPipeServerCallback<TTarget>
-    : DelegatingPipeCallback<H.Pipes.PipeServer<PipeMessage>, TTarget>
+  /// <typeparam name="TTarget">target to operate on</typeparam>
+  /// <typeparam name="TCallback">the final implementing type</typeparam>
+  public class DelegatingPipeServerCallback<TTargetAndCallback>
+    : DelegatingPipeCallback<H.Pipes.PipeServer<PipeMessage>, TTargetAndCallback, TTargetAndCallback>
+    where TTargetAndCallback : DelegatingPipeCallback<H.Pipes.PipeServer<PipeMessage>, PipeMessage, PipeMessageFactory, TTargetAndCallback, TTargetAndCallback>, IDisposable
+  {
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="pipe">the same pipe as in the pipe connection holding it</param>
+    public DelegatingPipeServerCallback(H.Pipes.PipeServer<PipeMessage> pipe) : base(pipe)
+    {
+    }
+  }
+
+  /// <summary>
+  /// Callback and proxy implementation of <typeparamref name="TTarget"/> for:<br/>
+  /// <see cref="DelegatingPipeServer{TPipe, TPacket, TPacketFactory, TTarget, TCallback}"/>
+  /// </summary>
+  /// <typeparam name="TTarget">target to operate on</typeparam>
+  /// <typeparam name="TCallback">the final implementing type</typeparam>
+  public class DelegatingPipeServerCallback<TTarget, TCallback>
+    : DelegatingPipeCallback<H.Pipes.PipeServer<PipeMessage>, TTarget, TCallback>
     where TTarget : IDisposable
+    where TCallback : DelegatingPipeCallback<H.Pipes.PipeServer<PipeMessage>, PipeMessage, PipeMessageFactory, TTarget, TCallback>
   {
     /// <summary>
     /// 
@@ -48,10 +71,11 @@ namespace T.Pipes
   }
 
   /// <inheritdoc/>
-  public class DelegatingPipeCallback<TPipe, TTarget>
-    : DelegatingPipeCallback<TPipe, PipeMessage, PipeMessageFactory, TTarget>
+  public class DelegatingPipeCallback<TPipe, TTarget, TCallback>
+    : DelegatingPipeCallback<TPipe, PipeMessage, PipeMessageFactory, TTarget, TCallback>
     where TTarget : IDisposable
     where TPipe : H.Pipes.IPipeConnection<PipeMessage>
+    where TCallback : DelegatingPipeCallback<TPipe, PipeMessage, PipeMessageFactory, TTarget, TCallback>
   {
     /// <summary>
     /// Creates the callback, must be done with the same pipe as in the pipe connection holding it.
@@ -79,21 +103,24 @@ namespace T.Pipes
   /// <typeparam name="TPipe"><see cref="H.Pipes.IPipeConnection{TPacket}"/></typeparam>
   /// <typeparam name="TPacket"><see cref="IPipeMessage"/></typeparam>
   /// <typeparam name="TPacketFactory"><see cref="IPipeMessageFactory{TPacket}"/></typeparam>
-  /// <typeparam name="TTarget"></typeparam>
-  public class DelegatingPipeCallback<TPipe, TPacket, TPacketFactory, TTarget>
+  /// <typeparam name="TTarget">target to operate on</typeparam>
+  /// <typeparam name="TCallback">the final implementing type</typeparam>
+  public class DelegatingPipeCallback<TPipe, TPacket, TPacketFactory, TTarget, TCallback>
     : IPipeDelegatingCallback<TPacket>
     where TTarget : IDisposable
     where TPipe : H.Pipes.IPipeConnection<TPacket>
     where TPacket : IPipeMessage
     where TPacketFactory : IPipeMessageFactory<TPacket>
+    where TCallback : DelegatingPipeCallback<TPipe, TPacket, TPacketFactory, TTarget, TCallback>
   {
     /// <summary>
     /// A Command function definition
     /// </summary>
     /// <param name="callback">associated callback/pipe/packetFactory</param>
+    /// <param name="message">message received</param>
     /// <param name="parameter">parameter/s to pass along</param>
     /// <returns>return value/s from target</returns>
-    public delegate void CommandFunction(DelegatingPipeCallback<TPipe, TPacket, TPacketFactory, TTarget> callback, object? parameter);
+    public delegate void CommandFunction(TCallback callback, TPacket message);
 
     private readonly TaskCompletionSource<object?> _connectedOnce = new();
     private readonly TaskCompletionSource<object?> _failedOnce = new();
@@ -348,7 +375,7 @@ namespace T.Pipes
     {
       if (Functions.TryGetValue(command.Command, out var function))
       {
-        function.Invoke(this, command.Parameter);
+        function.Invoke((TCallback)this, command);
       }
       OnUnknownCommand(command);
     }

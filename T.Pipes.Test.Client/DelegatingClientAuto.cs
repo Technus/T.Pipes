@@ -6,7 +6,7 @@ namespace T.Pipes.Test.Client
   [PipeUse(typeof(IAbstract))]
   [PipeUse(typeof(IAbstract<short>))]
   internal partial class Callback<TTarget>
-    : DelegatingPipeClientCallback<TTarget>
+    : DelegatingPipeClientCallback<TTarget, Callback<TTarget>>
     where TTarget : IAbstract, IAbstract<short>
   {
     public Callback(H.Pipes.PipeClient<PipeMessage> pipe, TTarget target) : base(pipe, target)
