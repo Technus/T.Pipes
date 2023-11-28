@@ -18,7 +18,7 @@ namespace T.Pipes.Test.Server
         _ = task.ContinueWith(static x => Environment.Exit(-1), TaskContinuationOptions.NotOnRanToCompletion);
         await task;
 
-        using (var item = server.Create())
+        using (var item = server.Callback.Create())
         {
           var target = item.Callback.AsIAbstract;
           var target1 = item.Callback.AsIAbstract_args_Int16_end_;

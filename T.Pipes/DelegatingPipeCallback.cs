@@ -434,7 +434,7 @@ namespace T.Pipes
     /// <returns></returns>
     public async Task<T> GetResponseAsync<T>(TPacket command)
     {
-      var tcs = new TaskCompletionSource<T>();
+      var tcs = new TaskCompletionSource<object>();
       await _semaphore.WaitAsync();
       _responses.Add(command.Id, tcs);
       _semaphore.Release();

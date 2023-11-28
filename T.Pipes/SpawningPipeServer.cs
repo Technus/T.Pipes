@@ -6,24 +6,58 @@ using T.Pipes.Abstractions;
 
 namespace T.Pipes
 {
-  public abstract class SpawningPipeServer<TCallback> : PipeServer<TCallback>
-    where TCallback : SpawningPipeServerCallback
+  /// <inheritdoc/>
+  public abstract class SpawningPipeServer<TCallback> : SpawningPipeServer<H.Pipes.PipeServer<PipeMessage>, TCallback>
+    where TCallback : SpawningPipeServerCallback<H.Pipes.PipeServer<PipeMessage>>
+  {
+    /// <summary>
+    /// Creates a proxy producer and target requester server
+    /// </summary>
+    /// <param name="pipe"></param>
+    /// <param name="clientExeName"></param>
+    /// <param name="callback"></param>
+    protected SpawningPipeServer(string pipe, string clientExeName, TCallback callback) : base(new(pipe), clientExeName, callback)
+    {
+    }
+
+    /// <summary>
+    /// Creates a proxy producer and target requester server
+    /// </summary>
+    /// <param name="pipe"></param>
+    /// <param name="clientExeName"></param>
+    /// <param name="callback"></param>
+    protected SpawningPipeServer(H.Pipes.PipeServer<PipeMessage> pipe, string clientExeName, TCallback callback) : base(pipe, clientExeName, callback)
+    {
+    }
+  }
+
+
+  /// <summary>
+  /// Helper to wrap factorization of <see cref="T.Pipes.Abstractions.IPipeDelegatingConnection{TMessage}"/> Servers
+  /// implements methods calling <see cref="SpawningPipeServerCallback{TPipe}.RequestProxyAsync{T}(string, T)"/> to provide proxies
+  /// </summary>
+  /// <typeparam name="TPipe"></typeparam>
+  /// <typeparam name="TCallback"></typeparam>
+  public abstract class SpawningPipeServer<TPipe, TCallback> : PipeServer<TPipe, PipeMessage, TCallback>
+    where TCallback : SpawningPipeServerCallback<TPipe>
+    where TPipe : H.Pipes.IPipeServer<PipeMessage>
   {
     private readonly Process _process;
 
-    private readonly int _timeoutMs;
+    /// <summary>
+    /// Creates a proxy producer and target requester server
+    /// </summary>
+    /// <param name="pipe"></param>
+    /// <param name="clientExeName"></param>
+    /// <param name="timeoutMs"></param>
+    /// <param name="callback"></param>
+    public SpawningPipeServer(TPipe pipe, string clientExeName, TCallback callback) : base(pipe, callback) 
+      => _process = new Process { StartInfo = new(clientExeName) };
 
-    public SpawningPipeServer(string pipe, string clientExeName, int timeoutMs, TCallback callback) 
-      : this(new H.Pipes.PipeServer<PipeMessage>(pipe), clientExeName, timeoutMs, callback)
-    {
-    }
-
-    public SpawningPipeServer(H.Pipes.PipeServer<PipeMessage> pipe, string clientExeName, int timeoutMs, TCallback callback) : base(pipe, callback)
-    {
-      _process = new Process { StartInfo = new(clientExeName) };
-      _timeoutMs = timeoutMs;
-    }
-
+    /// <summary>
+    /// Disposes Pipe, Callback and Client Process
+    /// </summary>
+    /// <returns></returns>
     public override async ValueTask DisposeAsync()
     {
       await base.DisposeAsync();
@@ -32,6 +66,12 @@ namespace T.Pipes
       _process.Dispose();
     }
 
+    /// <summary>
+    /// Starts the Pipe, attempts connection and throws on failure
+    /// </summary>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    /// <exception cref="InvalidOperationException">when a connection was not possible</exception>
     public override async Task StartAsync(CancellationToken cancellationToken = default)
     {
       var startTask = base.StartAsync(cancellationToken);
@@ -41,43 +81,15 @@ namespace T.Pipes
         _process.Start();
         var connectedTask = Callback.ConnectedOnce;
         using var cts = new CancellationTokenSource();
-        if (await Task.WhenAny(connectedTask, Task.Delay(_timeoutMs, cts.Token)) == connectedTask)
+        if (await Task.WhenAny(connectedTask, Task.Delay(Callback.ResponseTimeoutMs, cts.Token)) == connectedTask && connectedTask.IsCompleted)
         {
           cts.Cancel();
           return;
         }
         _process.Close();
-        await Pipe.StopAsync();
+        await StopAsync(CancellationToken.None);
       }
       throw new InvalidOperationException($"Either the client was not started or connection was impossible");
-    }
-
-    protected async Task<T> CreateInternal<T>(string command, T implementationServer)
-      where T : IPipeDelegatingConnection<PipeMessage>
-    {
-      var failedOnce = implementationServer.Callback.FailedOnce;
-
-      _ = failedOnce.ContinueWith(x =>
-      {
-        Callback.Mapping.Remove(implementationServer.ServerName);
-        _ = implementationServer.DisposeAsync();
-      }, TaskContinuationOptions.OnlyOnRanToCompletion);
-
-      _ = failedOnce.ContinueWith(x =>
-        Callback.Mapping.Remove(implementationServer.ServerName), TaskContinuationOptions.OnlyOnCanceled);
-
-      await implementationServer.StartAsync();
-      _ = Pipe.WriteAsync(PipeMessageFactory.Instance.Create(command, implementationServer.ServerName));
-      var connectedTask = implementationServer.Callback.ConnectedOnce;
-      using var cts = new CancellationTokenSource();
-      if (await Task.WhenAny(connectedTask, Task.Delay(_timeoutMs)) == connectedTask)
-      {
-        cts.Cancel();
-        Callback.Mapping.Add(implementationServer.ServerName, implementationServer);
-        return implementationServer;
-      }
-      _ = implementationServer.DisposeAsync();
-      throw new InvalidOperationException($"The {nameof(command)}: {command}, could not be performed, connection timed out.");
     }
   }
 }
