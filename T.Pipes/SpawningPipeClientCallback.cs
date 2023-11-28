@@ -120,7 +120,7 @@ namespace T.Pipes
     public virtual void OnExceptionOccurred(Exception e) => Clear();
 
     /// <summary>
-    /// Handles creation of Proxies on both sides and estabilishing a connection
+    /// Handles creation of Proxies on both sides and establishing a connection
     /// </summary>
     /// <param name="command"></param>
     /// <exception cref="InvalidOperationException"></exception>
