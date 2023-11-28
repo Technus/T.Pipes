@@ -8,7 +8,7 @@ namespace T.Pipes
   /// Creates the pipe server with a specified callback and pipe
   /// </summary>
   /// <typeparam name="TTargetAndCallback">both proxy target and callback, this will satisfy that requirement</typeparam>
-  public class DelegatingPipeServer<TTargetAndCallback>
+  public abstract class DelegatingPipeServer<TTargetAndCallback>
     : DelegatingPipeServer<TTargetAndCallback, TTargetAndCallback>
     where TTargetAndCallback : DelegatingPipeCallback<H.Pipes.PipeServer<PipeMessage>, PipeMessage, PipeMessageFactory, TTargetAndCallback, TTargetAndCallback>, IDisposable
   {
