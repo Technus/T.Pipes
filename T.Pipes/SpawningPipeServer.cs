@@ -49,7 +49,6 @@ namespace T.Pipes
     /// </summary>
     /// <param name="pipe"></param>
     /// <param name="clientExeName"></param>
-    /// <param name="timeoutMs"></param>
     /// <param name="callback"></param>
     public SpawningPipeServer(TPipe pipe, string clientExeName, TCallback callback) : base(pipe, callback) 
       => _process = new Process { StartInfo = new(clientExeName) };
