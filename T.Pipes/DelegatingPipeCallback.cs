@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -115,7 +115,7 @@ namespace T.Pipes
     /// <param name="callback">associated callback/pipe/packetFactory</param>
     /// <param name="message">message received</param>
     /// <returns>return value/s from target</returns>
-    public delegate void CommandFunction(TCallback callback, TPacket message);
+    public delegate Task CommandFunction(TCallback callback, TPacket message);
 
     private readonly TaskCompletionSource<object?> _connectedOnce = new();
     private readonly TaskCompletionSource<object?> _failedOnce = new();
@@ -251,15 +251,15 @@ namespace T.Pipes
     public virtual void Connected(string connection)
     {
       Clear();
-      _ = _connectedOnce.TrySetResult(null);
+      _connectedOnce.TrySetResult(null);
     }
 
     /// <inheritdoc/>
     public virtual void Disconnected(string connection)
     {
       Clear();
-      _ = _failedOnce.TrySetResult(null);
-      _ = _connectedOnce.TrySetCanceled();
+      _failedOnce.TrySetResult(null);
+      _connectedOnce.TrySetCanceled();
     }
 
     /// <summary>
@@ -271,10 +271,10 @@ namespace T.Pipes
     /// Disposes own resources, not the <see cref="Pipe"/> nor the <see cref="Target"/>
     /// </summary>
     /// <returns></returns>
-    public virtual ValueTask DisposeAsync()
+    public virtual async ValueTask DisposeAsync()
     {
-      _semaphore.Dispose();
-      if (_responses.Any())
+      await _semaphore.WaitAsync();
+      if (_responses.Count > 0)
       {
         var name = Pipe is H.Pipes.IPipeServer<TPacket> server ? $"Server Pipe: {server.PipeName}"
           : Pipe is H.Pipes.IPipeClient<TPacket> client ? $"Server: {client.ServerName}, Pipe: {client.PipeName}"
@@ -283,18 +283,18 @@ namespace T.Pipes
 
         foreach (var item in _responses)
         {
-          _ = item.Value.TrySetException(disposingException);
+          item.Value.TrySetException(disposingException);
         }
         _responses.Clear();
       }
+      _semaphore.Dispose();
       if (_target is not null)
       {
         TargetDeInitAuto();
         TargetDeInit(_target);
       }
-      _ = _failedOnce.TrySetCanceled();
-      _ = _connectedOnce.TrySetCanceled();
-      return default;
+      _failedOnce.TrySetCanceled();
+      _connectedOnce.TrySetCanceled();
     }
 
     /// <summary>
@@ -306,10 +306,10 @@ namespace T.Pipes
       _semaphore.Wait();
       foreach (var item in _responses)
       {
-        _ = item.Value.TrySetException(e);
+        item.Value.TrySetException(e);
       }
       _responses.Clear();
-      _ = _semaphore.Release();
+      _semaphore.Release();
     }
 
     /// <summary>
@@ -320,18 +320,18 @@ namespace T.Pipes
       _semaphore.Wait();
       foreach (var item in _responses)
       {
-        _ = item.Value.TrySetCanceled();
+        item.Value.TrySetCanceled();
       }
       _responses.Clear();
-      _ = _semaphore.Release();
+      _semaphore.Release();
     }
 
     /// <inheritdoc/>
     public virtual void OnExceptionOccurred(Exception e)
     {
       Clear(e);
-      _ = _failedOnce.TrySetException(e);
-      _ = _connectedOnce.TrySetException(e);
+      _failedOnce.TrySetException(e);
+      _connectedOnce.TrySetException(e);
     }
 
     /// <summary>
@@ -347,12 +347,14 @@ namespace T.Pipes
         return;
       }
 
-      if (_responses.TryGetValue(message.Id, out var response))
+      _semaphore.Wait();
+      var exists = _responses.TryGetValue(message.Id, out var response);
+      _responses.Remove(message.Id);
+      _semaphore.Release();
+
+      if (exists)
       {
-        _semaphore.Wait();
-        _ = _responses.Remove(message.Id);
-        _ = _semaphore.Release();
-        _ = response.TrySetResult(message.Parameter);
+        response!.TrySetResult(message.Parameter);
       }
       else
       {
@@ -384,7 +386,12 @@ namespace T.Pipes
     /// <param name="invalidMessage">the packet in question</param>
     /// <exception cref="ArgumentException">always</exception>
     protected virtual void OnUnknownCommand(TPacket invalidMessage)
-      => throw new ArgumentException($"Message unknown: {invalidMessage}", nameof(invalidMessage));
+    {
+      var message = Pipe is H.Pipes.IPipeServer<TPacket> server ? $"Message unknown: {invalidMessage}, Server Pipe: {server.PipeName}"
+        : Pipe is H.Pipes.IPipeClient<TPacket> client ? $"Message unknown: {invalidMessage}, Server: {client.ServerName}, Pipe: {client.PipeName}"
+        : "Message unknown: {invalidMessage}, Unknown Pipe";
+      throw new ArgumentException(message, nameof(invalidMessage));
+    }
 
     /// <summary>
     /// Does nothing on each <paramref name="message"/> sent
@@ -400,44 +407,13 @@ namespace T.Pipes
     /// <typeparam name="T">requested result type</typeparam>
     /// <param name="command">packet with command</param>
     /// <returns></returns>
-    public T GetResponse<T>(TPacket command)
-    {
-      var tcs = new TaskCompletionSource<object>();
-      _semaphore.Wait();
-      _responses.Add(command.Id, tcs);
-      _semaphore.Release();
-      var responseTask = tcs.Task;
-      if (ResponseTimeoutMs >= 0)
-      {
-        using var cts = new CancellationTokenSource();
-        if (Task.WhenAny(responseTask, Task.Delay(ResponseTimeoutMs, cts.Token)).Result == responseTask)
-        {
-          cts.Cancel();
-        }
-        else
-        {
-          _semaphore.Wait();
-          _responses.Remove(command.Id);
-          _semaphore.Release();
-          tcs.TrySetException(new TimeoutException());
-        }
-      }
-
-      return (T)responseTask.Result;
-    }
-
-    /// <summary>
-    /// Awaits Response using <see cref="TaskCompletionSource{TResult}"/>
-    /// </summary>
-    /// <typeparam name="T">requested result type</typeparam>
-    /// <param name="command">packet with command</param>
-    /// <returns></returns>
     public async Task<T> GetResponseAsync<T>(TPacket command)
     {
       var tcs = new TaskCompletionSource<object>();
       await _semaphore.WaitAsync();
       _responses.Add(command.Id, tcs);
       _semaphore.Release();
+      await WriteAsync(command);
       var responseTask = tcs.Task;
       if (ResponseTimeoutMs >= 0)
       {
@@ -465,20 +441,20 @@ namespace T.Pipes
     /// <param name="message"></param>
     /// <returns></returns>
     /// <remarks>do not write to the pipe directly, use that instead, (or the Wrapping Client/Server)</remarks>
-    public void Write(TPacket message)
+    public Task WriteAsync(TPacket message)
     {
       OnMessageSent(message);
-      _ = Pipe.WriteAsync(message);
+      return Pipe.WriteAsync(message);
     }
 
     /// <summary>
     /// Sends response using <see cref="IPipeMessageFactory{TPacket}.CreateResponse(TPacket)"/>
     /// </summary>
     /// <param name="message"></param>
-    public void SendResponse(TPacket message)
+    public Task SendResponseAsync(TPacket message)
     {
       var response = PacketFactory.CreateResponse(message);
-      Write(response);
+      return WriteAsync(response);
     }
 
     /// <summary>
@@ -487,10 +463,10 @@ namespace T.Pipes
     /// <typeparam name="T"></typeparam>
     /// <param name="message"></param>
     /// <param name="parameter"></param>
-    public void SendResponse<T>(TPacket message, T parameter)
+    public Task SendResponseAsync<T>(TPacket message, T parameter)
     {
       var response = PacketFactory.CreateResponse(message, parameter);
-      Write(response);
+      return WriteAsync(response);
     }
 
     /// <summary>
@@ -499,11 +475,10 @@ namespace T.Pipes
     /// <typeparam name="TOut"></typeparam>
     /// <param name="callerName">the command or function name</param>
     /// <returns></returns>
-    public async Task<TOut> RemoteAsync<TOut>(string callerName)
+    public Task<TOut> RemoteAsync<TOut>(string callerName)
     {
       var cmd = PacketFactory.Create(callerName);
-      Write(cmd);
-      return await GetResponseAsync<TOut>(cmd);
+      return GetResponseAsync<TOut>(cmd);
     }
 
     /// <summary>
@@ -514,11 +489,10 @@ namespace T.Pipes
     /// <param name="callerName">the command or function name</param>
     /// <param name="parameter"></param>
     /// <returns></returns>
-    public async Task<TOut> RemoteAsync<TIn, TOut>(string callerName, TIn? parameter)
+    public Task<TOut> RemoteAsync<TIn, TOut>(string callerName, TIn? parameter)
     {
       var cmd = PacketFactory.Create(callerName, parameter);
-      Write(cmd);
-      return await GetResponseAsync<TOut>(cmd);
+      return GetResponseAsync<TOut>(cmd);
     }
 
     /// <summary>
@@ -526,11 +500,10 @@ namespace T.Pipes
     /// </summary>
     /// <param name="callerName">the command or function name</param>
     /// <returns></returns>
-    public async Task RemoteAsync(string callerName)
+    public Task RemoteAsync(string callerName)
     {
       var cmd = PacketFactory.Create(callerName);
-      Write(cmd);
-      await GetResponseAsync<object?>(cmd);
+      return GetResponseAsync<object?>(cmd);
     }
 
     /// <summary>
@@ -540,11 +513,10 @@ namespace T.Pipes
     /// <param name="callerName">the command or function name</param>
     /// <param name="parameter"></param>
     /// <returns></returns>
-    public async Task RemoteAsync<TIn>(string callerName, TIn? parameter)
+    public Task RemoteAsync<TIn>(string callerName, TIn? parameter)
     {
       var cmd = PacketFactory.Create(callerName, parameter);
-      Write(cmd);
-      await GetResponseAsync<object?>(cmd);
+      return GetResponseAsync<object?>(cmd);
     }
 
     /// <summary>
@@ -553,12 +525,8 @@ namespace T.Pipes
     /// <typeparam name="TOut"></typeparam>
     /// <param name="callerName">the command or function name</param>
     /// <returns></returns>
-    public TOut Remote<TOut>(string callerName)
-    {
-      var cmd = PacketFactory.Create(callerName);
-      Write(cmd);
-      return GetResponse<TOut>(cmd);
-    }
+    public TOut Remote<TOut>(string callerName) 
+      => RemoteAsync<TOut>(callerName).Result;
 
     /// <summary>
     /// Delegates the work to the other side, by sending command and awaiting result
@@ -569,22 +537,14 @@ namespace T.Pipes
     /// <param name="parameter"></param>
     /// <returns></returns>
     public TOut Remote<TIn, TOut>(string callerName, TIn? parameter)
-    {
-      var cmd = PacketFactory.Create(callerName, parameter);
-      Write(cmd);
-      return GetResponse<TOut>(cmd);
-    }
+      => RemoteAsync<TIn, TOut>(callerName, parameter).Result;
 
     /// <summary>
     /// Delegates the work to the other side, by sending command and awaiting response
     /// </summary>
     /// <param name="callerName">the command or function name</param>
     public void Remote(string callerName)
-    {
-      var cmd = PacketFactory.Create(callerName);
-      Write(cmd);
-      GetResponse<object?>(cmd);
-    }
+      => RemoteAsync(callerName).Wait();
 
     /// <summary>
     /// Delegates the work to the other side, by sending command and awaiting response
@@ -593,10 +553,6 @@ namespace T.Pipes
     /// <param name="callerName">the command or function name</param>
     /// <param name="parameter"></param>
     public void Remote<TIn>(string callerName, TIn? parameter)
-    {
-      var cmd = PacketFactory.Create(callerName, parameter);
-      Write(cmd);
-      GetResponse<object?>(cmd);
-    }
+      => RemoteAsync(callerName, parameter).Wait();
   }
 }

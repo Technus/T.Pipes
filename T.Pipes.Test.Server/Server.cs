@@ -12,6 +12,18 @@ namespace T.Pipes.Test.Server
     }
 
     public DelegatingServerAuto Create() => RequestProxyAsync<DelegatingServerAuto>(PipeConstants.Create, new(Guid.NewGuid().ToString())).Result;
+
+    public override void OnMessageReceived(PipeMessage message)
+    {
+      Console.WriteLine(("I: " + message.ToString()).Pastel(ConsoleColor.Cyan));
+      base.OnMessageReceived(message);
+    }
+
+    public override void OnMessageSent(PipeMessage message)
+    {
+      Console.WriteLine(("O: " + message.ToString()).Pastel(ConsoleColor.Cyan));
+      base.OnMessageSent(message);
+    }
   }
 
   /// <summary>

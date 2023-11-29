@@ -90,16 +90,15 @@ namespace T.Pipes
     /// Disposes created Proxies
     /// </summary>
     /// <returns></returns>
-    public virtual ValueTask DisposeAsync()
+    public virtual async ValueTask DisposeAsync()
     {
-      _semaphore.Wait();
+      await _semaphore.WaitAsync();
       foreach (var client in _mapping.Values)
       {
         client.Dispose();
       }
       _mapping.Clear();
       _semaphore.Dispose();
-      return default;
     }
 
     /// <summary>
@@ -108,10 +107,10 @@ namespace T.Pipes
     /// <param name="message"></param>
     /// <returns></returns>
     /// <remarks>do not write to the pipe directly, use that instead, (or the Wrapping Client/Server)</remarks>
-    public void Write(PipeMessage message)
+    public Task WriteAsync(PipeMessage message)
     {
       OnMessageSent(message);
-      _ = Pipe.WriteAsync(message);
+      return Pipe.WriteAsync(message);
     }
 
     /// <summary>
@@ -122,27 +121,27 @@ namespace T.Pipes
     /// <summary>
     /// Handles creation of Proxies on both sides and establishing a connection
     /// </summary>
-    /// <param name="command"></param>
+    /// <param name="message"></param>
     /// <exception cref="InvalidOperationException"></exception>
-    public virtual void OnMessageReceived(PipeMessage command)
+    public virtual void OnMessageReceived(PipeMessage message)
     {
-      var proxy = CreateProxy(command);
+      var proxy = CreateProxy(message);
 
       var failedOnce = proxy.Callback.FailedOnce;
 
-      _ = failedOnce.ContinueWith(async x =>
+      failedOnce.ContinueWith(async x =>
       {
         await _semaphore.WaitAsync();
-        _mapping.Remove(proxy.ServerName);
+        _mapping.Remove(proxy.PipeName);
         _semaphore.Release();
         await proxy.DisposeAsync();
         proxy.Callback.Target.Dispose();
       }, TaskContinuationOptions.OnlyOnRanToCompletion);
 
-      _ = failedOnce.ContinueWith(async x =>
+      failedOnce.ContinueWith(async x =>
       {
         await _semaphore.WaitAsync();
-        _mapping.Remove(proxy.ServerName);
+        _mapping.Remove(proxy.PipeName);
         _semaphore.Release();
         proxy.Callback.Target.Dispose();
       }, TaskContinuationOptions.OnlyOnCanceled);
@@ -153,13 +152,13 @@ namespace T.Pipes
       {
         cts.Cancel();
         _semaphore.Wait();
-        _mapping.Add(command.Parameter!.ToString()!, proxy);
+        _mapping.Add(proxy.PipeName, proxy);
         _semaphore.Release();
         return;
       }
       proxy.Dispose();
       proxy.Callback.Target.Dispose();
-      throw new InvalidOperationException($"The {nameof(command)}: {command.Command}, could not be performed, connection was not started or connection was impossible.");
+      throw new InvalidOperationException($"The {nameof(message)}: {message.Command}, could not be performed, connection was not started or connection was impossible.");
     }
 
     /// <summary>

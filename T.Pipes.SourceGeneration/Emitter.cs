@@ -184,7 +184,7 @@ namespace T.Pipes.SourceGeneration
 
           if (!item.Value.invoke.ReturnsVoid || output.Count > 0)
           {
-            Writer.Write("callback.SendResponse(message, ");
+            Writer.Write("return callback.SendResponseAsync(message, ");
           }
 
           Writer.Write($"callback.{item.Key}(");
@@ -208,7 +208,7 @@ namespace T.Pipes.SourceGeneration
 
           if (item.Value.invoke.ReturnsVoid && output.Count == 0)
           {
-            Writer.Write(" callback.SendResponse(message);");
+            Writer.Write(" return callback.SendResponseAsync(message);");
           }
 
           Writer.WriteLine(" };");
@@ -219,7 +219,7 @@ namespace T.Pipes.SourceGeneration
 
           if (!item.Value.invoke.ReturnsVoid)
           {
-            Writer.Write("callback.SendResponse(message, ");
+            Writer.Write("return callback.SendResponseAsync(message, ");
           }
 
           Writer.Write("callback.").Write(item.Key).Write('(');
@@ -239,7 +239,7 @@ namespace T.Pipes.SourceGeneration
 
           if (item.Value.invoke.ReturnsVoid)
           {
-            Writer.Write(" callback.SendResponse(message);");
+            Writer.Write(" return callback.SendResponseAsync(message);");
           }
 
           Writer.WriteLine(" };");

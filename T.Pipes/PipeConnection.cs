@@ -58,10 +58,10 @@ namespace T.Pipes
       => Callback.OnExceptionOccurred(e.Exception);
 
     /// <inheritdoc/>
-    public async Task WriteAsync(TPacket value, CancellationToken cancellationToken = default)
+    public Task WriteAsync(TPacket value, CancellationToken cancellationToken = default)
     {
       Callback.OnMessageSent(value);
-      await Pipe.WriteAsync(value, cancellationToken);
+      return Pipe.WriteAsync(value, cancellationToken);
     }
 
     /// <inheritdoc/>

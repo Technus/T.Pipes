@@ -75,17 +75,16 @@ namespace T.Pipes
     /// Disposes Proxies
     /// </summary>
     /// <returns></returns>
-    public virtual ValueTask DisposeAsync()
+    public virtual async ValueTask DisposeAsync()
     {
-      _connectedOnce.TrySetCanceled();
-      _semaphore.Wait();
+      await _semaphore.WaitAsync();
       foreach (var server in _mapping.Values)
       {
         server.Dispose();
       }
       _mapping.Clear();
       _semaphore.Dispose();
-      return default;
+      _connectedOnce.TrySetCanceled();
     }
 
     /// <summary>
@@ -99,10 +98,10 @@ namespace T.Pipes
     /// <param name="message"></param>
     /// <returns></returns>
     /// <remarks>do not write to the pipe directly, use that instead, (or the Wrapping Client/Server)</remarks>
-    public void Write(PipeMessage message)
+    public Task WriteAsync(PipeMessage message)
     {
       OnMessageSent(message);
-      _ = Pipe.WriteAsync(message);
+      return Pipe.WriteAsync(message);
     }
 
 
@@ -164,14 +163,14 @@ namespace T.Pipes
       _ = failedOnce.ContinueWith(async x =>
       {
         await _semaphore.WaitAsync();
-        _mapping.Remove(implementationServer.ServerName);
+        _mapping.Remove(implementationServer.PipeName);
         _semaphore.Release();
-        _ = implementationServer.DisposeAsync();
+        await implementationServer.DisposeAsync();
       }, TaskContinuationOptions.OnlyOnRanToCompletion);
 
       _ = failedOnce.ContinueWith(async x => {
         await _semaphore.WaitAsync();
-        _mapping.Remove(implementationServer.ServerName);
+        _mapping.Remove(implementationServer.PipeName);
         _semaphore.Release();
       }, TaskContinuationOptions.OnlyOnCanceled);
 
@@ -179,19 +178,19 @@ namespace T.Pipes
       await startTask;
       if (startTask.IsCompleted)
       {
-        Write(PipeMessageFactory.Instance.Create(command, implementationServer.ServerName));
+        await WriteAsync(PipeMessageFactory.Instance.Create(command, implementationServer.PipeName));
         var connectedTask = implementationServer.Callback.ConnectedOnce;
         using var cts = new CancellationTokenSource();
         if (await Task.WhenAny(connectedTask, Task.Delay(ResponseTimeoutMs)) == connectedTask && connectedTask.IsCompleted)
         {
           cts.Cancel();
           _semaphore.Wait();
-          _mapping.Add(implementationServer.ServerName, implementationServer);
+          _mapping.Add(implementationServer.PipeName, implementationServer);
           _semaphore.Release();
           return implementationServer;
         }
       }
-      _ = implementationServer.DisposeAsync();
+      await implementationServer.DisposeAsync();
       throw new InvalidOperationException($"The {nameof(command)}: {command}, could not be performed, connection was not started or connection was impossible.");
     }
   }
