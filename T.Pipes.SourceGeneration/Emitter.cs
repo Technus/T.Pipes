@@ -656,9 +656,33 @@ namespace T.Pipes.SourceGeneration
         Writer.Write("_args");
         foreach (var item in namedTypeSymbol.TypeArguments)
         {
-          Writer.Write('_').Write(item.Name);
+          Writer.Write('_');
+          if(item is INamedTypeSymbol nts)
+            RenderTypeName(nts, served);
+          else
+            Writer.Write(item.Name);
         }
         Writer.Write("_end_");
+      }
+    }
+
+    private void RenderTypeName(StringBuilder writer, INamedTypeSymbol namedTypeSymbol, bool served)
+    {
+      writer
+        //.Append(served?"Serve_":"Using_")
+        .Append(namedTypeSymbol.Name);
+      if (namedTypeSymbol.TypeArguments.Length > 0)
+      {
+        writer.Append("_args");
+        foreach (var item in namedTypeSymbol.TypeArguments)
+        {
+          writer.Append('_');
+          if (item is INamedTypeSymbol nts)
+            RenderTypeName(writer, nts, served);
+          else
+            writer.Append(item.Name);
+        }
+        writer.Append("_end_");
       }
     }
 
@@ -690,24 +714,18 @@ namespace T.Pipes.SourceGeneration
 
     private string GetName(ISymbol symbol, bool served, string prefix = "")
     {
-      var writer = new StringBuilder();
+      var sb = new StringBuilder();
+      RenderName(sb, symbol, served, prefix);
+      return sb.ToString();
+    }
+
+    private void RenderName(StringBuilder writer, ISymbol symbol, bool served, string prefix = "")
+    {
       writer
         .Append(prefix)
         .Append(symbol.Name)
         .Append('_');
-      writer
-        //.Write(served?"Serve_":"Using_")
-        .Append(symbol.ContainingType.Name);
-      if(symbol.ContainingType.TypeArguments.Length > 0)
-      {
-        writer.Append("_args");
-        foreach (var item in symbol.ContainingType.TypeArguments)
-        {
-          writer.Append('_').Append(item.Name);
-        }
-        writer.Append("_end_");
-      }
-      return writer.ToString();
+      RenderTypeName(writer, symbol.ContainingType, served);
     }
 
     private void RenderSignature(IEventSymbol eventSymbol, bool served)
