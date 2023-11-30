@@ -28,23 +28,23 @@ namespace T.Pipes
     where TPipe : H.Pipes.IPipeClient<PipeMessage>
   {
     private readonly SemaphoreSlim _semaphore = new(1, 1);
-    private readonly Dictionary<string, IPipeDelegatingConnection<PipeMessage>> _mapping = new();
+    private readonly Dictionary<string, IPipeDelegatingConnection<PipeMessage>> _mapping = [];
 
     /// <summary>
     /// Creates Callback to handle Factorization of <see cref="IPipeDelegatingConnection{TMessage}"/>
     /// </summary>
     /// <param name="pipe"></param>
     /// <param name="timeoutMs"></param>
-    protected SpawningPipeClientCallback(TPipe pipe, int timeoutMs)
+    protected SpawningPipeClientCallback(TPipe pipe, int timeoutMs = Timeout.Infinite)
     {
-      Pipe = pipe;
       ResponseTimeoutMs = timeoutMs;
+      Pipe = pipe;
     }
 
     /// <summary>
     /// The response await timeout should happen after that time
     /// </summary>
-    public int ResponseTimeoutMs { get; }
+    public int ResponseTimeoutMs { get; set; }
 
     /// <summary>
     /// Used to access data tunnel
@@ -92,7 +92,7 @@ namespace T.Pipes
     /// <returns></returns>
     public virtual async ValueTask DisposeAsync()
     {
-      await _semaphore.WaitAsync();
+      await _semaphore.WaitAsync().ConfigureAwait(false);
       foreach (var client in _mapping.Values)
       {
         client.Dispose();
@@ -105,12 +105,13 @@ namespace T.Pipes
     /// Writes to the pipe directly and calls the Callback On Write
     /// </summary>
     /// <param name="message"></param>
+    /// <param name="cancellationToken"></param>
     /// <returns></returns>
     /// <remarks>do not write to the pipe directly, use that instead, (or the Wrapping Client/Server)</remarks>
-    public Task WriteAsync(PipeMessage message)
+    public async Task WriteAsync(PipeMessage message, CancellationToken cancellationToken = default)
     {
+      await Pipe.WriteAsync(message, cancellationToken).ConfigureAwait(false);
       OnMessageSent(message);
-      return Pipe.WriteAsync(message);
     }
 
     /// <summary>
@@ -126,39 +127,19 @@ namespace T.Pipes
     public virtual void OnMessageReceived(PipeMessage message)
     {
       var proxy = CreateProxy(message);
-
-      var failedOnce = proxy.Callback.FailedOnce;
-
-      failedOnce.ContinueWith(async x =>
+      try
       {
-        await _semaphore.WaitAsync();
-        _mapping.Remove(proxy.PipeName);
-        _semaphore.Release();
-        await proxy.DisposeAsync();
-        proxy.Callback.Target.Dispose();
-      }, TaskContinuationOptions.OnlyOnRanToCompletion);
-
-      failedOnce.ContinueWith(async x =>
-      {
-        await _semaphore.WaitAsync();
-        _mapping.Remove(proxy.PipeName);
-        _semaphore.Release();
-        proxy.Callback.Target.Dispose();
-      }, TaskContinuationOptions.OnlyOnCanceled);
-
-      var startTask = proxy.StartAsync();
-      using var cts = new CancellationTokenSource();
-      if (Task.WhenAny(startTask, Task.Delay(ResponseTimeoutMs, cts.Token)).Result == startTask && startTask.IsCompleted)
-      {
-        cts.Cancel();
+        proxy.StartAndConnectWithTimeoutAsync(ResponseTimeoutMs).Wait();
         _semaphore.Wait();
         _mapping.Add(proxy.PipeName, proxy);
         _semaphore.Release();
-        return;
       }
-      proxy.Dispose();
-      proxy.Callback.Target.Dispose();
-      throw new InvalidOperationException($"The {nameof(message)}: {message.Command}, could not be performed, connection was not started or connection was impossible.");
+      catch
+      {
+        proxy.Dispose();
+        proxy.Callback.Target.Dispose();
+        throw;
+      }
     }
 
     /// <summary>

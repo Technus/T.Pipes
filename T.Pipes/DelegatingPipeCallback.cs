@@ -117,8 +117,6 @@ namespace T.Pipes
     /// <returns>return value/s from target</returns>
     public delegate Task CommandFunction(TCallback callback, TPacket message);
 
-    private readonly TaskCompletionSource<object?> _connectedOnce = new();
-    private readonly TaskCompletionSource<object?> _failedOnce = new();
     private readonly Dictionary<Guid, TaskCompletionSource<object?>> _responses = [];
     private readonly SemaphoreSlim _semaphore = new(1, 1);
     private TTarget _target;
@@ -128,9 +126,11 @@ namespace T.Pipes
     /// </summary>
     /// <param name="pipe">the same pipe as in the pipe connection holding it</param>
     /// <param name="packetFactory">to create <typeparamref name="TPacket"/></param>
+    /// <param name="responseTimeoutMs">response timeout in ms</param>
     /// <exception cref="InvalidOperationException">when the this is not a valid <typeparamref name="TTarget"/> or null</exception>
-    public DelegatingPipeCallback(TPipe pipe, TPacketFactory packetFactory)
+    public DelegatingPipeCallback(TPipe pipe, TPacketFactory packetFactory, int responseTimeoutMs = Timeout.Infinite)
     {
+      ResponseTimeoutMs = responseTimeoutMs;
       Pipe = pipe;
       PacketFactory = packetFactory;
       if (this is TTarget tt)
@@ -150,9 +150,11 @@ namespace T.Pipes
     /// <param name="pipe">the same pipe as in the pipe connection holding it</param>
     /// <param name="packetFactory">to create <typeparamref name="TPacket"/></param>
     /// <param name="target">the actual implementation of <typeparamref name="TTarget"/></param>
+    /// <param name="responseTimeoutMs">response timeout in ms</param>
     /// <exception cref="InvalidOperationException">when <paramref name="target"/> is null</exception>
-    public DelegatingPipeCallback(TPipe pipe, TPacketFactory packetFactory, TTarget target)
+    public DelegatingPipeCallback(TPipe pipe, TPacketFactory packetFactory, TTarget target, int responseTimeoutMs = Timeout.Infinite)
     {
+      ResponseTimeoutMs = responseTimeoutMs;
       Pipe = pipe;
       PacketFactory = packetFactory;
       if (target is not null)
@@ -234,33 +236,14 @@ namespace T.Pipes
     /// </summary>
     public TPacketFactory PacketFactory { get; }
 
-    /// <summary>
-    /// Use to check if connection was established correctly the first time
-    /// </summary>
-    public Task ConnectedOnce => _connectedOnce.Task;
-
-    /// <summary>
-    /// Use to check if connection was failed at least once
-    /// </summary>
-    public Task FailedOnce => _failedOnce.Task;
+    /// <inheritdoc/>
+    public int ResponseTimeoutMs { get; set; }
 
     /// <inheritdoc/>
-    public int ResponseTimeoutMs { get; set; } = -1;
+    public virtual void Connected(string connection) => Clear();
 
     /// <inheritdoc/>
-    public virtual void Connected(string connection)
-    {
-      Clear();
-      _connectedOnce.TrySetResult(null);
-    }
-
-    /// <inheritdoc/>
-    public virtual void Disconnected(string connection)
-    {
-      Clear();
-      _failedOnce.TrySetResult(null);
-      _connectedOnce.TrySetCanceled();
-    }
+    public virtual void Disconnected(string connection) => Clear();
 
     /// <summary>
     /// <see cref="DisposeAsync"/>
@@ -273,7 +256,7 @@ namespace T.Pipes
     /// <returns></returns>
     public virtual async ValueTask DisposeAsync()
     {
-      await _semaphore.WaitAsync();
+      await _semaphore.WaitAsync().ConfigureAwait(false);
       if (_responses.Count > 0)
       {
         var name = Pipe is H.Pipes.IPipeServer<TPacket> server ? $"Server Pipe: {server.PipeName}"
@@ -293,8 +276,6 @@ namespace T.Pipes
         TargetDeInitAuto();
         TargetDeInit(_target);
       }
-      _failedOnce.TrySetCanceled();
-      _connectedOnce.TrySetCanceled();
     }
 
     /// <summary>
@@ -327,12 +308,7 @@ namespace T.Pipes
     }
 
     /// <inheritdoc/>
-    public virtual void OnExceptionOccurred(Exception e)
-    {
-      Clear(e);
-      _failedOnce.TrySetException(e);
-      _connectedOnce.TrySetException(e);
-    }
+    public virtual void OnExceptionOccurred(Exception e) => Clear(e);
 
     /// <summary>
     /// Called on each incoming message<br/>
@@ -389,7 +365,7 @@ namespace T.Pipes
     {
       var message = Pipe is H.Pipes.IPipeServer<TPacket> server ? $"Message unknown: {invalidMessage}, Server Pipe: {server.PipeName}"
         : Pipe is H.Pipes.IPipeClient<TPacket> client ? $"Message unknown: {invalidMessage}, Server: {client.ServerName}, Pipe: {client.PipeName}"
-        : "Message unknown: {invalidMessage}, Unknown Pipe";
+        : $"Message unknown: {invalidMessage}, Unknown Pipe";
       throw new ArgumentException(message, nameof(invalidMessage));
     }
 
@@ -406,31 +382,63 @@ namespace T.Pipes
     /// </summary>
     /// <typeparam name="T">requested result type</typeparam>
     /// <param name="command">packet with command</param>
+    /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    public async Task<T> GetResponseAsync<T>(TPacket command)
+    public async Task<T> GetResponseAsync<T>(TPacket command, CancellationToken cancellationToken = default)
     {
       var tcs = new TaskCompletionSource<object>();
-      await _semaphore.WaitAsync();
-      _responses.Add(command.Id, tcs);
-      _semaphore.Release();
-      await WriteAsync(command);
-      var responseTask = tcs.Task;
-      if (ResponseTimeoutMs >= 0)
+      using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+      CancellationTokenRegistration ctr = default;
+
+      try
       {
-        using var cts = new CancellationTokenSource();
-        if (await Task.WhenAny(responseTask, Task.Delay(ResponseTimeoutMs, cts.Token)) == responseTask)
+        if (ResponseTimeoutMs >= 0)
+          cts.CancelAfter(ResponseTimeoutMs);
+
+        if (ResponseTimeoutMs >= 0 || cancellationToken.CanBeCanceled)
+#if NET5_0_OR_GREATER
+          ctr = cts.Token.UnsafeRegister(static (x,ct) => ((TaskCompletionSource<object>)x!).TrySetCanceled(ct), tcs);
+#else
+          ctr = cts.Token.Register(static x =>
+          {
+            var (tcs, ct) = ((TaskCompletionSource<object>, CancellationToken))x;
+            tcs.TrySetCanceled(ct);
+          }, (tcs, cts.Token));
+#endif
+
+        await _semaphore.WaitAsync(cts.Token).ConfigureAwait(false);
+        _responses.Add(command.Id, tcs);
+        _semaphore.Release();
+        await WriteAsync(command, cts.Token).ConfigureAwait(false);
+        return (T)await tcs.Task.ConfigureAwait(false);
+      }
+      catch (OperationCanceledException ex) when (ex.CancellationToken == cts.Token)
+      {
+        if (cancellationToken.IsCancellationRequested)
         {
-          cts.Cancel();
+          tcs.TrySetException(ex);
+          throw;
         }
         else
         {
-          await _semaphore.WaitAsync();
-          _responses.Remove(command.Id);
-          _semaphore.Release();
-          tcs.TrySetException(new TimeoutException());
+          var e = new OperationCanceledException("Timed out", ex, ex.CancellationToken);
+          tcs.TrySetException(e);
+          throw e;
         }
       }
-      return (T)await responseTask;
+      catch (Exception e)
+      {
+        tcs.TrySetException(e);
+        throw;
+      }
+      finally
+      {
+        ctr.Dispose();
+        tcs.TrySetCanceled();
+        await _semaphore.WaitAsync((CancellationToken)default).ConfigureAwait(false);
+        _responses.Remove(command.Id);
+        _semaphore.Release();
+      }
     }
 
 #nullable restore
@@ -439,22 +447,24 @@ namespace T.Pipes
     /// Writes to the pipe directly and calls the Callback On Write
     /// </summary>
     /// <param name="message"></param>
+    /// <param name="cancellationToken"></param>
     /// <returns></returns>
     /// <remarks>do not write to the pipe directly, use that instead, (or the Wrapping Client/Server)</remarks>
-    public Task WriteAsync(TPacket message)
+    public async Task WriteAsync(TPacket message, CancellationToken cancellationToken = default)
     {
+      await Pipe.WriteAsync(message, cancellationToken).ConfigureAwait(false);
       OnMessageSent(message);
-      return Pipe.WriteAsync(message);
     }
 
     /// <summary>
     /// Sends response using <see cref="IPipeMessageFactory{TPacket}.CreateResponse(TPacket)"/>
     /// </summary>
     /// <param name="message"></param>
-    public Task SendResponseAsync(TPacket message)
+    /// <param name="cancellationToken"></param>
+    public Task SendResponseAsync(TPacket message, CancellationToken cancellationToken = default)
     {
       var response = PacketFactory.CreateResponse(message);
-      return WriteAsync(response);
+      return WriteAsync(response, cancellationToken);
     }
 
     /// <summary>
@@ -463,10 +473,11 @@ namespace T.Pipes
     /// <typeparam name="T"></typeparam>
     /// <param name="message"></param>
     /// <param name="parameter"></param>
-    public Task SendResponseAsync<T>(TPacket message, T parameter)
+    /// <param name="cancellationToken"></param>
+    public Task SendResponseAsync<T>(TPacket message, T parameter, CancellationToken cancellationToken = default)
     {
       var response = PacketFactory.CreateResponse(message, parameter);
-      return WriteAsync(response);
+      return WriteAsync(response, cancellationToken);
     }
 
     /// <summary>
@@ -474,11 +485,12 @@ namespace T.Pipes
     /// </summary>
     /// <typeparam name="TOut"></typeparam>
     /// <param name="callerName">the command or function name</param>
+    /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    public Task<TOut> RemoteAsync<TOut>(string callerName)
+    public Task<TOut> RemoteAsync<TOut>(string callerName, CancellationToken cancellationToken = default)
     {
       var cmd = PacketFactory.Create(callerName);
-      return GetResponseAsync<TOut>(cmd);
+      return GetResponseAsync<TOut>(cmd, cancellationToken);
     }
 
     /// <summary>
@@ -488,22 +500,24 @@ namespace T.Pipes
     /// <typeparam name="TOut"></typeparam>
     /// <param name="callerName">the command or function name</param>
     /// <param name="parameter"></param>
+    /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    public Task<TOut> RemoteAsync<TIn, TOut>(string callerName, TIn? parameter)
+    public Task<TOut> RemoteAsync<TIn, TOut>(string callerName, TIn? parameter, CancellationToken cancellationToken = default)
     {
       var cmd = PacketFactory.Create(callerName, parameter);
-      return GetResponseAsync<TOut>(cmd);
+      return GetResponseAsync<TOut>(cmd, cancellationToken);
     }
 
     /// <summary>
     /// Delegates the work to the other side, by sending command and awaiting response
     /// </summary>
     /// <param name="callerName">the command or function name</param>
+    /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    public Task RemoteAsync(string callerName)
+    public Task RemoteAsync(string callerName, CancellationToken cancellationToken = default)
     {
       var cmd = PacketFactory.Create(callerName);
-      return GetResponseAsync<object?>(cmd);
+      return GetResponseAsync<object?>(cmd, cancellationToken);
     }
 
     /// <summary>
@@ -512,11 +526,12 @@ namespace T.Pipes
     /// <typeparam name="TIn"></typeparam>
     /// <param name="callerName">the command or function name</param>
     /// <param name="parameter"></param>
+    /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    public Task RemoteAsync<TIn>(string callerName, TIn? parameter)
+    public Task RemoteAsync<TIn>(string callerName, TIn? parameter, CancellationToken cancellationToken = default)
     {
       var cmd = PacketFactory.Create(callerName, parameter);
-      return GetResponseAsync<object?>(cmd);
+      return GetResponseAsync<object?>(cmd, cancellationToken);
     }
 
     /// <summary>

@@ -34,7 +34,7 @@ namespace T.Pipes
 
   /// <summary>
   /// Helper to wrap factorization of <see cref="T.Pipes.Abstractions.IPipeDelegatingConnection{TMessage}"/> Servers
-  /// implements methods calling <see cref="SpawningPipeServerCallback{TPipe}.RequestProxyAsync{T}(string, T)"/> to provide proxies
+  /// implements methods calling <see cref="SpawningPipeServerCallback{TPipe}.RequestProxyAsync{T}(string, T, CancellationToken)"/> to provide proxies
   /// </summary>
   /// <typeparam name="TPipe"></typeparam>
   /// <typeparam name="TCallback"></typeparam>
@@ -59,36 +59,10 @@ namespace T.Pipes
     /// <returns></returns>
     public override async ValueTask DisposeAsync()
     {
-      await base.DisposeAsync();
-      await Callback.DisposeAsync();
+      await base.DisposeAsync().ConfigureAwait(false);
+      await Callback.DisposeAsync().ConfigureAwait(false);
       _process.Close();
       _process.Dispose();
-    }
-
-    /// <summary>
-    /// Starts the Pipe, attempts connection and throws on failure
-    /// </summary>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
-    /// <exception cref="InvalidOperationException">when a connection was not possible</exception>
-    public override async Task StartAsync(CancellationToken cancellationToken = default)
-    {
-      var startTask = base.StartAsync(cancellationToken);
-      await startTask;
-      if(startTask.IsCompleted)
-      {
-        _process.Start();
-        var connectedTask = Callback.ConnectedOnce;
-        using var cts = new CancellationTokenSource();
-        if (await Task.WhenAny(connectedTask, Task.Delay(Callback.ResponseTimeoutMs, cts.Token)) == connectedTask && connectedTask.IsCompleted)
-        {
-          cts.Cancel();
-          return;
-        }
-        _process.Close();
-        await StopAsync(CancellationToken.None);
-      }
-      throw new InvalidOperationException($"Either the client was not started or connection was impossible");
     }
   }
 }

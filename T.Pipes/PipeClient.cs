@@ -104,9 +104,13 @@ namespace T.Pipes
       => Pipe.DisconnectAsync(cancellationToken);
 
     /// <inheritdoc/>
+    public override Task StartAndConnectAsync(CancellationToken cancellationToken = default) 
+      => StartAsync(cancellationToken);
+
+    /// <inheritdoc/>
     public override async ValueTask DisposeAsync()
     {
-      await base.DisposeAsync();
+      await base.DisposeAsync().ConfigureAwait(false);
       Pipe.Disconnected -= OnDisconnected;
       Pipe.Connected -= OnConnected;
     }

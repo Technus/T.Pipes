@@ -85,8 +85,8 @@ namespace T.Pipes
     /// <returns></returns>
     public override async ValueTask DisposeAsync()
     {
-      await base.DisposeAsync();
-      await Callback.DisposeAsync();
+      await base.DisposeAsync().ConfigureAwait(false);
+      await Callback.DisposeAsync().ConfigureAwait(false);
     }
   }
 }

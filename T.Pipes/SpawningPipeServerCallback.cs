@@ -27,7 +27,6 @@ namespace T.Pipes
     : IPipeCallback<PipeMessage>
     where TPipe : H.Pipes.IPipeServer<PipeMessage>
   {
-    private readonly TaskCompletionSource<object?> _connectedOnce = new();
     private readonly SemaphoreSlim _semaphore = new(1, 1);
     private readonly Dictionary<string, IPipeDelegatingConnection<PipeMessage>> _mapping = [];
 
@@ -36,7 +35,7 @@ namespace T.Pipes
     /// </summary>
     /// <param name="pipe"></param>
     /// <param name="timeoutMs"></param>
-    protected SpawningPipeServerCallback(TPipe pipe, int timeoutMs)
+    protected SpawningPipeServerCallback(TPipe pipe, int timeoutMs = Timeout.Infinite)
     {
       Pipe = pipe;
       ResponseTimeoutMs = timeoutMs;
@@ -45,17 +44,12 @@ namespace T.Pipes
     /// <summary>
     /// The response await timeout should happen after that time
     /// </summary>
-    public int ResponseTimeoutMs { get; }
+    public int ResponseTimeoutMs { get; set; }
 
     /// <summary>
     /// Used to access data tunnel
     /// </summary>
     public TPipe Pipe { get; }
-
-    /// <summary>
-    /// Task that checks if a single connection was achieved
-    /// </summary>
-    public Task ConnectedOnce => _connectedOnce.Task;
 
     /// <summary>
     /// Disposes Proxies
@@ -77,14 +71,13 @@ namespace T.Pipes
     /// <returns></returns>
     public virtual async ValueTask DisposeAsync()
     {
-      await _semaphore.WaitAsync();
+      await _semaphore.WaitAsync().ConfigureAwait(false);
       foreach (var server in _mapping.Values)
       {
         server.Dispose();
       }
       _mapping.Clear();
       _semaphore.Dispose();
-      _connectedOnce.TrySetCanceled();
     }
 
     /// <summary>
@@ -96,43 +89,32 @@ namespace T.Pipes
     /// Writes to the pipe directly and calls the Callback On Write
     /// </summary>
     /// <param name="message"></param>
+    /// <param name="cancellationToken"></param>
     /// <returns></returns>
     /// <remarks>do not write to the pipe directly, use that instead, (or the Wrapping Client/Server)</remarks>
-    public Task WriteAsync(PipeMessage message)
+    public async Task WriteAsync(PipeMessage message, CancellationToken cancellationToken = default)
     {
+      await Pipe.WriteAsync(message, cancellationToken).ConfigureAwait(false);
       OnMessageSent(message);
-      return Pipe.WriteAsync(message);
     }
 
 
     /// <summary>
-    /// disposes created Proxies, and sets <see cref="ConnectedOnce"/> result
+    /// disposes created Proxies
     /// </summary>
-    public virtual void Connected(string connection)
-    {
-      Clear();
-      _connectedOnce.TrySetResult(null);
-    }
+    public virtual void Connected(string connection) => Clear();
 
 
     /// <summary>
-    /// disposes created Proxies, and sets <see cref="ConnectedOnce"/> result
+    /// disposes created Proxies
     /// </summary>
-    public virtual void Disconnected(string connection)
-    {
-      Clear();
-      _connectedOnce.TrySetCanceled();
-    }
+    public virtual void Disconnected(string connection) => Clear();
 
 
     /// <summary>
-    /// disposes created Proxies, and sets <see cref="ConnectedOnce"/> result
+    /// disposes created Proxies
     /// </summary>
-    public virtual void OnExceptionOccurred(Exception e)
-    {
-      Clear();
-      _connectedOnce.TrySetException(e);
-    }
+    public virtual void OnExceptionOccurred(Exception e) => Clear();
 
     /// <summary>
     /// No-op handling of sent messages
@@ -153,44 +135,41 @@ namespace T.Pipes
     /// <typeparam name="T"></typeparam>
     /// <param name="command"></param>
     /// <param name="implementationServer"></param>
+    /// <param name="cancellationToken"></param>
     /// <returns></returns>
     /// <exception cref="InvalidOperationException"></exception>
-    protected async Task<T> RequestProxyAsync<T>(string command, T implementationServer)
+    protected async Task<T> RequestProxyAsync<T>(string command, T implementationServer, CancellationToken cancellationToken = default)
       where T : IPipeDelegatingConnection<PipeMessage>
     {
-      var failedOnce = implementationServer.Callback.FailedOnce;
+      using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+      if(ResponseTimeoutMs>=0)
+        cts.CancelAfter(ResponseTimeoutMs);
 
-      _ = failedOnce.ContinueWith(async x =>
+      try
       {
-        await _semaphore.WaitAsync();
-        _mapping.Remove(implementationServer.PipeName);
-        _semaphore.Release();
-        await implementationServer.DisposeAsync();
-      }, TaskContinuationOptions.OnlyOnRanToCompletion);
-
-      _ = failedOnce.ContinueWith(async x => {
-        await _semaphore.WaitAsync();
-        _mapping.Remove(implementationServer.PipeName);
-        _semaphore.Release();
-      }, TaskContinuationOptions.OnlyOnCanceled);
-
-      var startTask = implementationServer.StartAsync();
-      await startTask;
-      if (startTask.IsCompleted)
-      {
-        await WriteAsync(PipeMessageFactory.Instance.Create(command, implementationServer.PipeName));
-        var connectedTask = implementationServer.Callback.ConnectedOnce;
-        using var cts = new CancellationTokenSource();
-        if (await Task.WhenAny(connectedTask, Task.Delay(ResponseTimeoutMs)) == connectedTask && connectedTask.IsCompleted)
-        {
-          cts.Cancel();
-          _semaphore.Wait();
-          _mapping.Add(implementationServer.PipeName, implementationServer);
-          _semaphore.Release();
-          return implementationServer;
-        }
+        await implementationServer.StartAsync(cts.Token).ConfigureAwait(false);
+        await WriteAsync(PipeMessageFactory.Instance.Create(command, implementationServer.PipeName), cancellationToken).ConfigureAwait(false);
       }
-      await implementationServer.DisposeAsync();
+      catch
+      {
+        await implementationServer.DisposeAsync();
+        throw;
+      }
+      finally
+      {
+
+      }
+
+      using var cts = new CancellationTokenSource();
+      if (await Task.WhenAny(connectedTask, Task.Delay(ResponseTimeoutMs)).ConfigureAwait(false) == connectedTask && connectedTask.IsCompletedSuccessfully())
+      {
+        cts.Cancel();
+        _semaphore.Wait();
+        _mapping.Add(implementationServer.PipeName, implementationServer);
+        _semaphore.Release();
+        return implementationServer;
+      }
+      await implementationServer.DisposeAsync().ConfigureAwait(false);
       throw new InvalidOperationException($"The {nameof(command)}: {command}, could not be performed, connection was not started or connection was impossible.");
     }
   }

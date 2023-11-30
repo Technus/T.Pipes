@@ -10,16 +10,6 @@ namespace T.Pipes.Abstractions
   public interface IPipeDelegatingCallback<TMessage> : IPipeCallback<TMessage>
   {
     /// <summary>
-    /// Use to check if connection was established correctly the first time
-    /// </summary>
-    public Task ConnectedOnce { get; }
-
-    /// <summary>
-    /// Use to check if connection was failed at least once
-    /// </summary>
-    public Task FailedOnce { get; }
-
-    /// <summary>
     /// Client will point to the target implementation<br/>
     /// Server will point to the proxy callback which is 'this'
     /// </summary>

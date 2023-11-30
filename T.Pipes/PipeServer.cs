@@ -1,4 +1,5 @@
 ﻿using H.Pipes.Args;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using T.Pipes.Abstractions;
@@ -98,6 +99,67 @@ namespace T.Pipes
     public override Task StartAsync(CancellationToken cancellationToken = default)
       => Pipe.StartAsync(cancellationToken);
 
+    /// <summary>
+    /// Starts and then awaits incoming connection, stops on failure/cancellation
+    /// </summary>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    public override async Task StartAndConnectAsync(CancellationToken cancellationToken = default)
+    {
+#if NET5_0_OR_GREATER
+      var tcs = new TaskCompletionSource();
+      EventHandler<ConnectionEventArgs<TPacket>> onConnected = (o, e) => tcs.TrySetResult();
+#else
+      var tcs = new TaskCompletionSource<object?>();
+      EventHandler<ConnectionEventArgs<TPacket>> onConnected = (o, e) => tcs.TrySetResult(null);
+#endif
+      CancellationTokenRegistration ctr = default;
+
+      try
+      {
+        if (cancellationToken.CanBeCanceled)
+#if NET5_0_OR_GREATER
+          ctr = cancellationToken.UnsafeRegister(static (x,ct) => ((TaskCompletionSource)x!).TrySetCanceled(ct), tcs);
+#else
+          ctr = cancellationToken.Register(static x =>
+          {
+            var (tcs, ct) = ((TaskCompletionSource<object?>, CancellationToken))x;
+            tcs.TrySetCanceled(ct);
+          }, (tcs, cancellationToken));
+#endif
+
+        Pipe.ClientConnected += onConnected;
+        await StartAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+          await tcs.Task.ConfigureAwait(false);
+        }
+        catch (Exception tcsException)
+        {
+          try
+          {
+            await StopAsync(default).ConfigureAwait(false);
+          }
+          catch (Exception stopException)
+          {
+            throw new AggregateException(tcsException,stopException);
+          }
+          throw;
+        }
+      }
+      catch (Exception e)
+      {
+        tcs.TrySetException(e);
+        throw;
+      }
+      finally
+      {
+        ctr.Dispose();
+        tcs.TrySetCanceled();
+        Pipe.ClientConnected -= onConnected;
+      }
+    }
+
     /// <inheritdoc/>
     public override Task StopAsync(CancellationToken cancellationToken = default)
       => Pipe.StopAsync(cancellationToken);
@@ -105,7 +167,7 @@ namespace T.Pipes
     /// <inheritdoc/>
     public override async ValueTask DisposeAsync()
     {
-      await base.DisposeAsync();
+      await base.DisposeAsync().ConfigureAwait(false);
       Pipe.ClientDisconnected -= OnClientDisconnected;
       Pipe.ClientConnected -= OnClientConnected;
     }

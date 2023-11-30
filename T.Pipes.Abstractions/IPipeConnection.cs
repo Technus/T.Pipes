@@ -31,6 +31,21 @@ namespace T.Pipes.Abstractions
     Task StartAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Starts and then awaits incoming connection, should use <see cref="StartAsync(CancellationToken)"/>
+    /// </summary>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    public Task StartAndConnectAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Allows to start and await connection for a specified time
+    /// </summary>
+    /// <param name="timeoutMs"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    Task StartAndConnectWithTimeoutAsync(int timeoutMs, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Stops the pipe
     /// </summary>
     /// <param name="cancellationToken"></param>

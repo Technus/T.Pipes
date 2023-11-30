@@ -54,27 +54,8 @@ namespace T.Pipes
     /// <returns></returns>
     public override async ValueTask DisposeAsync()
     {
-      await base.DisposeAsync();
-      await Callback.DisposeAsync();
-    }
-
-    /// <summary>
-    /// Starts the Pipe and attempts connection, throws on failure
-    /// </summary>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
-    /// <exception cref="InvalidOperationException">when a connection was not possible</exception>
-    public override async Task StartAsync(CancellationToken cancellationToken = default)
-    {
-      var startTask = base.StartAsync(cancellationToken);
-      using var cts = new CancellationTokenSource();
-      if (await Task.WhenAny(startTask, Task.Delay(Callback.ResponseTimeoutMs, cts.Token)) == startTask && startTask.IsCompleted)
-      {
-        cts.Cancel();
-        return;
-      }
-      await StopAsync(CancellationToken.None);
-      throw new InvalidOperationException($"Either the server was not started or connection was impossible");
+      await base.DisposeAsync().ConfigureAwait(false);
+      await Callback.DisposeAsync().ConfigureAwait(false);
     }
   }
 }
