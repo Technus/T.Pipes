@@ -320,7 +320,8 @@ namespace T.Pipes
 
       _semaphore.Wait();
       var exists = _responses.TryGetValue(message.Id, out var response);
-      _responses.Remove(message.Id);
+      if(exists)
+        _responses.Remove(message.Id);
       _semaphore.Release();
 
       if (exists)
