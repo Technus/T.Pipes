@@ -1,4 +1,5 @@
 ﻿using H.Pipes.Args;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using T.Pipes.Abstractions;
@@ -96,8 +97,25 @@ namespace T.Pipes
       => Callback.Connected(e.Connection.PipeName);
 
     /// <inheritdoc/>
-    public override Task StartAsync(CancellationToken cancellationToken = default)
-      => Pipe.ConnectAsync(cancellationToken);
+    public override async Task StartAsync(CancellationToken cancellationToken = default)
+    {
+      try
+      {
+        await Pipe.ConnectAsync(cancellationToken).ConfigureAwait(false);
+      }
+      catch (Exception startException)
+      {
+        try
+        {
+          await StopAsync(default).ConfigureAwait(false);
+        }
+        catch (Exception stopException)
+        {
+          throw new AggregateException(startException, stopException);
+        }
+        throw;
+      }
+    }
 
     /// <inheritdoc/>
     public override Task StopAsync(CancellationToken cancellationToken = default)
@@ -108,9 +126,9 @@ namespace T.Pipes
       => StartAsync(cancellationToken);
 
     /// <inheritdoc/>
-    public override async ValueTask DisposeAsync()
+    protected override void DisposeCore(bool includeAsync)
     {
-      await base.DisposeAsync().ConfigureAwait(false);
+      base.DisposeCore(includeAsync);
       Pipe.Disconnected -= OnDisconnected;
       Pipe.Connected -= OnConnected;
     }

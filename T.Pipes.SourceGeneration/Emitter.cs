@@ -165,7 +165,7 @@ namespace T.Pipes.SourceGeneration
       }
 
       [System.ComponentModel.Description("CommandSelector")]
-      static protected void RegisterCommandSelectorFunctionsFor{{() => RenderTypeSyntaxName()}}()
+      static internal void RegisterCommandSelectorFunctionsFor{{() => RenderTypeSyntaxName()}}()
       {{() => RenderStaticSelectorBody()}}
       """);
 

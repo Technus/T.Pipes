@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using T.Pipes.Abstractions;
@@ -19,7 +20,7 @@ namespace T.Pipes
     where TCallback : DelegatingPipeClientCallback<TTarget, TCallback>
   {
     /// <summary>
-    /// 
+    /// Creates the callback, must be done with the same pipe as in the pipe connection holding it.
     /// </summary>
     /// <param name="pipe">the same pipe as in the pipe connection holding it</param>
     /// <param name="target">the actual implementation of <typeparamref name="TTarget"/></param>
@@ -38,7 +39,7 @@ namespace T.Pipes
     where TTargetAndCallback : DelegatingPipeCallback<H.Pipes.PipeServer<PipeMessage>, PipeMessage, PipeMessageFactory, TTargetAndCallback, TTargetAndCallback>, IDisposable
   {
     /// <summary>
-    /// 
+    /// Creates the callback, must be done with the same pipe as in the pipe connection holding it.
     /// </summary>
     /// <param name="pipe">the same pipe as in the pipe connection holding it</param>
     public DelegatingPipeServerCallback(H.Pipes.PipeServer<PipeMessage> pipe) : base(pipe)
@@ -58,7 +59,7 @@ namespace T.Pipes
     where TCallback : DelegatingPipeCallback<H.Pipes.PipeServer<PipeMessage>, PipeMessage, PipeMessageFactory, TTarget, TCallback>
   {
     /// <summary>
-    /// 
+    /// Creates the callback, must be done with the same pipe as in the pipe connection holding it.
     /// </summary>
     /// <param name="pipe">the same pipe as in the pipe connection holding it</param>
     public DelegatingPipeServerCallback(H.Pipes.PipeServer<PipeMessage> pipe) : base(pipe)
@@ -102,7 +103,7 @@ namespace T.Pipes
   /// <typeparam name="TTarget">target to operate on</typeparam>
   /// <typeparam name="TCallback">the final implementing type</typeparam>
   public abstract class DelegatingPipeCallback<TPipe, TPacket, TPacketFactory, TTarget, TCallback>
-    : IPipeDelegatingCallback<TPacket>
+    : BaseClass, IPipeDelegatingCallback<TPacket>
     where TTarget : IDisposable
     where TPipe : H.Pipes.IPipeConnection<TPacket>
     where TPacket : IPipeMessage
@@ -246,17 +247,11 @@ namespace T.Pipes
     public virtual void Disconnected(string connection) => Clear();
 
     /// <summary>
-    /// <see cref="DisposeAsync"/>
-    /// </summary>
-    public void Dispose() => DisposeAsync().GetAwaiter().GetResult();
-
-    /// <summary>
     /// Disposes own resources, not the <see cref="Pipe"/> nor the <see cref="Target"/>
     /// </summary>
-    /// <returns></returns>
-    public virtual async ValueTask DisposeAsync()
+    protected override void DisposeCore(bool includeAsync)
     {
-      await _semaphore.WaitAsync().ConfigureAwait(false);
+      _semaphore.Wait();
       if (_responses.Count > 0)
       {
         var name = Pipe is H.Pipes.IPipeServer<TPacket> server ? $"Server Pipe: {server.PipeName}"
@@ -386,7 +381,7 @@ namespace T.Pipes
     /// <returns></returns>
     public async Task<T> GetResponseAsync<T>(TPacket command, CancellationToken cancellationToken = default)
     {
-      var tcs = new TaskCompletionSource<object>();
+      var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
       using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
       CancellationTokenRegistration ctr = default;
 
@@ -410,7 +405,14 @@ namespace T.Pipes
         _responses.Add(command.Id, tcs);
         _semaphore.Release();
         await WriteAsync(command, cts.Token).ConfigureAwait(false);
-        return (T)await tcs.Task.ConfigureAwait(false);
+        try
+        {
+          return (T)await tcs.Task.ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+          throw new InvalidOperationException("Command was sent, yet no response.", e);
+        }
       }
       catch (OperationCanceledException ex) when (ex.CancellationToken == cts.Token)
       {
@@ -421,7 +423,7 @@ namespace T.Pipes
         }
         else
         {
-          var e = new OperationCanceledException("Timed out", ex, ex.CancellationToken);
+          var e = new TimeoutException("Timeout expired", ex);
           tcs.TrySetException(e);
           throw e;
         }
@@ -434,8 +436,9 @@ namespace T.Pipes
       finally
       {
         ctr.Dispose();
-        tcs.TrySetCanceled();
-        await _semaphore.WaitAsync((CancellationToken)default).ConfigureAwait(false);
+        if (!tcs.Task.IsCompleted)
+          tcs.TrySetException(new InvalidOperationException("Failed to finish gracefully."));
+        await _semaphore.WaitAsync().ConfigureAwait(false);
         _responses.Remove(command.Id);
         _semaphore.Release();
       }

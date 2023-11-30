@@ -1,10 +1,8 @@
-﻿using Pastel;
-
-namespace T.Pipes.Test.Server
+﻿namespace T.Pipes.Test.Server
 {
   internal class Program
   {
-    static async Task Main(string[] args)
+    private static async Task Main(string[] args)
     {
 #if DEBUG
       //Debugger.Launch();
@@ -14,9 +12,7 @@ namespace T.Pipes.Test.Server
       {
         AppDomain.CurrentDomain.ProcessExit += (object? sender, EventArgs e) => server.Dispose();
 
-        var task = server.StartAsync();
-        _ = task.ContinueWith(static x => Environment.Exit(-1), TaskContinuationOptions.NotOnRanToCompletion);
-        await task;
+        await server.StartAndConnectWithTimeoutAsync();
 
         using (var item = server.Callback.Create())
         {

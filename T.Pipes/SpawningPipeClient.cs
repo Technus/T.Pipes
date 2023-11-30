@@ -1,13 +1,11 @@
-﻿using System;
-using System.Threading;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 
 namespace T.Pipes
 {
   /// <inheritdoc/>
-  public abstract class SpawningPipeClient<TCallback> :
-    SpawningPipeClient<H.Pipes.PipeClient<PipeMessage>, TCallback>
-    where TCallback : SpawningPipeClientCallback<H.Pipes.PipeClient<PipeMessage>>
+  public abstract class SpawningPipeClient<TCallback> 
+    : SpawningPipeClient<H.Pipes.PipeClient<PipeMessage>, TCallback>
+    where TCallback : SpawningPipeClientCallback
   {
     /// <summary>
     /// Creates the Target implementation spawning code
@@ -31,12 +29,12 @@ namespace T.Pipes
 
   /// <summary>
   /// Helper to wrap Factorization of <see cref="T.Pipes.Abstractions.IPipeDelegatingConnection{TMessage}"/> Clients<br/>
-  /// implement <see cref="SpawningPipeClientCallback{TPipe}.CreateProxy(PipeMessage)"/> to provide implementations
   /// </summary>
   /// <typeparam name="TPipe"></typeparam>
   /// <typeparam name="TCallback"></typeparam>
-  public abstract class SpawningPipeClient<TPipe, TCallback> : PipeClient<TPipe, PipeMessage, TCallback>
-    where TCallback : SpawningPipeClientCallback<TPipe>
+  public abstract class SpawningPipeClient<TPipe, TCallback> 
+    : PipeClient<TPipe, PipeMessage, TCallback>
+    where TCallback : SpawningPipeCallback<TPipe>
     where TPipe : H.Pipes.IPipeClient<PipeMessage>
   {
     /// <summary>
@@ -49,12 +47,23 @@ namespace T.Pipes
     }
 
     /// <summary>
-    /// Disposes the Pipe and Callback
+    /// Disposes <see cref="PipeConnection{TPipe, TPacket, TCallback}.Pipe"/> and <see cref="PipeConnection{TPipe, TPacket, TCallback}.Callback"/>
+    /// </summary>
+    /// <param name="includeAsync"></param>
+    protected override void DisposeCore(bool includeAsync)
+    {
+      base.DisposeCore(includeAsync);
+      if (includeAsync)
+        Callback.Dispose();
+    }
+
+    /// <summary>
+    /// Disposes <see cref="PipeConnection{TPipe, TPacket, TCallback}.Pipe"/> and <see cref="PipeConnection{TPipe, TPacket, TCallback}.Callback"/>
     /// </summary>
     /// <returns></returns>
-    public override async ValueTask DisposeAsync()
+    protected override async ValueTask DisposeAsyncCore()
     {
-      await base.DisposeAsync().ConfigureAwait(false);
+      await base.DisposeAsyncCore().ConfigureAwait(false);
       await Callback.DisposeAsync().ConfigureAwait(false);
     }
   }

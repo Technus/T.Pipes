@@ -6,7 +6,7 @@ namespace T.Pipes.Test.Client
 {
   [PipeUse(typeof(IAbstract))]
   [PipeUse(typeof(IAbstract<short>))]
-  internal partial class DelegatingCallback<TTarget>
+  internal sealed partial class DelegatingCallback<TTarget>
     : DelegatingPipeClientCallback<TTarget, DelegatingCallback<TTarget>>
     where TTarget : IAbstract, IAbstract<short>
   {
@@ -27,14 +27,14 @@ namespace T.Pipes.Test.Client
     }
   }
 
-  internal class DelegatingClientAuto<TTarget> : DelegatingPipeClient<TTarget, DelegatingCallback<TTarget>>
+  internal sealed class DelegatingClientAuto<TTarget> : DelegatingPipeClient<TTarget, DelegatingCallback<TTarget>>
     where TTarget : IAbstract, IAbstract<short>
   {
     public DelegatingClientAuto(string pipe, TTarget target) : this(new H.Pipes.PipeClient<PipeMessage>(pipe), target)
     {
     }
 
-    public DelegatingClientAuto(H.Pipes.PipeClient<PipeMessage> pipe, TTarget target) : base(pipe, new(pipe,target))
+    public DelegatingClientAuto(H.Pipes.PipeClient<PipeMessage> pipe, TTarget target) : base(pipe, new(pipe, target))
     {
     }
   }

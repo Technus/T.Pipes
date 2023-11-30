@@ -4,7 +4,7 @@ namespace T.Pipes.Test.Client
 {
   internal class Program
   {
-    static async Task Main(string[] args)
+    private static async Task Main(string[] args)
     {
 #if DEBUG
       Debugger.Launch();
@@ -14,9 +14,7 @@ namespace T.Pipes.Test.Client
       {
         AppDomain.CurrentDomain.ProcessExit += (object? sender, EventArgs e) => client.Dispose();
 
-        var task = client.StartAsync();
-        _ = task.ContinueWith(static x => Environment.Exit(-1), TaskContinuationOptions.NotOnRanToCompletion);
-        await task;
+        await client.StartAsync();
 
         await Task.Delay(Timeout.Infinite);
       }

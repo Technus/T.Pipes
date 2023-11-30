@@ -1,17 +1,22 @@
-﻿using System.Diagnostics;
-using Pastel;
+﻿using Pastel;
 using T.Pipes.Abstractions;
 using T.Pipes.Test.Abstractions;
 
 namespace T.Pipes.Test.Server
 {
-  internal class ServerCallback : SpawningPipeServerCallback
+  internal sealed class ServerCallback : SpawningPipeServerCallback
   {
     public ServerCallback(H.Pipes.PipeServer<PipeMessage> pipe) : base(pipe, PipeConstants.ConnectionAwaitTimeMs)
     {
     }
 
-    public DelegatingServerAuto Create() => RequestProxyAsync<DelegatingServerAuto>(PipeConstants.Create, new(Guid.NewGuid().ToString())).Result;
+    protected override IPipeDelegatingConnection<PipeMessage> CreateProxy(string command, string name) => command switch
+    {
+      PipeConstants.Create => new DelegatingServerAuto(name),
+      _ => throw new ArgumentException($"Invalid {nameof(command)}: {command}".Pastel(ConsoleColor.DarkCyan), nameof(command)),
+    };
+
+    public DelegatingServerAuto Create() => ProvideProxyAsyncCore<DelegatingServerAuto>(PipeConstants.Create).Result;
 
     public override void OnMessageReceived(PipeMessage message)
     {
@@ -29,13 +34,13 @@ namespace T.Pipes.Test.Server
   /// <summary>
   /// Main server used to control Delegating Server Instances
   /// </summary>
-  internal class Server : SpawningPipeServer<ServerCallback>
+  internal sealed class Server : SpawningPipeServer<ServerCallback>
   {
     public Server() : this(new H.Pipes.PipeServer<PipeMessage>(PipeConstants.ServerPipeName))
     {
     }
 
-    private Server(H.Pipes.PipeServer<PipeMessage> pipe) : base(pipe, PipeConstants.ClientExeName, new(pipe))
+    private Server(H.Pipes.PipeServer<PipeMessage> pipe) : base(pipe, new(PipeConstants.ClientExeName), new(pipe))
     {
     }
   }

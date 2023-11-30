@@ -1,5 +1,3 @@
-using T.Pipes.Abstractions;
-
 namespace T.Pipes.Test
 {
   public class UnitTest1
@@ -7,6 +5,23 @@ namespace T.Pipes.Test
     [Fact]
     public void Test1()
     {
+      Wtf().Wait();
     }
+
+    private static async Task Wtf()
+    {
+      var tcs = new TaskCompletionSource();
+
+
+      try
+      {
+        tcs.SetCanceled();
+        await tcs.Task;
+      }
+      catch
+      {
+
+      }
+    } 
   }
 }

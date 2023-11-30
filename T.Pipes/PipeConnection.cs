@@ -13,7 +13,7 @@ namespace T.Pipes
   /// <typeparam name="TPacket"></typeparam>
   /// <typeparam name="TCallback">any <see cref="IPipeCallback{TPacket}"/></typeparam>
   public abstract class PipeConnection<TPipe, TPacket, TCallback>
-    : IPipeConnection<TPacket>
+    : BaseClass, IPipeConnection<TPacket>
     where TPipe : H.Pipes.IPipeConnection<TPacket>
     where TCallback : IPipeCallback<TPacket>
   {
@@ -81,7 +81,7 @@ namespace T.Pipes
       {
         return StartAndConnectWithTimeoutInternalAsync(timeoutMs, cancellationToken);
       }
-      return StartAndConnectAsync();
+      return StartAndConnectAsync(cancellationToken);
     }
 
     /// <summary>
@@ -91,7 +91,7 @@ namespace T.Pipes
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     /// <exception cref="OperationCanceledException"></exception>
-    protected virtual async Task StartAndConnectWithTimeoutInternalAsync(int timeoutMs, CancellationToken cancellationToken = default)
+    protected async Task StartAndConnectWithTimeoutInternalAsync(int timeoutMs, CancellationToken cancellationToken = default)
     {
       using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
       cts.CancelAfter(timeoutMs);
@@ -107,7 +107,7 @@ namespace T.Pipes
         }
         else
         {
-          throw new OperationCanceledException("Timeout expired", ex, ex.CancellationToken);
+          throw new TimeoutException("Timeout expired", ex);
         }
       }
     }
@@ -116,16 +116,18 @@ namespace T.Pipes
     /// Disposes <see cref="Pipe"/>
     /// </summary>
     /// <returns></returns>
-    public virtual async ValueTask DisposeAsync()
-    {
-      await Pipe.DisposeAsync().ConfigureAwait(false);
-      Pipe.MessageReceived -= OnMessageReceived;
-      Pipe.ExceptionOccurred -= OnExceptionOccurred;
-    }
+    protected override ValueTask DisposeAsyncCore()
+      => Pipe.DisposeAsync();
 
     /// <summary>
     /// Disposes <see cref="Pipe"/> and <see cref="Callback"/>
     /// </summary>
-    public void Dispose() => DisposeAsync().GetAwaiter().GetResult();
+    protected override void DisposeCore(bool includeAsync)
+    {
+      if (includeAsync)
+        Pipe.DisposeAsync().GetAwaiter().GetResult();
+      Pipe.MessageReceived -= OnMessageReceived;
+      Pipe.ExceptionOccurred -= OnExceptionOccurred;
+    }
   }
 }
