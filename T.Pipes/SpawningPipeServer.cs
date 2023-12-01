@@ -49,7 +49,7 @@ namespace T.Pipes
     /// <param name="pipe"></param>
     /// <param name="client"></param>
     /// <param name="callback"></param>
-    public SpawningPipeServer(TPipe pipe, ProcessStartInfo client, TCallback callback) : base(pipe, callback) 
+    public SpawningPipeServer(TPipe pipe, ProcessStartInfo client, TCallback callback) : base(pipe, callback)
       => _process = new Process { StartInfo = client };
 
     /// <summary>

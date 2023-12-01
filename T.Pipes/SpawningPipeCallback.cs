@@ -161,7 +161,7 @@ namespace T.Pipes
       }
       catch
       {
-        await proxy.DisposeAsync().ConfigureAwait(false);
+        await proxy.StopAsync(default).ConfigureAwait(false);
         throw;
       }
     }
@@ -170,6 +170,7 @@ namespace T.Pipes
     /// Create instances of <see cref="IPipeDelegatingConnection{TMessage}"/>
     /// It will be later cast to final type or the base interface by <see cref="ProvideProxyAsyncCore{T}(string, string, CancellationToken)"/>
     /// It will be later initialized by <see cref="ProvideProxyAsyncCore{T}(string, string, CancellationToken)"/>
+    /// Custom logic needs to be provided to dispose elsewhere.
     /// </summary>
     /// <param name="command"></param>
     /// <param name="pipeName">name for the pipe</param>
