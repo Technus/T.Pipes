@@ -32,6 +32,12 @@ namespace T.Pipes.Test.Client
       Dispose();
     }
 
+    public override void OnExceptionOccurred(Exception e)
+    {
+      base.OnExceptionOccurred(e);
+      Dispose();
+    }
+
     protected override void DisposeCore(bool disposing,bool includeAsync)
     {
       base.DisposeCore(disposing, includeAsync);

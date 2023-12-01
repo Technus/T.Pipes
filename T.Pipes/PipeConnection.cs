@@ -131,7 +131,7 @@ namespace T.Pipes
     }
 
     /// <summary>
-    /// Finalizer as this has managed resources
+    /// Finalizer as this has unmanaged resources
     /// </summary>
     ~PipeConnection() => Finalizer();
   }

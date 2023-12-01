@@ -6,22 +6,19 @@ namespace T.Pipes.Test.Client
 {
   internal sealed class ClientCallback : SpawningPipeClientCallback
   {
+    private readonly CancellationTokenSource _disposingCancellation = new();
+
+    public CancellationToken DisposingCancellation => _disposingCancellation.Token;
+
     public ClientCallback(H.Pipes.PipeClient<PipeMessage> pipe) : base(pipe, PipeConstants.ConnectionAwaitTimeMs)
     {
     }
 
-    protected override IPipeDelegatingConnection<PipeMessage> CreateProxy(string command, string name)
+    protected override IPipeDelegatingConnection<PipeMessage> CreateProxy(string command, string name) => command switch
     {
-      var result = command switch
-      {
-        PipeConstants.Create => new DelegatingClientAuto<Target>(name, new Target()),
-        _ => throw new ArgumentException($"Invalid {nameof(command)}: {command}".Pastel(ConsoleColor.DarkYellow), nameof(command)),
-      };
-
-      AppDomain.CurrentDomain.ProcessExit += (o, e) => result.Dispose();
-
-      return result;
-    }
+      PipeConstants.Create => new DelegatingClientAuto<Target>(name, new Target()),
+      _ => throw new ArgumentException($"Invalid {nameof(command)}: {command}".Pastel(ConsoleColor.DarkYellow), nameof(command)),
+    };
 
     public override void OnMessageReceived(PipeMessage message)
     {
@@ -39,6 +36,18 @@ namespace T.Pipes.Test.Client
     {
       base.Disconnected(connection);
       Dispose();
+    }
+
+    public override void OnExceptionOccurred(Exception e)
+    {
+      base.OnExceptionOccurred(e);
+      Dispose();
+    }
+
+    protected override void DisposeCore(bool disposing, bool includeAsync)
+    {
+      base.DisposeCore(disposing, includeAsync);
+      _disposingCancellation.Cancel();
     }
   }
 
