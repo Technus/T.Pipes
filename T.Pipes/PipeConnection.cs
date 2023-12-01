@@ -61,7 +61,7 @@ namespace T.Pipes
     /// <inheritdoc/>
     public async Task WriteAsync(TPacket value, CancellationToken cancellationToken = default)
     {
-      await WriteAsync(value, cancellationToken).ConfigureAwait(false);
+      await Pipe.WriteAsync(value, cancellationToken).ConfigureAwait(false);
       Callback.OnMessageSent(value);
     }
 

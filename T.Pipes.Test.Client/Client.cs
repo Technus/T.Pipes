@@ -27,6 +27,12 @@ namespace T.Pipes.Test.Client
       Console.WriteLine(("O: " + message.ToString()).Pastel(ConsoleColor.Yellow));
       base.OnMessageSent(message);
     }
+
+    public override void Disconnected(string connection)
+    {
+      base.Disconnected(connection);
+      Dispose();
+    }
   }
 
   /// <summary>

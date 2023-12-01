@@ -8,13 +8,13 @@
       //Debugger.Launch();
 #endif
 
-      using (var server = new Server())
+      await using (var server = new Server())
       {
         AppDomain.CurrentDomain.ProcessExit += (object? sender, EventArgs e) => server.Dispose();
 
         await server.StartAndConnectWithTimeoutAsync();
 
-        using (var item = server.Callback.Create())
+        await using (var item = server.Callback.Create())
         {
           var target = item.Callback.AsIAbstract;
           var target1 = item.Callback.AsIAbstract_args_Int16_end_;

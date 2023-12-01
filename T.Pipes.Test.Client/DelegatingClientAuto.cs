@@ -25,6 +25,12 @@ namespace T.Pipes.Test.Client
       Console.WriteLine(("O: " + message.ToString()).Pastel(ConsoleColor.Yellow).PastelBg(ConsoleColor.DarkYellow));
       base.OnMessageSent(message);
     }
+
+    public override void Disconnected(string connection)
+    {
+      base.Disconnected(connection);
+      Dispose();
+    }
   }
 
   internal sealed class DelegatingClientAuto<TTarget> : DelegatingPipeClient<TTarget, DelegatingCallback<TTarget>>
@@ -36,6 +42,7 @@ namespace T.Pipes.Test.Client
 
     public DelegatingClientAuto(H.Pipes.PipeClient<PipeMessage> pipe, TTarget target) : base(pipe, new(pipe, target))
     {
+      AppDomain.CurrentDomain.ProcessExit += async (object? sender, EventArgs e) => await DisposeAsync();//due to nothing calling dispose
     }
   }
 }

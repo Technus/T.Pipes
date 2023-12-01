@@ -1,6 +1,4 @@
-﻿using H.Pipes;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
 using T.Pipes.Abstractions;
@@ -42,9 +40,6 @@ namespace T.Pipes
     : BaseClass, IPipeCallback<PipeMessage>
     where TPipe : H.Pipes.IPipeConnection<PipeMessage>
   {
-    private readonly SemaphoreSlim _semaphore = new(1, 1);
-    private readonly Dictionary<string, IPipeDelegatingConnection<PipeMessage>> _mapping = [];
-
     /// <summary>
     /// Creates Callback to handle Factorization of <see cref="IPipeDelegatingConnection{TMessage}"/>
     /// </summary>
@@ -67,51 +62,6 @@ namespace T.Pipes
     public TPipe Pipe { get; }
 
     /// <summary>
-    /// Disposes Proxies
-    /// </summary>
-    public virtual void Clear()
-    {
-      _semaphore.Wait();
-      foreach (var server in _mapping.Values)
-      {
-        server.Dispose();
-      }
-      _mapping.Clear();
-      _semaphore.Release();
-    }
-
-    /// <summary>
-    /// Disposes Proxies
-    /// </summary>
-    /// <returns></returns>
-    protected override void DisposeCore(bool includeAsync)
-    {
-      if (includeAsync)
-      {
-        _semaphore.Wait();
-        foreach (var server in _mapping.Values)
-        {
-          server.Dispose();
-        }
-      }
-      _mapping.Clear();
-      _semaphore.Dispose();
-    }
-
-    /// <summary>
-    /// Disposes Proxies
-    /// </summary>
-    /// <returns></returns>
-    protected override async ValueTask DisposeAsyncCore()
-    {
-      await _semaphore.WaitAsync().ConfigureAwait(false);
-      foreach (var server in _mapping.Values)
-      {
-        await server.DisposeAsync().ConfigureAwait(false);
-      }
-    }
-
-    /// <summary>
     /// Writes to the pipe directly and calls the Callback On Write
     /// </summary>
     /// <param name="message"></param>
@@ -128,19 +78,19 @@ namespace T.Pipes
     /// <summary>
     /// disposes created Proxies
     /// </summary>
-    public virtual void Connected(string connection) => Clear();
+    public virtual void Connected(string connection) { }
 
 
     /// <summary>
     /// disposes created Proxies
     /// </summary>
-    public virtual void Disconnected(string connection) => Clear();
+    public virtual void Disconnected(string connection) { }
 
 
     /// <summary>
     /// disposes created Proxies
     /// </summary>
-    public virtual void OnExceptionOccurred(Exception e) => Clear();
+    public virtual void OnExceptionOccurred(Exception e) { }
 
     /// <summary>
     /// No-op handling of sent messages
@@ -195,13 +145,10 @@ namespace T.Pipes
       try
       {
         if(primaryRequest)
-          await Pipe.WriteAsync(PipeMessageFactory.Instance.Create(command, pipeName)).ConfigureAwait(false);
+          await WriteAsync(PipeMessageFactory.Instance.Create(command, pipeName)).ConfigureAwait(false);
         try
         {
           await proxy.StartAndConnectWithTimeoutAsync(ResponseTimeoutMs, cancellationToken).ConfigureAwait(false);
-          await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
-          _mapping.Add(proxy.PipeName, proxy);
-          _semaphore.Release();
           return proxy;
         }
         catch (Exception e)
@@ -214,11 +161,8 @@ namespace T.Pipes
       }
       catch
       {
-        await _semaphore.WaitAsync().ConfigureAwait(false);
-        _mapping.Remove(proxy.PipeName);
-        _semaphore.Release();
         await proxy.DisposeAsync().ConfigureAwait(false);
-        proxy.Callback.Target.Dispose();
+        //proxy.Callback.Target.Dispose();
         throw;
       }
     }
