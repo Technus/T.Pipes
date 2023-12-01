@@ -247,9 +247,20 @@ namespace T.Pipes
     /// <summary>
     /// Disposes own resources, not the <see cref="Pipe"/> nor the <see cref="Target"/>
     /// </summary>
+    /// <returns></returns>
+    protected override async ValueTask DisposeAsyncCore()
+    {
+      await base.DisposeAsyncCore();
+      await _semaphore.WaitAsync();
+    }
+
+    /// <summary>
+    /// Disposes own resources, not the <see cref="Pipe"/> nor the <see cref="Target"/>
+    /// </summary>
     protected override void DisposeCore(bool includeAsync)
     {
-      _semaphore.Wait();
+      if(includeAsync)
+        _semaphore.Wait();
       if (_responses.Count > 0)
       {
         var name = Pipe is H.Pipes.IPipeServer<TPacket> server ? $"Server Pipe: {server.PipeName}"
