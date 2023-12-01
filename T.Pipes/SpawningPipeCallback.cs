@@ -145,11 +145,10 @@ namespace T.Pipes
       try
       {
         if(primaryRequest)
-          await WriteAsync(PipeMessageFactory.Instance.Create(command, pipeName)).ConfigureAwait(false);
+          await WriteAsync(PipeMessageFactory.Instance.Create(command, pipeName), cancellationToken).ConfigureAwait(false);
         try
         {
           await proxy.StartAndConnectWithTimeoutAsync(ResponseTimeoutMs, cancellationToken).ConfigureAwait(false);
-          return proxy;
         }
         catch (Exception e)
         {
@@ -158,11 +157,11 @@ namespace T.Pipes
           else 
             throw;
         }
+        return proxy;
       }
       catch
       {
         await proxy.DisposeAsync().ConfigureAwait(false);
-        //proxy.Callback.Target.Dispose();
         throw;
       }
     }

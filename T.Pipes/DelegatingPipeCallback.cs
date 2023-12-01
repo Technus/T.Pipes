@@ -250,8 +250,8 @@ namespace T.Pipes
     /// <returns></returns>
     protected override async ValueTask DisposeAsyncCore()
     {
-      await base.DisposeAsyncCore();
-      await _semaphore.WaitAsync();
+      await base.DisposeAsyncCore().ConfigureAwait(false);
+      await _semaphore.WaitAsync().ConfigureAwait(false);
     }
 
     /// <summary>
@@ -275,10 +275,10 @@ namespace T.Pipes
         _responses.Clear();
       }
       _semaphore.Dispose();
-      if (_target is not null)
+      if (Target is not null)
       {
         TargetDeInitAuto();
-        TargetDeInit(_target);
+        TargetDeInit(Target);
       }
     }
 

@@ -42,7 +42,7 @@ namespace T.Pipes.Test.Client
 
     public DelegatingClientAuto(H.Pipes.PipeClient<PipeMessage> pipe, TTarget target) : base(pipe, new(pipe, target))
     {
-      AppDomain.CurrentDomain.ProcessExit += async (object? sender, EventArgs e) => await DisposeAsync();//due to nothing calling dispose
+      AppDomain.CurrentDomain.ProcessExit += (object? sender, EventArgs e) => Dispose();//due to nothing calling dispose
     }
   }
 }
