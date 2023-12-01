@@ -10,11 +10,18 @@ namespace T.Pipes.Test.Client
     {
     }
 
-    protected override IPipeDelegatingConnection<PipeMessage> CreateProxy(string command, string name) => command switch
+    protected override IPipeDelegatingConnection<PipeMessage> CreateProxy(string command, string name)
     {
-      PipeConstants.Create => new DelegatingClientAuto<Target>(name, new Target()),
-      _ => throw new ArgumentException($"Invalid {nameof(command)}: {command}".Pastel(ConsoleColor.DarkYellow), nameof(command)),
-    };
+      var result = command switch
+      {
+        PipeConstants.Create => new DelegatingClientAuto<Target>(name, new Target()),
+        _ => throw new ArgumentException($"Invalid {nameof(command)}: {command}".Pastel(ConsoleColor.DarkYellow), nameof(command)),
+      };
+
+      AppDomain.CurrentDomain.ProcessExit += (o, e) => result.Dispose();
+
+      return result;
+    }
 
     public override void OnMessageReceived(PipeMessage message)
     {

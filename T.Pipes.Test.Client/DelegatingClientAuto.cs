@@ -31,6 +31,12 @@ namespace T.Pipes.Test.Client
       base.Disconnected(connection);
       Dispose();
     }
+
+    protected override void DisposeCore(bool includeAsync)
+    {
+      base.DisposeCore(includeAsync);
+      Target.Dispose();
+    }
   }
 
   internal sealed class DelegatingClientAuto<TTarget> : DelegatingPipeClient<TTarget, DelegatingCallback<TTarget>>
@@ -42,7 +48,6 @@ namespace T.Pipes.Test.Client
 
     public DelegatingClientAuto(H.Pipes.PipeClient<PipeMessage> pipe, TTarget target) : base(pipe, new(pipe, target))
     {
-      AppDomain.CurrentDomain.ProcessExit += (object? sender, EventArgs e) => Dispose();//due to nothing calling dispose
     }
   }
 }

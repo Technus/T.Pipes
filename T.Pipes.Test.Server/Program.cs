@@ -1,4 +1,4 @@
-﻿namespace T.Pipes.Test.Server
+namespace T.Pipes.Test.Server
 {
   internal class Program
   {
@@ -10,8 +10,6 @@
 
       await using (var server = new Server())
       {
-        AppDomain.CurrentDomain.ProcessExit += (object? sender, EventArgs e) => server.Dispose();
-
         await server.StartAndConnectWithTimeoutAsync();
 
         await using (var item = server.Callback.Create())
