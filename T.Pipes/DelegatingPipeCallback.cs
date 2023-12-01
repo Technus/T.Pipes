@@ -327,15 +327,17 @@ namespace T.Pipes
         return;
       }
 
-      _semaphore.Wait();
-      var exists = _responses.TryGetValue(message.Id, out var response);
-      if(exists)
-        _responses.Remove(message.Id);
-      _semaphore.Release();
-
-      if (exists)
+      if (message.IsResponse)
       {
-        response!.TrySetResult(message.Parameter);
+        _semaphore.Wait();
+        var exists = _responses.TryGetValue(message.Id, out var response);
+        if (exists)
+          _responses.Remove(message.Id);
+        _semaphore.Release();
+        if (exists)
+        {
+          response!.TrySetResult(message.Parameter);
+        }
       }
       else
       {

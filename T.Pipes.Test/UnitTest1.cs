@@ -10,7 +10,7 @@ namespace T.Pipes.Test
 
     private static async Task Wtf()
     {
-      var tcs = new TaskCompletionSource();
+      var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
 
       try

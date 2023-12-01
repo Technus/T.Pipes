@@ -14,7 +14,7 @@ namespace T.Pipes.Test.Client
 
       await client.StartAsync();
 
-      await Task.Delay(Timeout.Infinite, client.Callback.DisposingCancellation);
+      await Task.Delay(Timeout.Infinite, client.Callback.LifetimeCancellation);
     }
   }
 }

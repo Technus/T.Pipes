@@ -8,7 +8,7 @@ namespace T.Pipes.Abstractions
   public interface IPipeMessage
   {
     /// <summary>
-    /// Unique transaction identificator
+    /// Unique transaction ID
     /// </summary>
     public Guid Id { get; set; }
 
@@ -21,5 +21,10 @@ namespace T.Pipes.Abstractions
     /// Command parameter
     /// </summary>
     public object? Parameter { get; set; }
+
+    /// <summary>
+    /// Marks if this is response
+    /// </summary>
+    public bool IsResponse { get; set; }
   }
 }

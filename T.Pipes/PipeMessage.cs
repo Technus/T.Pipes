@@ -20,6 +20,9 @@ namespace T.Pipes
     /// <inheritdoc/>
     public object? Parameter { get; set; }
 
+    /// <inheritdoc/>
+    public bool IsResponse { get; set; }
+
     /// <summary>
     /// For convenience returns the same thing as debugger display
     /// </summary>

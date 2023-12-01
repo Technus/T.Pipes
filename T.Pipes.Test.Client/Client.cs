@@ -6,10 +6,6 @@ namespace T.Pipes.Test.Client
 {
   internal sealed class ClientCallback : SpawningPipeClientCallback
   {
-    private readonly CancellationTokenSource _disposingCancellation = new();
-
-    public CancellationToken DisposingCancellation => _disposingCancellation.Token;
-
     public ClientCallback(H.Pipes.PipeClient<PipeMessage> pipe) : base(pipe, PipeConstants.ConnectionAwaitTimeMs)
     {
     }
@@ -42,12 +38,6 @@ namespace T.Pipes.Test.Client
     {
       base.OnExceptionOccurred(e);
       Dispose();
-    }
-
-    protected override void DisposeCore(bool disposing, bool includeAsync)
-    {
-      base.DisposeCore(disposing, includeAsync);
-      _disposingCancellation.Cancel();
     }
   }
 

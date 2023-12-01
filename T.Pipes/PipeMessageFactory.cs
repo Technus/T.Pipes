@@ -28,10 +28,10 @@ namespace T.Pipes
 
     /// <inheritdoc/>
     public PipeMessage CreateResponse(PipeMessage commandMessage) 
-      => new() { Command = commandMessage.Command, Id = commandMessage.Id };
+      => new() { Command = commandMessage.Command, Id = commandMessage.Id, IsResponse = true };
 
     /// <inheritdoc/>
     public PipeMessage CreateResponse(PipeMessage commandMessage, object? parameter)
-      => new() { Command = commandMessage.Command, Id = commandMessage.Id, Parameter = parameter };
+      => new() { Command = commandMessage.Command, Id = commandMessage.Id, IsResponse = true, Parameter = parameter };
   }
 }

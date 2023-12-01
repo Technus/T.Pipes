@@ -40,6 +40,13 @@ namespace T.Pipes
     : BaseClass, IPipeCallback<PipeMessage>
     where TPipe : H.Pipes.IPipeConnection<PipeMessage>
   {
+    private readonly CancellationTokenSource _lifetimeCancellation = new();
+
+    /// <summary>
+    /// Cancelled on dispose or finalize
+    /// </summary>
+    public CancellationToken LifetimeCancellation => _lifetimeCancellation.Token;
+
     /// <summary>
     /// Creates Callback to handle Factorization of <see cref="IPipeDelegatingConnection{TMessage}"/>
     /// </summary>
@@ -176,5 +183,12 @@ namespace T.Pipes
     /// <param name="pipeName">name for the pipe</param>
     /// <returns></returns>
     protected abstract IPipeDelegatingConnection<PipeMessage> CreateProxy(string command, string pipeName);
+
+    /// <inheritdoc/>
+    protected override void DisposeCore(bool disposing, bool includeAsync)
+    {
+      base.DisposeCore(disposing, includeAsync);
+      _lifetimeCancellation.Cancel();
+    }
   }
 }

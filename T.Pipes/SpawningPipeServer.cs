@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -41,6 +42,7 @@ namespace T.Pipes
     where TCallback : SpawningPipeCallback<TPipe>
     where TPipe : H.Pipes.IPipeServer<PipeMessage>
   {
+    private readonly SemaphoreSlim _semaphore = new(1, 1);
     private readonly Process _process;
 
     /// <summary>
@@ -61,9 +63,20 @@ namespace T.Pipes
     {
       base.DisposeCore(disposing, includeAsync);
       if (includeAsync)
+      {
         Callback.Dispose();
-      _process.Close();
-      _process.Dispose();
+        _semaphore.Wait();
+      }
+      try
+      {
+        _process.Kill();
+      }
+      catch { }
+      finally
+      {
+        _process.Dispose();
+      }
+      _semaphore.Dispose();
     }
 
     /// <summary>
@@ -74,6 +87,7 @@ namespace T.Pipes
     {
       await base.DisposeAsyncCore(disposing).ConfigureAwait(false);
       await Callback.DisposeAsync().ConfigureAwait(false);
+      await _semaphore.WaitAsync().ConfigureAwait(false);
     }
 
     /// <summary>
@@ -81,10 +95,10 @@ namespace T.Pipes
     /// </summary>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    public override Task StartAsync(CancellationToken cancellationToken = default)
+    public override async Task StartAsync(CancellationToken cancellationToken = default)
     {
-      _process.Start();
-      return base.StartAsync(cancellationToken);
+      await StartProcess(cancellationToken).ConfigureAwait(false);
+      await base.StartAsync(cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -92,10 +106,72 @@ namespace T.Pipes
     /// </summary>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    public override Task StopAsync(CancellationToken cancellationToken = default)
+    public override async Task StopAsync(CancellationToken cancellationToken = default)
     {
-      _process.Close();
-      return base.StopAsync(cancellationToken);
+      await StopProcess(cancellationToken).ConfigureAwait(false);
+      await base.StopAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Starts the client process
+    /// </summary>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    protected async Task StartProcess(CancellationToken cancellationToken = default)
+    {
+      await StopProcess(cancellationToken).ConfigureAwait(false);
+      await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+      try
+      {
+        _process.Start();
+      }
+      finally
+      {
+        _semaphore.Release();
+      }
+    }
+
+    /// <summary>
+    /// Stops the client process
+    /// </summary>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    protected async Task StopProcess(CancellationToken cancellationToken = default)
+    {
+      await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+      try
+      {
+        _process.Refresh();
+        if (_process.HasExited)
+          return;
+
+        if (!_process.CloseMainWindow())
+          _process.Kill();
+
+#if NET5_0_OR_GREATER
+        await _process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+#else
+        var timeout = 10;
+        while (!_process.WaitForExit(timeout))
+        {
+          await Task.Yield();
+          if (timeout < 100)
+            timeout += 10;
+        }
+#endif
+      }
+      catch
+      {
+        try
+        {
+          _process.Kill();
+        }
+        catch { }
+      }
+      finally
+      {
+        _semaphore.Release();
+      }
     }
   }
 }
