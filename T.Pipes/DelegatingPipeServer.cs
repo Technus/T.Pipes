@@ -109,10 +109,11 @@ namespace T.Pipes
     /// <summary>
     /// Disposes <see cref="PipeConnection{TPipe, TPacket, TCallback}.Pipe"/> and <see cref="PipeConnection{TPipe, TPacket, TCallback}.Callback"/>
     /// </summary>
+    /// <param name="disposing"></param>
     /// <param name="includeAsync"></param>
-    protected override void DisposeCore(bool includeAsync)
+    protected override void DisposeCore(bool disposing, bool includeAsync)
     {
-      base.DisposeCore(includeAsync);
+      base.DisposeCore(disposing, includeAsync);
       if (includeAsync)
         Callback.Dispose();
     }
@@ -121,9 +122,9 @@ namespace T.Pipes
     /// Disposes <see cref="PipeConnection{TPipe, TPacket, TCallback}.Pipe"/> and <see cref="PipeConnection{TPipe, TPacket, TCallback}.Callback"/>
     /// </summary>
     /// <returns></returns>
-    protected override async ValueTask DisposeAsyncCore()
+    protected override async ValueTask DisposeAsyncCore(bool disposing)
     {
-      await base.DisposeAsyncCore().ConfigureAwait(false);
+      await base.DisposeAsyncCore(disposing).ConfigureAwait(false);
       await Callback.DisposeAsync().ConfigureAwait(false);
     }
   }

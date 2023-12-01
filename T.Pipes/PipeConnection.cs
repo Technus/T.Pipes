@@ -116,18 +116,23 @@ namespace T.Pipes
     /// Disposes <see cref="Pipe"/>
     /// </summary>
     /// <returns></returns>
-    protected override ValueTask DisposeAsyncCore()
+    protected override ValueTask DisposeAsyncCore(bool disposing)
       => Pipe.DisposeAsync();
 
     /// <summary>
     /// Disposes <see cref="Pipe"/> and <see cref="Callback"/>
     /// </summary>
-    protected override void DisposeCore(bool includeAsync)
+    protected override void DisposeCore(bool disposing, bool includeAsync)
     {
       if (includeAsync)
         Pipe.DisposeAsync().GetAwaiter().GetResult();
       Pipe.MessageReceived -= OnMessageReceived;
       Pipe.ExceptionOccurred -= OnExceptionOccurred;
     }
+
+    /// <summary>
+    /// Finalizer as this has managed resources
+    /// </summary>
+    ~PipeConnection() => Finalizer();
   }
 }

@@ -126,9 +126,9 @@ namespace T.Pipes
       => StartAsync(cancellationToken);
 
     /// <inheritdoc/>
-    protected override void DisposeCore(bool includeAsync)
+    protected override void DisposeCore(bool disposing, bool includeAsync)
     {
-      base.DisposeCore(includeAsync);
+      base.DisposeCore(disposing, includeAsync);
       Pipe.Disconnected -= OnDisconnected;
       Pipe.Connected -= OnConnected;
     }

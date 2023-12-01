@@ -184,9 +184,9 @@ namespace T.Pipes
     }
 
     /// <inheritdoc/>
-    protected override void DisposeCore(bool includeAsync)
+    protected override void DisposeCore(bool disposing, bool includeAsync)
     {
-      base.DisposeCore(includeAsync);
+      base.DisposeCore(disposing, includeAsync);
       Pipe.ClientDisconnected -= OnClientDisconnected;
       Pipe.ClientConnected -= OnClientConnected;
     }

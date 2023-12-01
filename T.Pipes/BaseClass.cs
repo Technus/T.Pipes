@@ -6,18 +6,56 @@ using System.Threading.Tasks;
 namespace T.Pipes
 {
   /// <summary>
+  /// Possible object states
+  /// </summary>
+  public enum DisposeState : int
+  {
+    /// <summary>
+    /// Created
+    /// </summary>
+    New,
+    /// <summary>
+    /// Disposing or Async Disposing
+    /// </summary>
+    Disposing,
+    /// <summary>
+    /// Finished Disposing no need for finalization
+    /// </summary>
+    Disposed,
+    /// <summary>
+    /// Finalizer was called
+    /// </summary>
+    Finalizing,
+    /// <summary>
+    /// Was Finalized instead of disposing
+    /// </summary>
+    Finalized,
+  }
+
+  /// <summary>
   /// Base patterns.
   /// </summary>
   public abstract class BaseClass : IAsyncDisposable, IDisposable
   {
-    private enum DisposeState : int
-    {
-      New,
-      Disposing,
-      Disposed,
-    }
-
     private int _disposedState = (int)DisposeState.New;
+
+    /// <summary>
+    /// Current dispose state
+    /// </summary>
+    protected DisposeState DisposeState => (DisposeState)_disposedState;
+
+    /// <summary>
+    /// Destructor helper
+    /// </summary>
+    protected void Finalizer()
+    {
+      var was = Interlocked.Exchange(ref _disposedState, (int)DisposeState.Finalizing);
+      if (was == (int)DisposeState.New)
+      {
+        DisposeCore(disposing: false,includeAsync: true);
+        _disposedState = (int)DisposeState.Finalized;
+      }
+    }
 
     /// <summary>
     /// Handle dispose logic
@@ -28,7 +66,7 @@ namespace T.Pipes
       var was = Interlocked.Exchange(ref _disposedState, (int)DisposeState.Disposing);
       if(was == (int)DisposeState.New)
       {
-        DisposeCore(includeAsync: true);
+        DisposeCore(disposing: true, includeAsync: true);
         GC.SuppressFinalize(this);
         _disposedState = (int)DisposeState.Disposed;
       }
@@ -44,8 +82,8 @@ namespace T.Pipes
       var was = Interlocked.Exchange(ref _disposedState, (int)DisposeState.Disposing);
       if (was == (int)DisposeState.New)
       {
-        await DisposeAsyncCore().ConfigureAwait(false);
-        DisposeCore(includeAsync: false);
+        await DisposeAsyncCore(disposing: true).ConfigureAwait(false);
+        DisposeCore(disposing: true, includeAsync: false);
         GC.SuppressFinalize(this);
         _disposedState = (int)DisposeState.Disposed;
       }
@@ -54,14 +92,16 @@ namespace T.Pipes
     /// <summary>
     /// Extension point for handling sync dispose logic and sometimes also async
     /// </summary>
+    /// <param name="disposing">false if called from finalizer</param>
     /// <param name="includeAsync">if should also dispose async disposables</param>
-    protected virtual void DisposeCore(bool includeAsync) { }
+    protected virtual void DisposeCore(bool disposing, bool includeAsync) { }
 
 
     /// <summary>
     /// Extension point for handling async only dispose logic
     /// </summary>
+    /// <param name="disposing">false if called from finalizer</param>
     /// <returns></returns>
-    protected virtual ValueTask DisposeAsyncCore() => default;
+    protected virtual ValueTask DisposeAsyncCore(bool disposing) => default;
   }
 }

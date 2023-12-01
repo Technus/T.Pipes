@@ -248,16 +248,16 @@ namespace T.Pipes
     /// Disposes own resources, not the <see cref="Pipe"/> nor the <see cref="Target"/>
     /// </summary>
     /// <returns></returns>
-    protected override async ValueTask DisposeAsyncCore()
+    protected override async ValueTask DisposeAsyncCore(bool disposing)
     {
-      await base.DisposeAsyncCore().ConfigureAwait(false);
+      await base.DisposeAsyncCore(disposing).ConfigureAwait(false);
       await _semaphore.WaitAsync().ConfigureAwait(false);
     }
 
     /// <summary>
     /// Disposes own resources, not the <see cref="Pipe"/> nor the <see cref="Target"/>
     /// </summary>
-    protected override void DisposeCore(bool includeAsync)
+    protected override void DisposeCore(bool disposing, bool includeAsync)
     {
       if(includeAsync)
         _semaphore.Wait();
