@@ -109,7 +109,7 @@ namespace T.Pipes
       var name = message.Parameter as string;
       if (name is null || name == string.Empty)
       {
-        throw new InvalidOperationException("Name was not specified.");
+        throw new ArgumentException("Name was not specified.", nameof(message));
       }
       _ = ProvideProxyAsyncCore<IPipeDelegatingConnection<PipeMessage>>(message.Command, name);
     }
@@ -153,7 +153,7 @@ namespace T.Pipes
         catch (Exception e)
         {
           if(primaryRequest)
-            throw new InvalidOperationException("Command was sent, yet no response.", e);
+            throw new NoResponseException(command, e);
           else 
             throw;
         }

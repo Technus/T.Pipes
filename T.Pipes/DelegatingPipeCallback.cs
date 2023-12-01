@@ -139,7 +139,7 @@ namespace T.Pipes
 
       if (_target is null)
       {
-        throw new InvalidOperationException($"In fact this is not {typeof(TTarget).FullName}");
+        throw new InvalidCastException($"In fact this is not {typeof(TTarget).FullName}");
       }
     }
 
@@ -163,7 +163,7 @@ namespace T.Pipes
 
       if (_target is null)
       {
-        throw new InvalidOperationException($"In fact target is not {typeof(TTarget).FullName}");
+        throw new InvalidCastException($"In fact target is not {typeof(TTarget).FullName}");
       }
     }
 
@@ -196,7 +196,7 @@ namespace T.Pipes
         }
         else
         {
-          throw new InvalidOperationException($"In fact target is not {typeof(TTarget).FullName}");
+          throw new InvalidCastException($"In fact target is not {typeof(TTarget).FullName}");
         }
       }
     }
@@ -421,7 +421,7 @@ namespace T.Pipes
         }
         catch (Exception e)
         {
-          throw new InvalidOperationException("Command was sent, yet no response.", e);
+          throw new NoResponseException(command.Command, e);
         }
       }
       catch (OperationCanceledException ex) when (ex.CancellationToken == cts.Token)
