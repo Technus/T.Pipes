@@ -108,8 +108,8 @@ namespace T.Pipes
     /// <returns></returns>
     public override async Task StopAsync(CancellationToken cancellationToken = default)
     {
-      await StopProcess(cancellationToken).ConfigureAwait(false);
       await base.StopAsync(cancellationToken).ConfigureAwait(false);
+      await StopProcess(cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -132,33 +132,60 @@ namespace T.Pipes
     }
 
     /// <summary>
-    /// Stops the client process
+    /// Stops the client process, kills after 10s
     /// </summary>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     protected async Task StopProcess(CancellationToken cancellationToken = default)
     {
+      var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+      cts.CancelAfter(10000);
       await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+      var closeSent = false;
       try
       {
         _process.Refresh();
         if (_process.HasExited)
           return;
 
-        if (!_process.CloseMainWindow())
-          _process.Kill();
+        closeSent = _process.CloseMainWindow();
 
 #if NET5_0_OR_GREATER
-        await _process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+        await _process.WaitForExitAsync(cts.Token).ConfigureAwait(false);
 #else
         var timeout = 10;
         while (!_process.WaitForExit(timeout))
         {
+          if (cts.Token.IsCancellationRequested)
+            throw new OperationCanceledException("Cancelled waiting for graceful close", cts.Token);
           await Task.Yield();
           if (timeout < 100)
             timeout += 10;
         }
 #endif
+      }
+      catch (OperationCanceledException ex) when (ex.CancellationToken == cts.Token)
+      {
+        if (cancellationToken.IsCancellationRequested)
+        {
+          if (closeSent)
+          {
+            try
+            {
+              _process.Kill();
+            }
+            catch { }
+          }
+          else throw;
+        }
+        else
+        {
+          try
+          {
+            _process.Kill();
+          }
+          catch { }
+        }
       }
       catch
       {
