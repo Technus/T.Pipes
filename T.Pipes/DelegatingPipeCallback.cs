@@ -598,8 +598,17 @@ namespace T.Pipes
     /// <typeparam name="TOut"></typeparam>
     /// <param name="callerName">the command or function name</param>
     /// <returns></returns>
-    public TOut Remote<TOut>(string callerName) 
-      => RemoteAsync<TOut>(callerName).Result;
+    public TOut Remote<TOut>(string callerName)
+    {
+      try
+      {
+        return RemoteAsync<TOut>(callerName).Result;
+      }
+      catch (AggregateException ae) when (ae.InnerExceptions.Count == 1)
+      {
+        throw ae.InnerException!;
+      }
+    }
 
     /// <summary>
     /// Delegates the work to the other side, by sending command and awaiting result
@@ -610,14 +619,32 @@ namespace T.Pipes
     /// <param name="parameter"></param>
     /// <returns></returns>
     public TOut Remote<TIn, TOut>(string callerName, TIn? parameter)
-      => RemoteAsync<TIn, TOut>(callerName, parameter).Result;
+    {
+      try
+      {
+        return RemoteAsync<TIn, TOut>(callerName, parameter).Result;
+      }
+      catch (AggregateException ae) when (ae.InnerExceptions.Count == 1)
+      {
+        throw ae.InnerException!;
+      }
+    }
 
     /// <summary>
     /// Delegates the work to the other side, by sending command and awaiting response
     /// </summary>
     /// <param name="callerName">the command or function name</param>
     public void Remote(string callerName)
-      => RemoteAsync(callerName).Wait();
+    {
+      try
+      {
+        RemoteAsync(callerName).Wait();
+      }
+      catch (AggregateException ae) when (ae.InnerExceptions.Count == 1)
+      {
+        throw ae.InnerException!;
+      }
+    }
 
     /// <summary>
     /// Delegates the work to the other side, by sending command and awaiting response
@@ -626,6 +653,15 @@ namespace T.Pipes
     /// <param name="callerName">the command or function name</param>
     /// <param name="parameter"></param>
     public void Remote<TIn>(string callerName, TIn? parameter)
-      => RemoteAsync(callerName, parameter).Wait();
+    {
+      try
+      {
+        RemoteAsync(callerName, parameter).Wait();
+      }
+      catch (AggregateException ae) when (ae.InnerExceptions.Count == 1)
+      {
+        throw ae.InnerException!;
+      }
+    }
   }
 }
