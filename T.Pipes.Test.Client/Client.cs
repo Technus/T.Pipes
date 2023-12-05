@@ -31,13 +31,13 @@ namespace T.Pipes.Test.Client
     public override void Disconnected(string connection)
     {
       base.Disconnected(connection);
-      Dispose();
+      LifetimeCancellationSource.Cancel();
     }
 
     public override void OnExceptionOccurred(Exception e)
     {
       base.OnExceptionOccurred(e);
-      Dispose();
+      LifetimeCancellationSource.Cancel();
     }
   }
 

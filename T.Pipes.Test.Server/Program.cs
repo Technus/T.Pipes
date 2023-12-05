@@ -1,3 +1,5 @@
+using T.Pipes.Test.Abstractions;
+
 namespace T.Pipes.Test.Server
 {
   internal class Program
@@ -10,7 +12,7 @@ namespace T.Pipes.Test.Server
 
       await using (var server = new Server())
       {
-        await server.StartAndConnectWithTimeoutAsync();
+        await server.StartAndConnectWithTimeoutAsync(PipeConstants.ConnectionAwaitTimeMs);
 
         await using (var item = server.Callback.Create())
         {

@@ -59,7 +59,7 @@ namespace T.Pipes
       => Callback.OnExceptionOccurred(e.Exception);
 
     /// <inheritdoc/>
-    public async Task WriteAsync(TPacket value, CancellationToken cancellationToken = default)
+    public virtual async Task WriteAsync(TPacket value, CancellationToken cancellationToken = default)
     {
       await Pipe.WriteAsync(value, cancellationToken).ConfigureAwait(false);
       Callback.OnMessageSent(value);
@@ -75,7 +75,7 @@ namespace T.Pipes
     public abstract Task StartAndConnectAsync(CancellationToken cancellationToken = default);
 
     /// <inheritdoc/>
-    public Task StartAndConnectWithTimeoutAsync(int timeoutMs = Timeout.Infinite, CancellationToken cancellationToken = default)
+    public virtual Task StartAndConnectWithTimeoutAsync(int timeoutMs = Timeout.Infinite, CancellationToken cancellationToken = default)
     {
       if(timeoutMs >= 0)
       {
@@ -91,26 +91,7 @@ namespace T.Pipes
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     /// <exception cref="OperationCanceledException"></exception>
-    protected async Task StartAndConnectWithTimeoutInternalAsync(int timeoutMs, CancellationToken cancellationToken = default)
-    {
-      using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-      cts.CancelAfter(timeoutMs);
-      try
-      {
-        await StartAndConnectAsync(cts.Token).ConfigureAwait(false);
-      }
-      catch (OperationCanceledException ex) when (ex.CancellationToken == cts.Token)
-      {
-        if (cancellationToken.IsCancellationRequested)
-        {
-          throw;
-        }
-        else
-        {
-          throw new TimeoutException("Timeout expired", ex);
-        }
-      }
-    }
+    protected abstract Task StartAndConnectWithTimeoutInternalAsync(int timeoutMs, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Disposes <see cref="Pipe"/>
