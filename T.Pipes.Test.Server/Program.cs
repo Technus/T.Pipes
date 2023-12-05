@@ -24,7 +24,7 @@ namespace T.Pipes.Test.Server
         }
         await Task.Delay(1000);
       }
-      await Task.Delay(10000);
+      await Task.Delay(5000);
     }
   }
 }

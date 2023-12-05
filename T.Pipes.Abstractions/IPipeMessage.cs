@@ -25,6 +25,6 @@ namespace T.Pipes.Abstractions
     /// <summary>
     /// Marks if this is response
     /// </summary>
-    public bool IsResponse { get; set; }
+    public PacketType PacketType { get; set; }
   }
 }

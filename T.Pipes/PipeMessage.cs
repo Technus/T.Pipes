@@ -21,12 +21,12 @@ namespace T.Pipes
     public object? Parameter { get; set; }
 
     /// <inheritdoc/>
-    public bool IsResponse { get; set; }
+    public PacketType PacketType { get; set; }
 
     /// <summary>
     /// For convenience returns the same thing as debugger display
     /// </summary>
     /// <returns>debugger display string</returns>
-    public override string ToString() => $"{Id} / {Command} / {Parameter}";
+    public override string ToString() => $"{Id} / {Command} / {PacketType} / {Parameter}";
   }
 }

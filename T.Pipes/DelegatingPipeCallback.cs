@@ -327,7 +327,7 @@ namespace T.Pipes
         return;
       }
 
-      if (message.IsResponse)
+      if ((message.PacketType & PacketType.Response)!=0)//Any response
       {
         _semaphore.Wait();
         var exists = _responses.TryGetValue(message.Id, out var response);
@@ -336,12 +336,48 @@ namespace T.Pipes
         _semaphore.Release();
         if (exists)
         {
-          response!.TrySetResult(message.Parameter);
+          if (message.PacketType == PacketType.ResponseFailure)
+            response!.TrySetException((Exception)message.Parameter!);
+          else if (message.PacketType == PacketType.ResponseCancellation)
+          {
+            if (message.Parameter is Exception ex)
+              response!.TrySetException(ex);
+            else
+              response!.TrySetCanceled();
+          }
+          else
+            response!.TrySetResult(message.Parameter);
         }
       }
-      else
+      else if ((message.PacketType & PacketType.Command) != 0)//Any command
       {
-        OnCommandReceived(message);
+        if (message.PacketType == PacketType.CommandFailure)
+        {
+          try
+          {
+            throw (Exception)message.Parameter!;
+          }
+          finally
+          {
+            WriteAsync(PacketFactory.CreateResponse(message)).Wait();
+          }
+        }
+        else if (message.PacketType == PacketType.CommandCancellation)
+        {
+          try
+          {
+            if (message.Parameter is Exception ex)
+              throw ex;
+            else
+              throw new OperationCanceledException("Command Cancellation Recieved");
+          }
+          finally
+          {
+            WriteAsync(PacketFactory.CreateResponse(message)).Wait();
+          }
+        }
+        else
+          OnCommandReceived(message);
       }
     }
 
@@ -355,7 +391,14 @@ namespace T.Pipes
     {
       if (Functions.TryGetValue(command.Command, out var function))
       {
-        function.Invoke((TCallback)this, command);
+        try
+        {
+          function.Invoke((TCallback)this, command);
+        }
+        catch (Exception e)
+        {
+          WriteAsync(PacketFactory.CreateResponseFailure(command,e)).Wait();
+        }
       }
       else
       {
@@ -421,9 +464,9 @@ namespace T.Pipes
         {
           return (T)await tcs.Task.ConfigureAwait(false);
         }
-        catch (Exception e)
+        catch (OperationCanceledException ex) when (ex.CancellationToken == cts.Token)
         {
-          throw new NoResponseException(command.Command, e);
+          throw new NoResponseException(command.Command, ex);
         }
       }
       catch (OperationCanceledException ex) when (ex.CancellationToken == cts.Token)
@@ -504,7 +547,7 @@ namespace T.Pipes
     /// <returns></returns>
     public Task<TOut> RemoteAsync<TOut>(string callerName, CancellationToken cancellationToken = default)
     {
-      var cmd = PacketFactory.Create(callerName);
+      var cmd = PacketFactory.CreateCommand(callerName);
       return GetResponseAsync<TOut>(cmd, cancellationToken);
     }
 
@@ -519,7 +562,7 @@ namespace T.Pipes
     /// <returns></returns>
     public Task<TOut> RemoteAsync<TIn, TOut>(string callerName, TIn? parameter, CancellationToken cancellationToken = default)
     {
-      var cmd = PacketFactory.Create(callerName, parameter);
+      var cmd = PacketFactory.CreateCommand(callerName, parameter);
       return GetResponseAsync<TOut>(cmd, cancellationToken);
     }
 
@@ -531,7 +574,7 @@ namespace T.Pipes
     /// <returns></returns>
     public Task RemoteAsync(string callerName, CancellationToken cancellationToken = default)
     {
-      var cmd = PacketFactory.Create(callerName);
+      var cmd = PacketFactory.CreateCommand(callerName);
       return GetResponseAsync<object?>(cmd, cancellationToken);
     }
 
@@ -545,7 +588,7 @@ namespace T.Pipes
     /// <returns></returns>
     public Task RemoteAsync<TIn>(string callerName, TIn? parameter, CancellationToken cancellationToken = default)
     {
-      var cmd = PacketFactory.Create(callerName, parameter);
+      var cmd = PacketFactory.CreateCommand(callerName, parameter);
       return GetResponseAsync<object?>(cmd, cancellationToken);
     }
 

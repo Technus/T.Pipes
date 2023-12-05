@@ -19,19 +19,35 @@ namespace T.Pipes
     protected PipeMessageFactory() { }
 
     /// <inheritdoc/>
-    public PipeMessage Create(string command) 
-      => new() { Command = command, Id = Guid.NewGuid() };
+    public PipeMessage CreateCommand(string command) 
+      => new() { Command = command, Id = Guid.NewGuid(), PacketType = PacketType.Command };
 
     /// <inheritdoc/>
-    public PipeMessage Create(string command, object? parameter) 
-      => new() { Command = command, Id = Guid.NewGuid(), Parameter = parameter };
+    public PipeMessage CreateCommand(string command, object? parameter) 
+      => new() { Command = command, Id = Guid.NewGuid(), PacketType = PacketType.Command, Parameter = parameter };
+
+    /// <inheritdoc/>
+    public PipeMessage CreateCommandCancellation(string command, Exception? parameter)
+      => new() { Command = command, Id = Guid.NewGuid(), PacketType = PacketType.CommandCancellation, Parameter = parameter };
+
+    /// <inheritdoc/>
+    public PipeMessage CreateCommandFailure(string command, Exception parameter)
+      => new() { Command = command, Id = Guid.NewGuid(), PacketType = PacketType.CommandFailure, Parameter = parameter };
 
     /// <inheritdoc/>
     public PipeMessage CreateResponse(PipeMessage commandMessage) 
-      => new() { Command = commandMessage.Command, Id = commandMessage.Id, IsResponse = true };
+      => new() { Command = commandMessage.Command, Id = commandMessage.Id, PacketType = PacketType.Response };
 
     /// <inheritdoc/>
     public PipeMessage CreateResponse(PipeMessage commandMessage, object? parameter)
-      => new() { Command = commandMessage.Command, Id = commandMessage.Id, IsResponse = true, Parameter = parameter };
+      => new() { Command = commandMessage.Command, Id = commandMessage.Id, PacketType = PacketType.Response, Parameter = parameter };
+
+    /// <inheritdoc/>
+    public PipeMessage CreateResponseCancellation(PipeMessage commandMessage, Exception? parameter)
+      => new() { Command = commandMessage.Command, Id = commandMessage.Id, PacketType = PacketType.ResponseCancellation, Parameter = parameter };
+
+    /// <inheritdoc/>
+    public PipeMessage CreateResponseFailure(PipeMessage commandMessage, Exception parameter)
+      => new() { Command = commandMessage.Command, Id = commandMessage.Id, PacketType = PacketType.ResponseFailure, Parameter = parameter };
   }
 }

@@ -155,7 +155,7 @@ namespace T.Pipes
       try
       {
         if(primaryRequest)
-          await WriteAsync(PipeMessageFactory.Instance.Create(command, pipeName), cancellationToken).ConfigureAwait(false);
+          await WriteAsync(PipeMessageFactory.Instance.CreateCommand(command, pipeName), cancellationToken).ConfigureAwait(false);
         try
         {
           await proxy.StartAndConnectWithTimeoutAsync(ResponseTimeoutMs, cancellationToken).ConfigureAwait(false);

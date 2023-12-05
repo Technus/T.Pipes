@@ -21,5 +21,14 @@ namespace T.Pipes
     public NoResponseException(string message, Exception innerException) : base(message, innerException)
     {
     }
+
+    /// <summary>
+    /// Serialization ctor
+    /// </summary>
+    /// <param name="info"></param>
+    /// <param name="context"></param>
+    protected NoResponseException(SerializationInfo info, StreamingContext context) : base(info, context)
+    {
+    }
   }
 }
