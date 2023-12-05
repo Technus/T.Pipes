@@ -24,14 +24,14 @@ namespace T.Pipes.Abstractions
     Task WriteAsync(TMessage value, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Starts the pipe
+    /// Starts the pipe, finishes ~instantly
     /// </summary>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     Task StartAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Starts and then awaits incoming connection, should use <see cref="StartAsync(CancellationToken)"/>
+    /// Starts and then awaits incoming connection
     /// </summary>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
@@ -46,7 +46,7 @@ namespace T.Pipes.Abstractions
     Task StartAndConnectWithTimeoutAsync(int timeoutMs, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Stops the pipe
+    /// Stops the pipe, finishes ~instantly
     /// </summary>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
@@ -54,7 +54,7 @@ namespace T.Pipes.Abstractions
 
     /// <summary>
     /// For servers checks if it is running
-    /// For clients if it is running and connected (since client cannot be free running)
+    /// For clients if it is running and connected or connecting
     /// </summary>
     bool IsRunning { get; }
 

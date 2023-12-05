@@ -69,7 +69,7 @@ namespace T.Pipes
     /// <summary>
     /// Checks if it is running and connected (since client cannot be free running)
     /// </summary>
-    public override bool IsRunning => Pipe.IsConnected;
+    public override bool IsRunning => Pipe.IsConnected || Pipe.IsConnecting;
 
     /// <summary>
     /// Generated unique name
@@ -97,7 +97,15 @@ namespace T.Pipes
       => Callback.Connected(e.Connection.PipeName);
 
     /// <inheritdoc/>
-    public override async Task StartAsync(CancellationToken cancellationToken = default)
+    public override Task StartAsync(CancellationToken cancellationToken = default)
+      => Task.Run(() => StartAndConnectAsync(cancellationToken));
+
+    /// <inheritdoc/>
+    public override Task StopAsync(CancellationToken cancellationToken = default)
+      => Pipe.DisconnectAsync(cancellationToken);
+
+    /// <inheritdoc/>
+    public override async Task StartAndConnectAsync(CancellationToken cancellationToken = default)
     {
       try
       {
@@ -116,14 +124,6 @@ namespace T.Pipes
         throw;
       }
     }
-
-    /// <inheritdoc/>
-    public override Task StopAsync(CancellationToken cancellationToken = default)
-      => Pipe.DisconnectAsync(cancellationToken);
-
-    /// <inheritdoc/>
-    public override Task StartAndConnectAsync(CancellationToken cancellationToken = default) 
-      => StartAsync(cancellationToken);
 
     /// <inheritdoc/>
     protected override async Task StartAndConnectWithTimeoutInternalAsync(int timeoutMs, CancellationToken cancellationToken = default)
