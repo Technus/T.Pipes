@@ -190,6 +190,7 @@ namespace T.Pipes
     {
       base.DisposeCore(disposing, includeAsync);
       LifetimeCancellationSource.Cancel();
+      LifetimeCancellationSource.Dispose();
     }
   }
 }
