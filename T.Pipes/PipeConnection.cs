@@ -28,7 +28,8 @@ namespace T.Pipes
     public TCallback Callback { get; }
 
     /// <inheritdoc/>
-    public abstract bool IsRunning { get; }
+    [Obsolete("Very unreliable in H.Pipes")]
+    public abstract bool IsConnecting { get; }
 
     /// <inheritdoc/>
     public abstract string PipeName { get; }

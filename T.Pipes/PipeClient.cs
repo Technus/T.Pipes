@@ -69,7 +69,8 @@ namespace T.Pipes
     /// <summary>
     /// Checks if it is running and connected (since client cannot be free running)
     /// </summary>
-    public override bool IsRunning => Pipe.IsConnected || Pipe.IsConnecting;
+    [Obsolete("Very unreliable in H.Pipes")]
+    public override bool IsConnecting => Pipe.IsConnecting;
 
     /// <summary>
     /// Generated unique name
@@ -98,7 +99,10 @@ namespace T.Pipes
 
     /// <inheritdoc/>
     public override Task StartAsync(CancellationToken cancellationToken = default)
-      => Task.Run(() => _ = StartAndConnectAsync(cancellationToken));
+    {
+      _ = StartAndConnectAsync(cancellationToken);
+      return Task.CompletedTask;
+    }
 
     /// <inheritdoc/>
     public override Task StopAsync(CancellationToken cancellationToken = default)

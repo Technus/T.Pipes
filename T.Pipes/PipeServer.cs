@@ -68,7 +68,8 @@ namespace T.Pipes
     /// <summary>
     /// Checks if it is running
     /// </summary>
-    public override bool IsRunning => Pipe.IsStarted;
+    [Obsolete("Very unreliable in H.Pipes")]
+    public override bool IsConnecting => Pipe.IsStarted;
 
     /// <summary>
     /// Same as <see cref="ServerName"/>

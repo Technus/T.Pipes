@@ -63,7 +63,7 @@ namespace T.Pipes.Abstractions
     /// For servers checks if it is running
     /// For clients if it is running and connected or connecting
     /// </summary>
-    bool IsRunning { get; }
+    bool IsConnecting { get; }
 
     /// <summary>
     /// For servers it is <see cref="ServerName"/>
