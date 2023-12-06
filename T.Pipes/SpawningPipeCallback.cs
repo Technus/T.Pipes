@@ -37,17 +37,9 @@ namespace T.Pipes
   /// Callback to handle Factorization of <see cref="IPipeDelegatingConnection{TMessage}"/>
   /// </summary>
   public abstract class SpawningPipeCallback<TPipe>
-    : BaseClass, IPipeCallback<PipeMessage>
+    : PipeCallbackBase<TPipe, PipeMessage, PipeMessageFactory, SpawningPipeCallback<TPipe>>
     where TPipe : H.Pipes.IPipeConnection<PipeMessage>
   {
-    /// <summary>
-    /// Signal that it is not needed anymore
-    /// </summary>
-    protected CancellationTokenSource LifetimeCancellationSource { get; } = new();
-
-    /// <inheritdoc/>
-    public CancellationToken LifetimeCancellation => LifetimeCancellationSource.Token;
-
     /// <summary>
     /// Creates Callback to handle Factorization of <see cref="IPipeDelegatingConnection{TMessage}"/>
     /// </summary>
@@ -86,25 +78,25 @@ namespace T.Pipes
     /// <summary>
     /// disposes created Proxies
     /// </summary>
-    public virtual void Connected(string connection) { }
+    public override void Connected(string connection) { }
 
 
     /// <summary>
     /// disposes created Proxies
     /// </summary>
-    public virtual void Disconnected(string connection) { }
+    public override void Disconnected(string connection) { }
 
 
     /// <summary>
     /// disposes created Proxies
     /// </summary>
-    public virtual void OnExceptionOccurred(Exception e) { }
+    public override void OnExceptionOccurred(Exception e) { }
 
     /// <summary>
     /// No-op handling of sent messages
     /// </summary>
     /// <param name="message"></param>
-    public virtual void OnMessageSent(PipeMessage message) { }
+    public override void OnMessageSent(PipeMessage message) { }
 
     /// <summary>
     /// Handles creation of Proxies
@@ -112,7 +104,7 @@ namespace T.Pipes
     /// </summary>
     /// <param name="message"></param>
     /// <exception cref="InvalidOperationException"></exception>
-    public virtual void OnMessageReceived(PipeMessage message)
+    public override void OnMessageReceived(PipeMessage message)
     {
       var name = message.Parameter as string;
       if (name is null || name == string.Empty)
@@ -184,13 +176,5 @@ namespace T.Pipes
     /// <param name="pipeName">name for the pipe</param>
     /// <returns></returns>
     protected abstract IPipeDelegatingConnection<PipeMessage> CreateProxy(string command, string pipeName);
-
-    /// <inheritdoc/>
-    protected override void DisposeCore(bool disposing, bool includeAsync)
-    {
-      base.DisposeCore(disposing, includeAsync);
-      LifetimeCancellationSource.Cancel();
-      LifetimeCancellationSource.Dispose();
-    }
   }
 }

@@ -101,22 +101,13 @@ namespace T.Pipes
   /// <typeparam name="TTarget">target to operate on</typeparam>
   /// <typeparam name="TCallback">the final implementing type</typeparam>
   public abstract class DelegatingPipeCallback<TPipe, TPacket, TPacketFactory, TTarget, TCallback>
-    : BaseClass, IPipeDelegatingCallback<TPacket>
+    : PipeCallbackBase<TPipe, TPacket, TPacketFactory, TCallback>, IPipeDelegatingCallback<TPacket>
     where TTarget : IDisposable
     where TPipe : H.Pipes.IPipeConnection<TPacket>
     where TPacket : IPipeMessage
     where TPacketFactory : IPipeMessageFactory<TPacket>
     where TCallback : DelegatingPipeCallback<TPipe, TPacket, TPacketFactory, TTarget, TCallback>
   {
-    /// <summary>
-    /// Signal that it is not needed anymore
-    /// </summary>
-    protected CancellationTokenSource LifetimeCancellationSource { get; } = new();
-
-    /// <inheritdoc/>
-    public CancellationToken LifetimeCancellation => LifetimeCancellationSource.Token;
-
-
     /// <summary>
     /// A Command function definition
     /// </summary>
@@ -248,10 +239,10 @@ namespace T.Pipes
     public int ResponseTimeoutMs { get; set; }
 
     /// <inheritdoc/>
-    public virtual void Connected(string connection) => Clear();
+    public override void Connected(string connection) => Clear();
 
     /// <inheritdoc/>
-    public virtual void Disconnected(string connection) => Clear();
+    public override void Disconnected(string connection) => Clear();
 
     /// <summary>
     /// Disposes own resources, not the <see cref="Pipe"/> nor the <see cref="Target"/>
@@ -268,6 +259,7 @@ namespace T.Pipes
     /// </summary>
     protected override void DisposeCore(bool disposing, bool includeAsync)
     {
+      base.DisposeCore(disposing, includeAsync);
       if(includeAsync)
         _semaphore.Wait();
       if (_responses.Count > 0)
@@ -289,8 +281,6 @@ namespace T.Pipes
         TargetDeInitAuto();
         TargetDeInit(Target);
       }
-      LifetimeCancellationSource.Cancel();
-      LifetimeCancellationSource.Dispose();
     }
 
     /// <summary>
@@ -323,7 +313,7 @@ namespace T.Pipes
     }
 
     /// <inheritdoc/>
-    public virtual void OnExceptionOccurred(Exception e) => Clear(e);
+    public override void OnExceptionOccurred(Exception e) => Clear(e);
 
     /// <summary>
     /// Called on each incoming message<br/>
@@ -331,7 +321,7 @@ namespace T.Pipes
     /// Else calls <see cref="OnCommandReceived(TPacket)"/>
     /// </summary>
     /// <param name="message"></param>
-    public virtual void OnMessageReceived(TPacket? message)
+    public override void OnMessageReceived(TPacket? message)
     {
       if (message is null)
       {
@@ -434,7 +424,7 @@ namespace T.Pipes
     /// Does nothing on each <paramref name="message"/> sent
     /// </summary>
     /// <param name="message"></param>
-    public virtual void OnMessageSent(TPacket? message) { }
+    public override void OnMessageSent(TPacket? message) { }
 
 #nullable disable
 
