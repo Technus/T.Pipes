@@ -95,7 +95,7 @@ namespace T.Pipes
 
     /// <summary>
     /// Calls <see cref="PipeConnection{TPipe, TPacket, TCallback}.StartAndConnectWithTimeoutAsync(int, CancellationToken)"/>
-    /// And awaits, it will get cancelled on the <see cref="SpawningPipeCallback{TPipe}.LifetimeCancellation"/> so on Dispose call
+    /// And awaits, it will get cancelled on the <see cref="IPipeCallback{TMessage}.LifetimeCancellation"/> so on Dispose call
     /// </summary>
     /// <returns>Only after the client is Cancelled</returns>
     public async Task StartAndConnectWithTimeoutAndAwaitCancellationAsync(int timeoutMs = 1000, CancellationToken cancellationToken = default)
