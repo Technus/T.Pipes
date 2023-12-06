@@ -1,4 +1,6 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace T.Pipes
 {
@@ -44,6 +46,23 @@ namespace T.Pipes
     /// <param name="callback"></param>
     protected SpawningPipeClient(TPipe pipe, TCallback callback) : base(pipe, callback)
     {
+    }
+
+    /// <summary>
+    /// Calls <see cref="PipeConnection{TPipe, TPacket, TCallback}.StartAndConnectWithTimeoutAsync(int, CancellationToken)"/>
+    /// And awaits, it will get cancelled on the <see cref="SpawningPipeCallback{TPipe}.LifetimeCancellation"/> so on Dispose call
+    /// </summary>
+    /// <returns>Only after the client is Cancelled</returns>
+    public async Task StartAndConnectWithTimeoutAndAwaitCancellationAsync(int timeoutMs = 1000, CancellationToken cancellationToken = default)
+    {
+      var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, Callback.LifetimeCancellation);
+      await StartAndConnectWithTimeoutAsync(timeoutMs, cts.Token);
+      try
+      {
+        //Let it spin...
+        await Task.Delay(Timeout.Infinite, cts.Token);
+      }
+      catch (OperationCanceledException e) when (e.CancellationToken == Callback.LifetimeCancellation) { }
     }
 
     /// <summary>

@@ -55,42 +55,6 @@ namespace T.Pipes
       => _process = new Process { StartInfo = client };
 
     /// <summary>
-    /// Disposes <see cref="PipeConnection{TPipe, TPacket, TCallback}.Pipe"/> and <see cref="PipeConnection{TPipe, TPacket, TCallback}.Callback"/>
-    /// </summary>
-    /// <param name="disposing"></param>
-    /// <param name="includeAsync"></param>
-    protected override void DisposeCore(bool disposing, bool includeAsync)
-    {
-      base.DisposeCore(disposing, includeAsync);
-      if (includeAsync)
-      {
-        Callback.Dispose();
-        _semaphore.Wait();
-      }
-      try
-      {
-        _process.Kill();
-      }
-      catch { }
-      finally
-      {
-        _process.Dispose();
-      }
-      _semaphore.Dispose();
-    }
-
-    /// <summary>
-    /// Disposes <see cref="PipeConnection{TPipe, TPacket, TCallback}.Pipe"/> and <see cref="PipeConnection{TPipe, TPacket, TCallback}.Callback"/>
-    /// </summary>
-    /// <returns></returns>
-    protected override async ValueTask DisposeAsyncCore(bool disposing)
-    {
-      await base.DisposeAsyncCore(disposing).ConfigureAwait(false);
-      await Callback.DisposeAsync().ConfigureAwait(false);
-      await _semaphore.WaitAsync().ConfigureAwait(false);
-    }
-
-    /// <summary>
     /// starts the process and the pipe
     /// </summary>
     /// <param name="cancellationToken"></param>
@@ -199,6 +163,59 @@ namespace T.Pipes
       {
         _semaphore.Release();
       }
+    }
+
+    /// <summary>
+    /// Calls <see cref="PipeConnection{TPipe, TPacket, TCallback}.StartAndConnectWithTimeoutAsync(int, CancellationToken)"/>
+    /// And awaits, it will get cancelled on the <see cref="SpawningPipeCallback{TPipe}.LifetimeCancellation"/> so on Dispose call
+    /// </summary>
+    /// <returns>Only after the client is Cancelled</returns>
+    public async Task StartAndConnectWithTimeoutAndAwaitCancellationAsync(int timeoutMs = 1000, CancellationToken cancellationToken = default)
+    {
+      var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, Callback.LifetimeCancellation);
+      await StartAndConnectWithTimeoutAsync(timeoutMs, cts.Token);
+      try
+      {
+        //Let it spin...
+        await Task.Delay(Timeout.Infinite, cts.Token);
+      }
+      catch (OperationCanceledException e) when (e.CancellationToken == Callback.LifetimeCancellation) { }
+    }
+
+    /// <summary>
+    /// Disposes <see cref="PipeConnection{TPipe, TPacket, TCallback}.Pipe"/> and <see cref="PipeConnection{TPipe, TPacket, TCallback}.Callback"/>
+    /// </summary>
+    /// <param name="disposing"></param>
+    /// <param name="includeAsync"></param>
+    protected override void DisposeCore(bool disposing, bool includeAsync)
+    {
+      base.DisposeCore(disposing, includeAsync);
+      if (includeAsync)
+      {
+        Callback.Dispose();
+        _semaphore.Wait();
+      }
+      try
+      {
+        _process.Kill();
+      }
+      catch { }
+      finally
+      {
+        _process.Dispose();
+      }
+      _semaphore.Dispose();
+    }
+
+    /// <summary>
+    /// Disposes <see cref="PipeConnection{TPipe, TPacket, TCallback}.Pipe"/> and <see cref="PipeConnection{TPipe, TPacket, TCallback}.Callback"/>
+    /// </summary>
+    /// <returns></returns>
+    protected override async ValueTask DisposeAsyncCore(bool disposing)
+    {
+      await base.DisposeAsyncCore(disposing).ConfigureAwait(false);
+      await Callback.DisposeAsync().ConfigureAwait(false);
+      await _semaphore.WaitAsync().ConfigureAwait(false);
     }
   }
 }
