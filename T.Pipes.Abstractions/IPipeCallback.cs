@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 
 namespace T.Pipes.Abstractions
 {
@@ -8,6 +9,11 @@ namespace T.Pipes.Abstractions
   /// <typeparam name="TMessage">packet type <see cref="IPipeMessage"/> implementations are usually used</typeparam>
   public interface IPipeCallback<TMessage> : IDisposable, IAsyncDisposable
   {
+    /// <summary>
+    /// Cancelled on dispose or finalize just in case, or when should be cancelled or finalized
+    /// </summary>
+    CancellationToken LifetimeCancellation { get; }
+
     /// <summary>
     /// Triggers when sending
     /// </summary>

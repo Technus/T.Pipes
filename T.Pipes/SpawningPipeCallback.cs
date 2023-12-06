@@ -45,9 +45,7 @@ namespace T.Pipes
     /// </summary>
     protected CancellationTokenSource LifetimeCancellationSource { get; } = new();
 
-    /// <summary>
-    /// Cancelled on dispose or finalize
-    /// </summary>
+    /// <inheritdoc/>
     public CancellationToken LifetimeCancellation => LifetimeCancellationSource.Token;
 
     /// <summary>

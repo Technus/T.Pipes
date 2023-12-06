@@ -166,23 +166,6 @@ namespace T.Pipes
     }
 
     /// <summary>
-    /// Calls <see cref="PipeConnection{TPipe, TPacket, TCallback}.StartAndConnectWithTimeoutAsync(int, CancellationToken)"/>
-    /// And awaits, it will get cancelled on the <see cref="SpawningPipeCallback{TPipe}.LifetimeCancellation"/> so on Dispose call
-    /// </summary>
-    /// <returns>Only after the client is Cancelled</returns>
-    public async Task StartAndConnectWithTimeoutAndAwaitCancellationAsync(int timeoutMs = 1000, CancellationToken cancellationToken = default)
-    {
-      var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, Callback.LifetimeCancellation);
-      await StartAndConnectWithTimeoutAsync(timeoutMs, cts.Token);
-      try
-      {
-        //Let it spin...
-        await Task.Delay(Timeout.Infinite, cts.Token);
-      }
-      catch (OperationCanceledException e) when (e.CancellationToken == Callback.LifetimeCancellation) { }
-    }
-
-    /// <summary>
     /// Disposes <see cref="PipeConnection{TPipe, TPacket, TCallback}.Pipe"/> and <see cref="PipeConnection{TPipe, TPacket, TCallback}.Callback"/>
     /// </summary>
     /// <param name="disposing"></param>

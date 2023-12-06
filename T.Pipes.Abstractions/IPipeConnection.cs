@@ -43,7 +43,14 @@ namespace T.Pipes.Abstractions
     /// <param name="timeoutMs"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    Task StartAndConnectWithTimeoutAsync(int timeoutMs, CancellationToken cancellationToken = default);
+    Task StartAndConnectWithTimeoutAsync(int timeoutMs = 1000, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Calls <see cref="StartAndConnectWithTimeoutAsync(int, CancellationToken)"/>
+    /// And awaits, it will also get cancelled on the <see cref="IPipeCallback{TMessage}.LifetimeCancellation"/>
+    /// </summary>
+    /// <returns>Only after the client is Cancelled</returns>
+    public Task StartAndConnectWithTimeoutAndAwaitCancellationAsync(int timeoutMs = 1000, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Stops the pipe, finishes ~instantly

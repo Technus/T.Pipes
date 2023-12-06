@@ -109,6 +109,15 @@ namespace T.Pipes
     where TCallback : DelegatingPipeCallback<TPipe, TPacket, TPacketFactory, TTarget, TCallback>
   {
     /// <summary>
+    /// Signal that it is not needed anymore
+    /// </summary>
+    protected CancellationTokenSource LifetimeCancellationSource { get; } = new();
+
+    /// <inheritdoc/>
+    public CancellationToken LifetimeCancellation => LifetimeCancellationSource.Token;
+
+
+    /// <summary>
     /// A Command function definition
     /// </summary>
     /// <param name="callback">associated callback/pipe/packetFactory</param>
@@ -280,6 +289,8 @@ namespace T.Pipes
         TargetDeInitAuto();
         TargetDeInit(Target);
       }
+      LifetimeCancellationSource.Cancel();
+      LifetimeCancellationSource.Dispose();
     }
 
     /// <summary>

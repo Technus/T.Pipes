@@ -10,9 +10,8 @@ namespace T.Pipes.Test.Client
     : DelegatingPipeClientCallback<TTarget, DelegatingCallback<TTarget>>
     where TTarget : IAbstract, IAbstract<short>
   {
-    public DelegatingCallback(H.Pipes.PipeClient<PipeMessage> pipe, TTarget target) : base(pipe, target)
-    {
-    }
+    public DelegatingCallback(H.Pipes.PipeClient<PipeMessage> pipe, TTarget target) : base(pipe, target) 
+      => LifetimeCancellation.Register(static x => ((IDisposable)x!).Dispose(), this);
 
     public override void OnMessageReceived(PipeMessage message)
     {
@@ -29,13 +28,13 @@ namespace T.Pipes.Test.Client
     public override void Disconnected(string connection)
     {
       base.Disconnected(connection);
-      Dispose();
+      LifetimeCancellationSource.Cancel();
     }
 
     public override void OnExceptionOccurred(Exception e)
     {
       base.OnExceptionOccurred(e);
-      Dispose();
+      LifetimeCancellationSource.Cancel();
     }
 
     protected override void DisposeCore(bool disposing,bool includeAsync)
