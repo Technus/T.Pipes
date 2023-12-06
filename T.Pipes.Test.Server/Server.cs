@@ -16,7 +16,7 @@ namespace T.Pipes.Test.Server
       _ => throw new ArgumentException($"Invalid {nameof(command)}: {command}".Pastel(ConsoleColor.DarkCyan), nameof(command)),
     };
 
-    public DelegatingServerAuto Create() => ProvideProxyAsyncCore<DelegatingServerAuto>(PipeConstants.Create).Result;
+    public Task<DelegatingServerAuto> Create() => ProvideProxyAsyncCore<DelegatingServerAuto>(PipeConstants.Create);
 
     public override void OnMessageReceived(PipeMessage message)
     {

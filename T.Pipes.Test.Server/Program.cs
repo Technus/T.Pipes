@@ -14,7 +14,7 @@ namespace T.Pipes.Test.Server
       {
         await server.StartAndConnectWithTimeoutAsync(PipeConstants.ConnectionAwaitTimeMs);
 
-        await using (var item = server.Callback.Create())
+        await using (var item = await server.Callback.Create())
         {
           var target = item.Callback.AsIAbstract;
           var target1 = item.Callback.AsIAbstract_args_Int16_end_;
