@@ -27,6 +27,9 @@ namespace T.Pipes.Abstractions
     /// </summary>
     /// <param name="info"></param>
     /// <param name="context"></param>
+#if NET8_0_OR_GREATER
+    [Obsolete("This is being still used for remoting kindof...", DiagnosticId = "SYSLIB0051")]
+#endif
     protected NoResponseException(SerializationInfo info, StreamingContext context) : base(info, context)
     {
     }
