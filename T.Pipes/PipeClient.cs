@@ -152,15 +152,7 @@ namespace T.Pipes
 #endif
 
         Pipe.Connected += onConnected;
-        var startTask = Task.WhenAny(StartAndConnectAsync(cts.Token), tcs.Task);
-        try
-        {
-          await startTask.ConfigureAwait(false);
-        }
-        catch
-        {
-          throw startTask.Exception!;
-        }
+        await Task.WhenAny(StartAndConnectAsync(cts.Token), tcs.Task).ConfigureAwait(false);
       }
       catch (OperationCanceledException ex) when (ex.CancellationToken == cts.Token)
       {
