@@ -100,7 +100,7 @@ namespace T.Pipes
     /// <returns>Only after the client is Cancelled</returns>
     public async Task StartAndConnectWithTimeoutAndAwaitCancellationAsync(int timeoutMs = 1000, CancellationToken cancellationToken = default)
     {
-      var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, Callback.LifetimeCancellation);
+      using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, Callback.LifetimeCancellation);
       await StartAndConnectWithTimeoutAsync(timeoutMs, cts.Token);
       try
       {

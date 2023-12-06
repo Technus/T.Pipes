@@ -102,7 +102,7 @@ namespace T.Pipes
     /// <returns></returns>
     protected async Task StopProcess(CancellationToken cancellationToken = default)
     {
-      var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+      using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
       cts.CancelAfter(10000);
       await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
       var closeSent = false;
