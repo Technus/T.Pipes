@@ -14,7 +14,7 @@ namespace T.Pipes.Abstractions
     /// <summary>
     /// Current dispose state
     /// </summary>
-    protected int _disposeState = (int)DisposeState.New;
+    private int _disposeState = (int)DisposeState.New;
 
     /// <summary>
     /// Check if disposed
