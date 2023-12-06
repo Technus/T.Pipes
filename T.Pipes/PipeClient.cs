@@ -98,7 +98,7 @@ namespace T.Pipes
 
     /// <inheritdoc/>
     public override Task StartAsync(CancellationToken cancellationToken = default)
-      => Task.Run(() => StartAndConnectAsync(cancellationToken));
+      => Task.Run(() => _ = StartAndConnectAsync(cancellationToken));
 
     /// <inheritdoc/>
     public override Task StopAsync(CancellationToken cancellationToken = default)
