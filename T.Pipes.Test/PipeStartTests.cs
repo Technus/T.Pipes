@@ -235,10 +235,9 @@
 
       await using var client = new PipeClient<IPipeCallback<PipeMessage>>(pipeName, clientCallback);
 
-      var action = () => client.StartAndConnectWithTimeoutAndAwaitCancellationAsync(timeoutMs: 2000);
-
-      var result = await action.Should().CompleteWithinAsync(TimeSpan.FromMilliseconds(200));
-      await result.And.ThrowAsync<OperationCanceledException>();
+      var task = Cache(() => client.StartAndConnectWithTimeoutAndAwaitCancellationAsync(timeoutMs: 2000));
+      await task.Should().CompleteWithinAsync(TimeSpan.FromMilliseconds(200));
+      await task.Should().ThrowAsync<OperationCanceledException>();
     }
 
     [Fact]
