@@ -1,7 +1,4 @@
-﻿using NSubstitute.Extensions;
-using T.Pipes.Abstractions;
-
-namespace T.Pipes.Test
+﻿namespace T.Pipes.Test
 {
   [ExcludeFromCodeCoverage]
   public class PipeStartTests

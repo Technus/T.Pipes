@@ -1,5 +1,3 @@
-using T.Pipes.Abstractions;
-
 namespace T.Pipes.Test
 {
   [ExcludeFromCodeCoverage]
