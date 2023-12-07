@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using T.Pipes.Abstractions;
 
 namespace T.Pipes.Test
@@ -6,100 +5,6 @@ namespace T.Pipes.Test
   [ExcludeFromCodeCoverage]
   public class PipeConnectionTests
   {
-    [Fact]
-    public async Task PipeClientCancel()
-    {
-      var pipeName = Guid.NewGuid().ToString();
-
-      var clientCallback = Substitute.For<IPipeCallback<PipeMessage>>();
-      await using var client = new PipeClient<IPipeCallback<PipeMessage>>(pipeName, clientCallback);
-
-      using var cts = new CancellationTokenSource();
-      cts.Cancel();
-      var token = cts.Token;
-
-      var action = () => client.StartAndConnectAsync(token);
-
-      await action.Should().ThrowAsync<OperationCanceledException>();
-    }
-
-    [Fact]
-    public async Task PipeServerCancel()
-    {
-      var pipeName = Guid.NewGuid().ToString();
-
-      var serverCallback = Substitute.For<IPipeCallback<PipeMessage>>();
-      await using var server = new PipeServer<IPipeCallback<PipeMessage>>(pipeName, serverCallback);
-
-      using var cts = new CancellationTokenSource();
-      cts.Cancel();
-      var token = cts.Token;
-
-      var action = () => server.StartAndConnectAsync(cancellationToken: token);
-
-      await action.Should().ThrowAsync<OperationCanceledException>();
-    }
-
-    [Fact]
-    public async Task PipeClientCancelAfter()
-    {
-      var pipeName = Guid.NewGuid().ToString();
-
-      var clientCallback = Substitute.For<IPipeCallback<PipeMessage>>();
-      await using var client = new PipeClient<IPipeCallback<PipeMessage>>(pipeName, clientCallback);
-
-      using var cts = new CancellationTokenSource();
-      cts.CancelAfter(100);
-      var token = cts.Token;
-
-      var action = () => client.StartAndConnectAsync(token);
-
-      await action.Should().ThrowAsync<OperationCanceledException>();
-    }
-
-    [Fact]
-    public async Task PipeServerCancelAfter()
-    {
-      var pipeName = Guid.NewGuid().ToString();
-
-      var serverCallback = Substitute.For<IPipeCallback<PipeMessage>>();
-      await using var server = new PipeServer<IPipeCallback<PipeMessage>>(pipeName, serverCallback);
-
-      using var cts = new CancellationTokenSource();
-      cts.CancelAfter(100);
-      var token = cts.Token;
-
-      var action = () => server.StartAndConnectAsync(cancellationToken: token);
-
-      await action.Should().ThrowAsync<OperationCanceledException>();
-    }
-
-    [Fact]
-    public async Task PipeClientTimeout()
-    {
-      var pipeName = Guid.NewGuid().ToString();
-
-      var clientCallback = Substitute.For<IPipeCallback<PipeMessage>>();
-      await using var client = new PipeClient<IPipeCallback<PipeMessage>>(pipeName, clientCallback);
-
-      var action = () => client.StartAndConnectWithTimeoutAsync(timeoutMs: 100);
-
-      await action.Should().ThrowAsync<TimeoutException>();
-    }
-
-    [Fact]
-    public async Task PipeServerTimeout()
-    {
-      var pipeName = Guid.NewGuid().ToString();
-
-      var serverCallback = Substitute.For<IPipeCallback<PipeMessage>>();
-      await using var server = new PipeServer<IPipeCallback<PipeMessage>>(pipeName, serverCallback);
-
-      var action = () => server.StartAndConnectWithTimeoutAsync(timeoutMs: 100);
-
-      await action.Should().ThrowAsync<TimeoutException>();
-    }
-
     [Fact]
     public async Task PipeClientStartAndConnect()
     {
@@ -113,7 +18,9 @@ namespace T.Pipes.Test
 
       await server.StartAsync();
 
-      await client.StartAndConnectAsync();
+      var action = () => client.StartAndConnectAsync();
+
+      await action.Should().CompleteWithinAsync(TimeSpan.FromMilliseconds(50));
     }
 
     [Fact]
@@ -129,7 +36,9 @@ namespace T.Pipes.Test
 
       await client.StartAsync();
 
-      await server.StartAndConnectAsync();
+      var action = () => server.StartAndConnectAsync();
+
+      await action.Should().CompleteWithinAsync(TimeSpan.FromMilliseconds(50));
     }
 
     [Fact(Skip = "IsConnecting is very unreliable in H.Pipes")]

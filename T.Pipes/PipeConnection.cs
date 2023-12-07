@@ -102,13 +102,16 @@ namespace T.Pipes
     public async Task StartAndConnectWithTimeoutAndAwaitCancellationAsync(int timeoutMs = 1000, CancellationToken cancellationToken = default)
     {
       using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, Callback.LifetimeCancellation);
-      await StartAndConnectWithTimeoutAsync(timeoutMs, cts.Token).ConfigureAwait(false);
       try
       {
+        await StartAndConnectWithTimeoutAsync(timeoutMs, cts.Token).ConfigureAwait(false);
         //Let it spin...
         await Task.Delay(Timeout.Infinite, cts.Token).ConfigureAwait(false);
       }
-      catch (OperationCanceledException e) when (e.CancellationToken == cts.Token) { }
+      finally
+      {
+        await StopAsync(default);
+      }
     }
 
     /// <summary>
