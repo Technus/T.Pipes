@@ -14,10 +14,10 @@ namespace T.Pipes.Test
     public async Task StringSendTest()
     {
       var pipeName = Guid.NewGuid().ToString();
-      var serverCallback = Substitute.For<IPipeCallback<string>>();
+      await using var serverCallback = Substitute.For<IPipeCallback<string>>();
       await using var server = new PipeServer<string, IPipeCallback<string>>(pipeName, serverCallback);
 
-      var clientCallback = Substitute.For<IPipeCallback<string>>();
+      await using var clientCallback = Substitute.For<IPipeCallback<string>>();
       await using var client = new PipeClient<string, IPipeCallback<string>>(pipeName, clientCallback);
 
       await server.StartAsync();
@@ -47,10 +47,10 @@ namespace T.Pipes.Test
     public async Task StringReceiveTest()
     {
       var pipeName = Guid.NewGuid().ToString();
-      var serverCallback = Substitute.For<IPipeCallback<string>>();
+      await using var serverCallback = Substitute.For<IPipeCallback<string>>();
       await using var server = new PipeServer<string, IPipeCallback<string>>(pipeName, serverCallback);
 
-      var clientCallback = Substitute.For<IPipeCallback<string>>();
+      await using var clientCallback = Substitute.For<IPipeCallback<string>>();
       await using var client = new PipeClient<string, IPipeCallback<string>>(pipeName, clientCallback);
 
       await server.StartAsync();

@@ -13,7 +13,7 @@ namespace T.Pipes.Test
     public async Task PipeClientProperCallback()
     {
       var pipeName = Guid.NewGuid().ToString();
-      var clientCallback = Substitute.For<IPipeCallback<PipeMessage>>();
+      await using var clientCallback = Substitute.For<IPipeCallback<PipeMessage>>();
 
       await using var client = new PipeClient<IPipeCallback<PipeMessage>>(pipeName, clientCallback);
 
@@ -25,7 +25,7 @@ namespace T.Pipes.Test
     public async Task PipeServerProperCallback()
     {
       var pipeName = Guid.NewGuid().ToString();
-      var serverCallback = Substitute.For<IPipeCallback<PipeMessage>>();
+      await using var serverCallback = Substitute.For<IPipeCallback<PipeMessage>>();
 
       await using var server = new PipeServer<IPipeCallback<PipeMessage>>(pipeName, serverCallback);
 

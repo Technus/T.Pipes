@@ -7,7 +7,7 @@
     public async Task PipeClientStartAndFallTrough()
     {
       var pipeName = Guid.NewGuid().ToString();
-      var clientCallback = Substitute.For<IPipeCallback<PipeMessage>>();
+      await using var clientCallback = Substitute.For<IPipeCallback<PipeMessage>>();
       await using var client = new PipeClient<IPipeCallback<PipeMessage>>(pipeName, clientCallback);
 
       var task = client.StartAsync();
@@ -20,7 +20,7 @@
     public async Task PipeServerStartAndFallTrough()
     {
       var pipeName = Guid.NewGuid().ToString();
-      var serverCallback = Substitute.For<IPipeCallback<PipeMessage>>();
+      await using var serverCallback = Substitute.For<IPipeCallback<PipeMessage>>();
       await using var server = new PipeServer<IPipeCallback<PipeMessage>>(pipeName, serverCallback);
 
       var task = server.StartAsync();
@@ -33,7 +33,7 @@
     public async Task PipeClientCancel()
     {
       var pipeName = Guid.NewGuid().ToString();
-      var clientCallback = Substitute.For<IPipeCallback<PipeMessage>>();
+      await using var clientCallback = Substitute.For<IPipeCallback<PipeMessage>>();
       await using var client = new PipeClient<IPipeCallback<PipeMessage>>(pipeName, clientCallback);
       using var cts = new CancellationTokenSource();
       cts.Cancel();
@@ -48,7 +48,7 @@
     public async Task PipeServerCancel()
     {
       var pipeName = Guid.NewGuid().ToString();
-      var serverCallback = Substitute.For<IPipeCallback<PipeMessage>>();
+      await using var serverCallback = Substitute.For<IPipeCallback<PipeMessage>>();
       await using var server = new PipeServer<IPipeCallback<PipeMessage>>(pipeName, serverCallback);
       using var cts = new CancellationTokenSource();
       cts.Cancel();
@@ -63,7 +63,7 @@
     public async Task PipeClientCancelAfter()
     {
       var pipeName = Guid.NewGuid().ToString();
-      var clientCallback = Substitute.For<IPipeCallback<PipeMessage>>();
+      await using var clientCallback = Substitute.For<IPipeCallback<PipeMessage>>();
       await using var client = new PipeClient<IPipeCallback<PipeMessage>>(pipeName, clientCallback);
       using var cts = new CancellationTokenSource();
       cts.CancelAfter(100);
@@ -78,7 +78,7 @@
     public async Task PipeServerCancelAfter()
     {
       var pipeName = Guid.NewGuid().ToString();
-      var serverCallback = Substitute.For<IPipeCallback<PipeMessage>>();
+      await using var serverCallback = Substitute.For<IPipeCallback<PipeMessage>>();
       await using var server = new PipeServer<IPipeCallback<PipeMessage>>(pipeName, serverCallback);
       using var cts = new CancellationTokenSource();
       cts.CancelAfter(100);
@@ -93,7 +93,7 @@
     public async Task PipeClientTimeout()
     {
       var pipeName = Guid.NewGuid().ToString();
-      var clientCallback = Substitute.For<IPipeCallback<PipeMessage>>();
+      await using var clientCallback = Substitute.For<IPipeCallback<PipeMessage>>();
       await using var client = new PipeClient<IPipeCallback<PipeMessage>>(pipeName, clientCallback);
 
       var task = client.StartAndConnectWithTimeoutAsync(timeoutMs: 100);
@@ -105,7 +105,7 @@
     public async Task PipeServerTimeout()
     {
       var pipeName = Guid.NewGuid().ToString();
-      var serverCallback = Substitute.For<IPipeCallback<PipeMessage>>();
+      await using var serverCallback = Substitute.For<IPipeCallback<PipeMessage>>();
       await using var server = new PipeServer<IPipeCallback<PipeMessage>>(pipeName, serverCallback);
 
       var task = server.StartAndConnectWithTimeoutAsync(timeoutMs: 100);
@@ -117,7 +117,7 @@
     public async Task PipeClientConnectWait()
     {
       var pipeName = Guid.NewGuid().ToString();
-      var clientCallback = Substitute.For<IPipeCallback<PipeMessage>>();
+      await using var clientCallback = Substitute.For<IPipeCallback<PipeMessage>>();
       await using var client = new PipeClient<IPipeCallback<PipeMessage>>(pipeName, clientCallback);
 
       var task = client.StartAndConnectAsync();
@@ -129,7 +129,7 @@
     public async Task PipeServerConnectWait()
     {
       var pipeName = Guid.NewGuid().ToString();
-      var serverCallback = Substitute.For<IPipeCallback<PipeMessage>>();
+      await using var serverCallback = Substitute.For<IPipeCallback<PipeMessage>>();
       await using var server = new PipeServer<IPipeCallback<PipeMessage>>(pipeName, serverCallback);
 
       var task = server.StartAndConnectAsync();
@@ -141,7 +141,7 @@
     public async Task PipeClientConnectWait2()
     {
       var pipeName = Guid.NewGuid().ToString();
-      var clientCallback = Substitute.For<IPipeCallback<PipeMessage>>();
+      await using var clientCallback = Substitute.For<IPipeCallback<PipeMessage>>();
       await using var client = new PipeClient<IPipeCallback<PipeMessage>>(pipeName, clientCallback);
 
       var task = client.StartAndConnectWithTimeoutAsync(timeoutMs: 2000);
@@ -154,7 +154,7 @@
     public async Task PipeServerConnectWait2()
     {
       var pipeName = Guid.NewGuid().ToString();
-      var serverCallback = Substitute.For<IPipeCallback<PipeMessage>>();
+      await using var serverCallback = Substitute.For<IPipeCallback<PipeMessage>>();
       await using var server = new PipeServer<IPipeCallback<PipeMessage>>(pipeName, serverCallback);
 
       var task = server.StartAndConnectWithTimeoutAsync(timeoutMs: 2000);
@@ -169,7 +169,7 @@
       var pipeName = Guid.NewGuid().ToString();
       var cts = new CancellationTokenSource();
       cts.Cancel();
-      var clientCallback = Substitute.For<IPipeCallback<PipeMessage>>();
+      await using var clientCallback = Substitute.For<IPipeCallback<PipeMessage>>();
       clientCallback.LifetimeCancellation.Returns(cts.Token);
       await using var client = new PipeClient<IPipeCallback<PipeMessage>>(pipeName, clientCallback);
 
@@ -185,7 +185,7 @@
       var pipeName = Guid.NewGuid().ToString();
       var cts = new CancellationTokenSource();
       cts.Cancel();
-      var serverCallback = Substitute.For<IPipeCallback<PipeMessage>>();
+      await using var serverCallback = Substitute.For<IPipeCallback<PipeMessage>>();
       serverCallback.LifetimeCancellation.Returns(cts.Token);
       await using var server = new PipeServer<IPipeCallback<PipeMessage>>(pipeName, serverCallback);
 
@@ -201,7 +201,7 @@
       var pipeName = Guid.NewGuid().ToString();
       var cts = new CancellationTokenSource();
       cts.CancelAfter(100);
-      var clientCallback = Substitute.For<IPipeCallback<PipeMessage>>();
+      await using var clientCallback = Substitute.For<IPipeCallback<PipeMessage>>();
       clientCallback.LifetimeCancellation.Returns(cts.Token);
 
       await using var client = new PipeClient<IPipeCallback<PipeMessage>>(pipeName, clientCallback);
@@ -219,7 +219,7 @@
       var cts = new CancellationTokenSource();
       cts.CancelAfter(100);
 
-      var serverCallback = Substitute.For<IPipeCallback<PipeMessage>>();
+      await using var serverCallback = Substitute.For<IPipeCallback<PipeMessage>>();
       serverCallback.LifetimeCancellation.Returns(cts.Token);
 
       await using var server = new PipeServer<IPipeCallback<PipeMessage>>(pipeName, serverCallback);
@@ -235,7 +235,7 @@
     public async Task PipeClientStartAndWait()
     {
       var pipeName = Guid.NewGuid().ToString();
-      var clientCallback = Substitute.For<IPipeCallback<PipeMessage>>();
+      await using var clientCallback = Substitute.For<IPipeCallback<PipeMessage>>();
       await using var client = new PipeClient<IPipeCallback<PipeMessage>>(pipeName, clientCallback);
 
       var task = client.StartAndConnectWithTimeoutAsync();
@@ -247,7 +247,7 @@
     public async Task PipeServerStartAndWait()
     {
       var pipeName = Guid.NewGuid().ToString();
-      var serverCallback = Substitute.For<IPipeCallback<PipeMessage>>();
+      await using var serverCallback = Substitute.For<IPipeCallback<PipeMessage>>();
       await using var server = new PipeServer<IPipeCallback<PipeMessage>>(pipeName, serverCallback);
 
       var task = server.StartAndConnectWithTimeoutAsync();

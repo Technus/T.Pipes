@@ -7,9 +7,9 @@ namespace T.Pipes.Test
     public async Task PipeClientStartAndConnect()
     {
       var pipeName = Guid.NewGuid().ToString();
-      var serverCallback = Substitute.For<IPipeCallback<PipeMessage>>();
+      await using var serverCallback = Substitute.For<IPipeCallback<PipeMessage>>();
       await using var server = new PipeServer<IPipeCallback<PipeMessage>>(pipeName, serverCallback);
-      var clientCallback = Substitute.For<IPipeCallback<PipeMessage>>();
+      await using var clientCallback = Substitute.For<IPipeCallback<PipeMessage>>();
       await using var client = new PipeClient<IPipeCallback<PipeMessage>>(pipeName, clientCallback);
       await server.StartAsync();
 
@@ -23,9 +23,9 @@ namespace T.Pipes.Test
     public async Task PipeServerStartAndConnect()
     {
       var pipeName = Guid.NewGuid().ToString();
-      var serverCallback = Substitute.For<IPipeCallback<PipeMessage>>();
+      await using var serverCallback = Substitute.For<IPipeCallback<PipeMessage>>();
       await using var server = new PipeServer<IPipeCallback<PipeMessage>>(pipeName, serverCallback);
-      var clientCallback = Substitute.For<IPipeCallback<PipeMessage>>();
+      await using var clientCallback = Substitute.For<IPipeCallback<PipeMessage>>();
       await using var client = new PipeClient<IPipeCallback<PipeMessage>>(pipeName, clientCallback);
       await client.StartAsync();
 
@@ -39,9 +39,9 @@ namespace T.Pipes.Test
     public async Task PipeClientDisconnect()
     {
       var pipeName = Guid.NewGuid().ToString();
-      var serverCallback = Substitute.For<IPipeCallback<PipeMessage>>();
+      await using var serverCallback = Substitute.For<IPipeCallback<PipeMessage>>();
       await using var server = new PipeServer<IPipeCallback<PipeMessage>>(pipeName, serverCallback);
-      var clientCallback = Substitute.For<IPipeCallback<PipeMessage>>();
+      await using var clientCallback = Substitute.For<IPipeCallback<PipeMessage>>();
       await using var client = new PipeClient<IPipeCallback<PipeMessage>>(pipeName, clientCallback);
 
       serverCallback.Received(0).OnConnected(Arg.Any<string>());
@@ -77,9 +77,9 @@ namespace T.Pipes.Test
     public async Task PipeServerDisconnect()
     {
       var pipeName = Guid.NewGuid().ToString();
-      var serverCallback = Substitute.For<IPipeCallback<PipeMessage>>();
+      await using var serverCallback = Substitute.For<IPipeCallback<PipeMessage>>();
       await using var server = new PipeServer<IPipeCallback<PipeMessage>>(pipeName, serverCallback);
-      var clientCallback = Substitute.For<IPipeCallback<PipeMessage>>();
+      await using var clientCallback = Substitute.For<IPipeCallback<PipeMessage>>();
       await using var client = new PipeClient<IPipeCallback<PipeMessage>>(pipeName, clientCallback);
 
       serverCallback.Received(0).OnConnected(Arg.Any<string>());
@@ -115,9 +115,9 @@ namespace T.Pipes.Test
     public async Task PipeClientDispose()
     {
       var pipeName = Guid.NewGuid().ToString();
-      var serverCallback = Substitute.For<IPipeCallback<PipeMessage>>();
+      await using var serverCallback = Substitute.For<IPipeCallback<PipeMessage>>();
       await using var server = new PipeServer<IPipeCallback<PipeMessage>>(pipeName, serverCallback);
-      var clientCallback = Substitute.For<IPipeCallback<PipeMessage>>();
+      await using var clientCallback = Substitute.For<IPipeCallback<PipeMessage>>();
       var client = new PipeClient<IPipeCallback<PipeMessage>>(pipeName, clientCallback);
       try
       {
@@ -159,9 +159,9 @@ namespace T.Pipes.Test
     public async Task PipeServerDispose()
     {
       var pipeName = Guid.NewGuid().ToString();
-      var serverCallback = Substitute.For<IPipeCallback<PipeMessage>>();
+      await using var serverCallback = Substitute.For<IPipeCallback<PipeMessage>>();
       var server = new PipeServer<IPipeCallback<PipeMessage>>(pipeName, serverCallback);
-      var clientCallback = Substitute.For<IPipeCallback<PipeMessage>>();
+      await using var clientCallback = Substitute.For<IPipeCallback<PipeMessage>>();
       await using var client = new PipeClient<IPipeCallback<PipeMessage>>(pipeName, clientCallback);
       try
       {

@@ -15,7 +15,7 @@ namespace T.Pipes.Test
       var pipe = Substitute.For<H.Pipes.IPipeClient<PipeMessage>>();
       pipe.PipeName.Returns(Guid.NewGuid().ToString());
       pipe.ServerName.Returns(Guid.NewGuid().ToString());
-      var clientCallback = Substitute.For<IPipeCallback<PipeMessage>>();
+      using var clientCallback = Substitute.For<IPipeCallback<PipeMessage>>();
       using var client = new PipeClient<H.Pipes.IPipeClient<PipeMessage>, PipeMessage, IPipeCallback<PipeMessage>>(pipe, clientCallback);
 
       client.ServerName.Should().Be(pipe.ServerName);
@@ -27,7 +27,7 @@ namespace T.Pipes.Test
     {
       var pipe = Substitute.For<H.Pipes.IPipeServer<PipeMessage>>();
       pipe.PipeName.Returns(Guid.NewGuid().ToString());
-      var serverCallback = Substitute.For<IPipeCallback<PipeMessage>>();
+      using var serverCallback = Substitute.For<IPipeCallback<PipeMessage>>();
       using var server = new PipeServer<H.Pipes.IPipeServer<PipeMessage>, PipeMessage, IPipeCallback<PipeMessage>>(pipe, serverCallback);
 
       server.ServerName.Should().Be(pipe.PipeName);
@@ -38,7 +38,7 @@ namespace T.Pipes.Test
     public void PipeClientDispose()
     {
       var pipe = Substitute.For<H.Pipes.IPipeClient<PipeMessage>>();
-      var clientCallback = Substitute.For<IPipeCallback<PipeMessage>>();
+      using var clientCallback = Substitute.For<IPipeCallback<PipeMessage>>();
       var client = new PipeClient<H.Pipes.IPipeClient<PipeMessage>, PipeMessage, IPipeCallback<PipeMessage>>(pipe, clientCallback);
 
       var task = client.Dispose;
@@ -50,7 +50,7 @@ namespace T.Pipes.Test
     public void PipeServerDispose()
     {
       var pipe = Substitute.For<H.Pipes.IPipeServer<PipeMessage>>();
-      var serverCallback = Substitute.For<IPipeCallback<PipeMessage>>();
+      using var serverCallback = Substitute.For<IPipeCallback<PipeMessage>>();
       var server = new PipeServer<H.Pipes.IPipeServer<PipeMessage>, PipeMessage, IPipeCallback<PipeMessage>>(pipe, serverCallback);
 
       var task = server.Dispose;
@@ -62,7 +62,7 @@ namespace T.Pipes.Test
     public async Task PipeClientDisposeAsync()
     {
       var pipe = Substitute.For<H.Pipes.IPipeClient<PipeMessage>>();
-      var clientCallback = Substitute.For<IPipeCallback<PipeMessage>>();
+      await using var clientCallback = Substitute.For<IPipeCallback<PipeMessage>>();
       var client = new PipeClient<H.Pipes.IPipeClient<PipeMessage>, PipeMessage, IPipeCallback<PipeMessage>>(pipe, clientCallback);
 
       var task = client.DisposeAsync();
@@ -74,7 +74,7 @@ namespace T.Pipes.Test
     public async Task PipeServerDisposeAsync()
     {
       var pipe = Substitute.For<H.Pipes.IPipeServer<PipeMessage>>();
-      var serverCallback = Substitute.For<IPipeCallback<PipeMessage>>();
+      await using var serverCallback = Substitute.For<IPipeCallback<PipeMessage>>();
       var server = new PipeServer<H.Pipes.IPipeServer<PipeMessage>, PipeMessage, IPipeCallback<PipeMessage>>(pipe, serverCallback);
 
       var task = server.DisposeAsync();
@@ -86,7 +86,7 @@ namespace T.Pipes.Test
     public async Task PipeClientProperPipe()
     {
       var pipe = Substitute.For<H.Pipes.IPipeClient<PipeMessage>>();
-      var clientCallback = Substitute.For<IPipeCallback<PipeMessage>>();
+      await using var clientCallback = Substitute.For<IPipeCallback<PipeMessage>>();
 
       await using var client = new PipeClient<H.Pipes.IPipeClient<PipeMessage>, PipeMessage,IPipeCallback<PipeMessage>>(pipe, clientCallback);
 
@@ -97,7 +97,7 @@ namespace T.Pipes.Test
     public async Task PipeServerProperPipe()
     {
       var pipe = Substitute.For<H.Pipes.IPipeServer<PipeMessage>>();
-      var serverCallback = Substitute.For<IPipeCallback<PipeMessage>>();
+      await using var serverCallback = Substitute.For<IPipeCallback<PipeMessage>>();
 
       await using var server = new PipeServer<H.Pipes.IPipeServer<PipeMessage>, PipeMessage, IPipeCallback<PipeMessage>>(pipe, serverCallback);
 
