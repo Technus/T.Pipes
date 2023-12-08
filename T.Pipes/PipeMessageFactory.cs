@@ -27,7 +27,7 @@ namespace T.Pipes
       => new() { Command = command, Id = Guid.NewGuid(), PacketType = PacketType.Command, Parameter = parameter };
 
     /// <inheritdoc/>
-    public PipeMessage CreateCommandCancellation(string command, Exception? parameter)
+    public PipeMessage CreateCommandCancellation(string command, Exception? parameter = default)
       => new() { Command = command, Id = Guid.NewGuid(), PacketType = PacketType.CommandCancellation, Parameter = parameter };
 
     /// <inheritdoc/>
@@ -43,7 +43,7 @@ namespace T.Pipes
       => new() { Command = commandMessage.Command, Id = commandMessage.Id, PacketType = PacketType.Response, Parameter = parameter };
 
     /// <inheritdoc/>
-    public PipeMessage CreateResponseCancellation(PipeMessage commandMessage, Exception? parameter)
+    public PipeMessage CreateResponseCancellation(PipeMessage commandMessage, Exception? parameter = default)
       => new() { Command = commandMessage.Command, Id = commandMessage.Id, PacketType = PacketType.ResponseCancellation, Parameter = parameter };
 
     /// <inheritdoc/>

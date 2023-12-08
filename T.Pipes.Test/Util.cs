@@ -1,19 +1,22 @@
 ﻿using FluentAssertions.Specialized;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 
 namespace T.Pipes.Test
 {
-  internal delegate TTask CachedTask<TTask>() where TTask : Task; 
+  internal delegate TTask CachedTask<TTask>() where TTask : Task;
 
+  [ExcludeFromCodeCoverage]
   internal static class LazyUtil
   {
-    public static CachedTask<V> Cache<K,V>(K source, Func<K,V> func) where V : Task 
+    public static CachedTask<V> Cache<K,V>(K source, Func<K,V> func) where V : Task
       => source.Cache(func);
 
-    public static CachedTask<T> Cache<T>(Func<T> func) where T : Task 
+    public static CachedTask<T> Cache<T>(Func<T> func) where T : Task
       => func.Cache();
   }
 
+  [ExcludeFromCodeCoverage]
   internal static class Util
   {
     public static CachedTask<V> Cache<K, V>(this K source, Func<K, V> func) where V : Task => Cache(() => func(source));
@@ -22,6 +25,18 @@ namespace T.Pipes.Test
     {
       var lazy = new Lazy<T>(func, LazyThreadSafetyMode.PublicationOnly);
       return () => lazy.Value;
+    }
+
+    public static NonGenericAsyncFunctionAssertions Should(this ValueTask value)
+    {
+      var action = () => value.AsTask();
+      return action.Should();
+    }
+
+    public static GenericAsyncFunctionAssertions<T> Should<T>(this ValueTask<T> value)
+    {
+      var action = () => value.AsTask();
+      return action.Should();
     }
 
     public static NonGenericAsyncFunctionAssertions Should(this Task value)
@@ -91,7 +106,7 @@ namespace T.Pipes.Test
       where TTask : Task
       where TAssertions : AsyncFunctionAssertions<TTask, TAssertions>
     {
-      var task = me.Subject.AsLazy<Task>();
+      var task = me.Subject.Cache<Task>();
       await task.Should().CompleteWithinAsync(timeout, because, becauseArgs);
       task().IsCanceled.Should().BeTrue(because, becauseArgs);
       return new AndConstraint<TAssertions>(me);
@@ -108,7 +123,7 @@ namespace T.Pipes.Test
       where TTask : Task
       where TAssertions : AsyncFunctionAssertions<TTask, TAssertions>
     {
-      var task = me.Subject.AsLazy<Task>();
+      var task = me.Subject.Cache<Task>();
       await task.Should().CompleteWithinAsync(timeout, because, becauseArgs);
       task().IsFaulted.Should().BeTrue(because, becauseArgs);
       return new AndConstraint<TAssertions>(me);

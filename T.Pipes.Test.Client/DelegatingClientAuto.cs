@@ -32,9 +32,9 @@ namespace T.Pipes.Test.Client
       base.OnMessageSent(message);
     }
 
-    public override void Disconnected(string connection)
+    public override void OnDisconnected(string connection)
     {
-      base.Disconnected(connection);
+      base.OnDisconnected(connection);
       LifetimeCancellationSource.Cancel();
     }
 

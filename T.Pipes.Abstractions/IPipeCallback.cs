@@ -37,12 +37,12 @@ namespace T.Pipes.Abstractions
     /// Triggers when a connection was established
     /// </summary>
     /// <param name="connection">the unique pipe id for this client/server internal pipe</param>
-    void Connected(string connection);
+    void OnConnected(string connection);
 
     /// <summary>
     /// Triggers when a connection was closed, alternatively on error <see cref="OnExceptionOccurred(Exception)"/>
     /// </summary>
     /// <param name="connection">the unique pipe id for this client/server internal pipe</param>
-    void Disconnected(string connection);
+    void OnDisconnected(string connection);
   }
 }

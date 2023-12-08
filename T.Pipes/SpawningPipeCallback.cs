@@ -78,13 +78,13 @@ namespace T.Pipes
     /// <summary>
     /// disposes created Proxies
     /// </summary>
-    public override void Connected(string connection) { }
+    public override void OnConnected(string connection) { }
 
 
     /// <summary>
     /// disposes created Proxies
     /// </summary>
-    public override void Disconnected(string connection) { }
+    public override void OnDisconnected(string connection) { }
 
 
     /// <summary>

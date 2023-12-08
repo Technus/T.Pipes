@@ -27,10 +27,10 @@ namespace T.Pipes
     public CancellationToken LifetimeCancellation => LifetimeCancellationSource.Token;
 
     /// <inheritdoc/>
-    public abstract void Connected(string connection);
+    public abstract void OnConnected(string connection);
 
     /// <inheritdoc/>
-    public abstract void Disconnected(string connection);
+    public abstract void OnDisconnected(string connection);
 
     /// <inheritdoc/>
     public abstract void OnExceptionOccurred(Exception e);

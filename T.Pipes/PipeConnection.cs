@@ -17,6 +17,8 @@ namespace T.Pipes
     where TPipe : H.Pipes.IPipeConnection<TPacket>
     where TCallback : IPipeCallback<TPacket>
   {
+    private int _connectionCount;
+
     /// <summary>
     /// The <typeparamref name="TPipe"/> used
     /// </summary>
@@ -52,6 +54,24 @@ namespace T.Pipes
       Pipe.ExceptionOccurred += OnExceptionOccurred;
       Pipe.MessageReceived += OnMessageReceived;
     }
+
+    /// <summary>
+    /// Must be called on incoming connection
+    /// </summary>
+    /// <returns></returns>
+    protected virtual int IncrementConnectionCount() => Interlocked.Increment(ref _connectionCount);
+
+    /// <summary>
+    /// Must be called on closing connection
+    /// </summary>
+    /// <returns></returns>
+    protected virtual int DecrementConnectionCount() => Interlocked.Decrement(ref _connectionCount);
+
+    /// <summary>
+    /// Total connections made
+    /// </summary>
+    /// <returns></returns>
+    protected virtual int ConnectionCount() => _connectionCount;
 
     private void OnMessageReceived(object? sender, ConnectionMessageEventArgs<TPacket?> e) 
       => Callback.OnMessageReceived(e.Message);
@@ -118,7 +138,7 @@ namespace T.Pipes
     /// Disposes <see cref="Pipe"/>
     /// </summary>
     /// <returns></returns>
-    protected override ValueTask DisposeAsyncCore(bool disposing)
+    protected override ValueTask DisposeAsyncCore(bool disposing) 
       => Pipe.DisposeAsync();
 
     /// <summary>

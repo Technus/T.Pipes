@@ -91,11 +91,18 @@ namespace T.Pipes
       Pipe.Connected += OnConnected;
     }
 
-    private void OnDisconnected(object? sender, ConnectionEventArgs<TPacket> e) 
-      => Callback.Disconnected(e.Connection.PipeName);
+    private void OnDisconnected(object? sender, ConnectionEventArgs<TPacket> e)
+    {
+      if (DecrementConnectionCount() == 0 && IsDisposed)
+        Pipe.Disconnected -= OnDisconnected;
+      Callback.OnDisconnected(e.Connection.PipeName);
+    }
 
-    private void OnConnected(object? sender, ConnectionEventArgs<TPacket> e) 
-      => Callback.Connected(e.Connection.PipeName);
+    private void OnConnected(object? sender, ConnectionEventArgs<TPacket> e)
+    {
+      IncrementConnectionCount();
+      Callback.OnConnected(e.Connection.PipeName);
+    }
 
     /// <inheritdoc/>
     public override Task StartAsync(CancellationToken cancellationToken = default)
@@ -188,7 +195,8 @@ namespace T.Pipes
     protected override void DisposeCore(bool disposing, bool includeAsync)
     {
       base.DisposeCore(disposing, includeAsync);
-      Pipe.Disconnected -= OnDisconnected;
+      if (ConnectionCount() == 0)
+        Pipe.Disconnected -= OnDisconnected;
       Pipe.Connected -= OnConnected;
     }
   }

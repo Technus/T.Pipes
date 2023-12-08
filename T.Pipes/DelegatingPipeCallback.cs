@@ -239,10 +239,10 @@ namespace T.Pipes
     public int ResponseTimeoutMs { get; set; }
 
     /// <inheritdoc/>
-    public override void Connected(string connection) => Clear();
+    public override void OnConnected(string connection) => Clear();
 
     /// <inheritdoc/>
-    public override void Disconnected(string connection) => Clear();
+    public override void OnDisconnected(string connection) => Clear();
 
     /// <summary>
     /// Disposes own resources, not the <see cref="Pipe"/> nor the <see cref="Target"/>
