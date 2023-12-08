@@ -92,8 +92,7 @@ namespace T.Pipes
 
     private void OnClientDisconnected(object? sender, ConnectionEventArgs<TPacket> e)
     {
-      if (DecrementConnectionCount() == 0 && IsDisposed)
-        Pipe.ClientDisconnected -= OnClientDisconnected;
+      DecrementConnectionCount();
       Callback.OnDisconnected(e.Connection.PipeName);
     }
 
@@ -250,9 +249,8 @@ namespace T.Pipes
     protected override void DisposeCore(bool disposing, bool includeAsync)
     {
       base.DisposeCore(disposing, includeAsync);
-      if (ConnectionCount() == 0)
-        Pipe.ClientDisconnected -= OnClientDisconnected;
       Pipe.ClientConnected -= OnClientConnected;
+      Pipe.ClientDisconnected -= OnClientDisconnected;
     }
   }
 }

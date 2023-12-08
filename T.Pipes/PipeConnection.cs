@@ -18,6 +18,7 @@ namespace T.Pipes
     where TCallback : IPipeCallback<TPacket>
   {
     private int _connectionCount;
+    private readonly SemaphoreSlim _noConnections = new(1, 1);
 
     /// <summary>
     /// The <typeparamref name="TPipe"/> used
@@ -58,20 +59,24 @@ namespace T.Pipes
     /// <summary>
     /// Must be called on incoming connection
     /// </summary>
-    /// <returns></returns>
-    protected virtual int IncrementConnectionCount() => Interlocked.Increment(ref _connectionCount);
+    /// <returns>current count</returns>
+    protected virtual int IncrementConnectionCount()
+    {
+      var result = Interlocked.Increment(ref _connectionCount);
+      if (result == 1) _noConnections.Wait();
+      return result;
+    }
 
     /// <summary>
     /// Must be called on closing connection
     /// </summary>
-    /// <returns></returns>
-    protected virtual int DecrementConnectionCount() => Interlocked.Decrement(ref _connectionCount);
-
-    /// <summary>
-    /// Total connections made
-    /// </summary>
-    /// <returns></returns>
-    protected virtual int ConnectionCount() => _connectionCount;
+    /// <returns>current count</returns>
+    protected virtual int DecrementConnectionCount()
+    {
+      var result = Interlocked.Decrement(ref _connectionCount);
+      if (result == 0) _noConnections.Release();
+      return result;
+    }
 
     private void OnMessageReceived(object? sender, ConnectionMessageEventArgs<TPacket?> e) 
       => Callback.OnMessageReceived(e.Message);
@@ -138,8 +143,11 @@ namespace T.Pipes
     /// Disposes <see cref="Pipe"/>
     /// </summary>
     /// <returns></returns>
-    protected override ValueTask DisposeAsyncCore(bool disposing) 
-      => Pipe.DisposeAsync();
+    protected override async ValueTask DisposeAsyncCore(bool disposing)
+    {
+      await Pipe.DisposeAsync().ConfigureAwait(false);
+      await _noConnections.WaitAsync().ConfigureAwait(false);
+    }
 
     /// <summary>
     /// Disposes <see cref="Pipe"/> and <see cref="Callback"/>
@@ -147,7 +155,11 @@ namespace T.Pipes
     protected override void DisposeCore(bool disposing, bool includeAsync)
     {
       if (includeAsync)
+      {
         Pipe.DisposeAsync().GetAwaiter().GetResult();
+        _noConnections.Wait();
+      }
+      _noConnections.Dispose();
       Pipe.MessageReceived -= OnMessageReceived;
       Pipe.ExceptionOccurred -= OnExceptionOccurred;
     }
