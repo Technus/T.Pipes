@@ -76,7 +76,7 @@ namespace T.Pipes
     /// Creates the callback, must be done with the same pipe as in the pipe connection holding it.
     /// </summary>
     /// <param name="pipe">the same pipe as in the pipe connection holding it</param>
-    public DelegatingPipeCallback(TPipe pipe) : base(pipe, new PipeMessageFactory())
+    public DelegatingPipeCallback(TPipe pipe) : base(pipe, new())
     {
     }
 
@@ -85,7 +85,7 @@ namespace T.Pipes
     /// </summary>
     /// <param name="pipe">the same pipe as in the pipe connection holding it</param>
     /// <param name="target">the actual implementation of <typeparamref name="TTarget"/></param>
-    public DelegatingPipeCallback(TPipe pipe, TTarget target) : base(pipe, new PipeMessageFactory(), target)
+    public DelegatingPipeCallback(TPipe pipe, TTarget target) : base(pipe, new(), target)
     {
     }
   }
@@ -382,7 +382,7 @@ namespace T.Pipes
       {
         try
         {
-          function.Invoke((TCallback)this, command);
+          function.Invoke((TCallback)this, command).Wait();
         }
         catch (Exception e)
         {
