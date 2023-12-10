@@ -1,6 +1,4 @@
 ﻿using FluentAssertions.Specialized;
-using System.Linq.Expressions;
-using System.Threading.Tasks;
 
 namespace T.Pipes.Test
 {

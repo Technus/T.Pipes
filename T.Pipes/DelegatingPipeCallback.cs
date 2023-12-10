@@ -76,7 +76,7 @@ namespace T.Pipes
     /// Creates the callback, must be done with the same pipe as in the pipe connection holding it.
     /// </summary>
     /// <param name="pipe">the same pipe as in the pipe connection holding it</param>
-    public DelegatingPipeCallback(TPipe pipe) : base(pipe, PipeMessageFactory.Instance)
+    public DelegatingPipeCallback(TPipe pipe) : base(pipe, new PipeMessageFactory())
     {
     }
 
@@ -85,7 +85,7 @@ namespace T.Pipes
     /// </summary>
     /// <param name="pipe">the same pipe as in the pipe connection holding it</param>
     /// <param name="target">the actual implementation of <typeparamref name="TTarget"/></param>
-    public DelegatingPipeCallback(TPipe pipe, TTarget target) : base(pipe, PipeMessageFactory.Instance, target)
+    public DelegatingPipeCallback(TPipe pipe, TTarget target) : base(pipe, new PipeMessageFactory(), target)
     {
     }
   }
@@ -116,7 +116,7 @@ namespace T.Pipes
     /// <returns>return value/s from target</returns>
     public delegate Task CommandFunction(TCallback callback, TPacket message);
 
-    private readonly Dictionary<Guid, TaskCompletionSource<object?>> _responses = [];
+    private readonly Dictionary<long, TaskCompletionSource<object?>> _responses = new(16);
     private readonly SemaphoreSlim _semaphore = new(1, 1);
     private TTarget _target;
 
@@ -127,11 +127,10 @@ namespace T.Pipes
     /// <param name="packetFactory">to create <typeparamref name="TPacket"/></param>
     /// <param name="responseTimeoutMs">response timeout in ms</param>
     /// <exception cref="InvalidOperationException">when the this is not a valid <typeparamref name="TTarget"/> or null</exception>
-    public DelegatingPipeCallback(TPipe pipe, TPacketFactory packetFactory, int responseTimeoutMs = Timeout.Infinite)
+    public DelegatingPipeCallback(TPipe pipe, TPacketFactory packetFactory, int responseTimeoutMs = Timeout.Infinite) : base(packetFactory)
     {
       ResponseTimeoutMs = responseTimeoutMs;
       Pipe = pipe;
-      PacketFactory = packetFactory;
       if (this is TTarget tt)
       {
         Target = tt;
@@ -151,11 +150,10 @@ namespace T.Pipes
     /// <param name="target">the actual implementation of <typeparamref name="TTarget"/></param>
     /// <param name="responseTimeoutMs">response timeout in ms</param>
     /// <exception cref="InvalidOperationException">when <paramref name="target"/> is null</exception>
-    public DelegatingPipeCallback(TPipe pipe, TPacketFactory packetFactory, TTarget target, int responseTimeoutMs = Timeout.Infinite)
+    public DelegatingPipeCallback(TPipe pipe, TPacketFactory packetFactory, TTarget target, int responseTimeoutMs = Timeout.Infinite) : base(packetFactory)
     {
       ResponseTimeoutMs = responseTimeoutMs;
       Pipe = pipe;
-      PacketFactory = packetFactory;
       if (target is not null)
       {
         Target = target;
@@ -229,11 +227,6 @@ namespace T.Pipes
     /// Used to access data tunnel
     /// </summary>
     public TPipe Pipe { get; }
-
-    /// <summary>
-    /// Used to create packets
-    /// </summary>
-    public TPacketFactory PacketFactory { get; }
 
     /// <inheritdoc/>
     public int ResponseTimeoutMs { get; set; }
@@ -321,13 +314,8 @@ namespace T.Pipes
     /// Else calls <see cref="OnCommandReceived(TPacket)"/>
     /// </summary>
     /// <param name="message"></param>
-    public override void OnMessageReceived(TPacket? message)
+    public override void OnMessageReceived(TPacket message)
     {
-      if (message is null)
-      {
-        return;
-      }
-
       if ((message.PacketType & PacketType.Response)!=0)//Any response
       {
         _semaphore.Wait();
@@ -424,7 +412,7 @@ namespace T.Pipes
     /// Does nothing on each <paramref name="message"/> sent
     /// </summary>
     /// <param name="message"></param>
-    public override void OnMessageSent(TPacket? message) { }
+    public override void OnMessageSent(TPacket message) { }
 
 #nullable disable
 

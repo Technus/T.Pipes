@@ -6,7 +6,7 @@ namespace T.Pipes.Abstractions
   /// Describes packet content
   /// </summary>
   [Flags]
-  public enum PacketType : byte
+  public enum PacketType : int
   {
     /// <summary>
     /// Unknown/default

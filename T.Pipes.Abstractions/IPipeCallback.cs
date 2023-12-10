@@ -18,7 +18,7 @@ namespace T.Pipes.Abstractions
     /// Triggers when sending
     /// </summary>
     /// <param name="message">the message being sent</param>
-    void OnMessageSent(TMessage? message);
+    void OnMessageSent(TMessage message);
 
     /// <summary>
     /// Triggers on exceptions in the pipe
@@ -31,7 +31,7 @@ namespace T.Pipes.Abstractions
     /// </summary>
     /// <param name="message"></param>
     /// <remarks>To prevent circular dependencies must also be called inside callback before writing to pure pipe, (not the wrapped pipe)</remarks>
-    void OnMessageReceived(TMessage? message);
+    void OnMessageReceived(TMessage message);
 
     /// <summary>
     /// Triggers when a connection was established

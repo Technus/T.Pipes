@@ -9,19 +9,19 @@ namespace T.Pipes
   /// </summary>
   [Serializable]
   [DebuggerDisplay("{Id} / {Command} / {Parameter}")]
-  public struct PipeMessage : IPipeMessage
+  public class PipeMessage : IPipeMessage
   {
     /// <inheritdoc/>
-    public Guid Id { get; set; }
-
-    /// <inheritdoc/>
-    public string Command { get; set; }
-
-    /// <inheritdoc/>
-    public object? Parameter { get; set; }
+    public long Id { get; set; }
 
     /// <inheritdoc/>
     public PacketType PacketType { get; set; }
+
+    /// <inheritdoc/>
+    public string Command { get; set; } = string.Empty;
+
+    /// <inheritdoc/>
+    public object? Parameter { get; set; }
 
     /// <summary>
     /// For convenience returns the same thing as debugger display

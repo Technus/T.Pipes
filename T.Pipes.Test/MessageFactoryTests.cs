@@ -13,7 +13,7 @@ namespace T.Pipes.Test
     public void MakesCommand()
     {
       var cmd = Guid.NewGuid().ToString();
-      var dut = PipeMessageFactory.Instance;
+      var dut = new PipeMessageFactory();
 
       var result = dut.CreateCommand(cmd);
 
@@ -35,7 +35,7 @@ namespace T.Pipes.Test
     {
       var cmd = Guid.NewGuid().ToString();
       var param = Guid.NewGuid();
-      var dut = PipeMessageFactory.Instance;
+      var dut = new PipeMessageFactory();
 
       var result = dut.CreateCommand(cmd, param);
 
@@ -58,7 +58,7 @@ namespace T.Pipes.Test
     public void MakesCommandCancellation()
     {
       var cmd = Guid.NewGuid().ToString();
-      var dut = PipeMessageFactory.Instance;
+      var dut = new PipeMessageFactory();
 
       var result = dut.CreateCommandCancellation(cmd);
 
@@ -79,7 +79,7 @@ namespace T.Pipes.Test
     public void MakesCommandCancellationWithParam()
     {
       var cmd = Guid.NewGuid().ToString();
-      var dut = PipeMessageFactory.Instance;
+      var dut = new PipeMessageFactory();
       var param = new Exception();
 
       var result = dut.CreateCommandCancellation(cmd, param);
@@ -103,7 +103,7 @@ namespace T.Pipes.Test
     public void MakesCommandFailureWithParam()
     {
       var cmd = Guid.NewGuid().ToString();
-      var dut = PipeMessageFactory.Instance;
+      var dut = new PipeMessageFactory();
       var param = new Exception();
 
       var result = dut.CreateCommandFailure(cmd, param);
@@ -127,7 +127,7 @@ namespace T.Pipes.Test
     public void MakesResponse()
     {
       var cmd = Guid.NewGuid().ToString();
-      var dut = PipeMessageFactory.Instance;
+      var dut = new PipeMessageFactory();
 
       var command = dut.CreateCommand(cmd);
       var result = dut.CreateResponse(command);
@@ -153,7 +153,7 @@ namespace T.Pipes.Test
     {
       var cmd = Guid.NewGuid().ToString();
       var param = Guid.NewGuid();
-      var dut = PipeMessageFactory.Instance;
+      var dut = new PipeMessageFactory();
 
       var command = dut.CreateCommand(cmd);
       var result = dut.CreateResponse(command, param);
@@ -178,7 +178,7 @@ namespace T.Pipes.Test
     public void MakesResponseCancellation()
     {
       var cmd = Guid.NewGuid().ToString();
-      var dut = PipeMessageFactory.Instance;
+      var dut = new PipeMessageFactory();
 
       var command = dut.CreateCommand(cmd);
       var result = dut.CreateResponseCancellation(command);
@@ -204,7 +204,7 @@ namespace T.Pipes.Test
     {
       var cmd = Guid.NewGuid().ToString();
       var param = new Exception();
-      var dut = PipeMessageFactory.Instance;
+      var dut = new PipeMessageFactory();
 
       var command = dut.CreateCommand(cmd);
       var result = dut.CreateResponseCancellation(command, param);
@@ -230,7 +230,7 @@ namespace T.Pipes.Test
     {
       var cmd = Guid.NewGuid().ToString();
       var param = new Exception();
-      var dut = PipeMessageFactory.Instance;
+      var dut = new PipeMessageFactory();
 
       var command = dut.CreateCommand(cmd);
       var result = dut.CreateResponseFailure(command, param);

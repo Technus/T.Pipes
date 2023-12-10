@@ -45,7 +45,7 @@ namespace T.Pipes
     /// </summary>
     /// <param name="pipe"></param>
     /// <param name="timeoutMs"></param>
-    protected SpawningPipeCallback(TPipe pipe, int timeoutMs = Timeout.Infinite)
+    protected SpawningPipeCallback(TPipe pipe, int timeoutMs = Timeout.Infinite) : base(new())
     {
       Pipe = pipe;
       ResponseTimeoutMs = timeoutMs;
@@ -145,7 +145,7 @@ namespace T.Pipes
       try
       {
         if(primaryRequest)
-          await WriteAsync(PipeMessageFactory.Instance.CreateCommand(command, pipeName), cancellationToken).ConfigureAwait(false);
+          await WriteAsync(PacketFactory.CreateCommand(command, pipeName), cancellationToken).ConfigureAwait(false);
         try
         {
           await proxy.StartAndConnectWithTimeoutAsync(ResponseTimeoutMs, cancellationToken).ConfigureAwait(false);

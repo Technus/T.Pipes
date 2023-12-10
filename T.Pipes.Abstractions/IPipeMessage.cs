@@ -8,9 +8,14 @@ namespace T.Pipes.Abstractions
   public interface IPipeMessage
   {
     /// <summary>
+    /// Marks if this is response
+    /// </summary>
+    public PacketType PacketType { get; set; }
+
+    /// <summary>
     /// Unique transaction ID
     /// </summary>
-    public Guid Id { get; set; }
+    public long Id { get; set; }
 
     /// <summary>
     /// Command to execute
@@ -21,10 +26,5 @@ namespace T.Pipes.Abstractions
     /// Command parameter
     /// </summary>
     public object? Parameter { get; set; }
-
-    /// <summary>
-    /// Marks if this is response
-    /// </summary>
-    public PacketType PacketType { get; set; }
   }
 }

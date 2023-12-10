@@ -7,6 +7,7 @@ using T.Pipes.Test.Abstractions;
 
 namespace T.Pipes.Test
 {
+  [ExcludeFromCodeCoverage]
   public class PipeDelegationTests
   {
     [Fact]

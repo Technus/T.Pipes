@@ -26,6 +26,20 @@ namespace T.Pipes
     /// <inheritdoc/>
     public CancellationToken LifetimeCancellation => LifetimeCancellationSource.Token;
 
+    /// <summary>
+    /// Packet factory being used
+    /// </summary>
+    protected TPacketFactory PacketFactory { get; }
+
+    /// <summary>
+    /// The base constructor
+    /// </summary>
+    /// <param name="packetFactory"></param>
+    protected PipeCallbackBase(TPacketFactory packetFactory)
+    {
+      PacketFactory = packetFactory;
+    }
+
     /// <inheritdoc/>
     public abstract void OnConnected(string connection);
 
@@ -36,10 +50,10 @@ namespace T.Pipes
     public abstract void OnExceptionOccurred(Exception e);
 
     /// <inheritdoc/>
-    public abstract void OnMessageReceived(TPacket? message);
+    public abstract void OnMessageReceived(TPacket message);
 
     /// <inheritdoc/>
-    public abstract void OnMessageSent(TPacket? message);
+    public abstract void OnMessageSent(TPacket message);
 
     /// <inheritdoc/>
     protected override void DisposeCore(bool disposing, bool includeAsync)
