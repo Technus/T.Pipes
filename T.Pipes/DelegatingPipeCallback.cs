@@ -471,6 +471,11 @@ namespace T.Pipes
 
       try
       {
+        if (ResponseTimeoutMs == 0)
+          cts.Cancel();
+        else if (ResponseTimeoutMs > 0)
+          cts.CancelAfter(ResponseTimeoutMs);
+
 #if NET5_0_OR_GREATER
         ctr = cts.Token.UnsafeRegister(static (x,ct) => ((TaskCompletionSource<object>)x!).TrySetCanceled(ct), tcs);
 #else
