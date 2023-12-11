@@ -8,7 +8,7 @@ namespace T.Pipes.Abstractions
   /// Abstraction for Client and Server, invokes <see cref="IPipeCallback{TMessage}"/> on events.
   /// </summary>
   /// <typeparam name="TMessage">packet type <see cref="IPipeMessage"/> implementations are usually used</typeparam>
-  public interface IPipeConnection<TMessage> : IAsyncDisposable, IDisposable
+  public interface IPipeConnection<in TMessage> : IAsyncDisposable, IDisposable
   {
     /// <summary>
     /// The Pipe Callback

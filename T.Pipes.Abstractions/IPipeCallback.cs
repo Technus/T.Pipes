@@ -7,7 +7,7 @@ namespace T.Pipes.Abstractions
   /// Callback group for <see cref="IPipeConnection{TMessage}"/>
   /// </summary>
   /// <typeparam name="TMessage">packet type <see cref="IPipeMessage"/> implementations are usually used</typeparam>
-  public interface IPipeCallback<TMessage> : IDisposable, IAsyncDisposable
+  public interface IPipeCallback<in TMessage> : IDisposable, IAsyncDisposable
   {
     /// <summary>
     /// Cancelled on dispose or finalize just in case, or when should be cancelled or finalized

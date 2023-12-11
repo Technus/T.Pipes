@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace T.Pipes.Abstractions
+﻿namespace T.Pipes.Abstractions
 {
   /// <summary>
   /// Packet
