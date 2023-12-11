@@ -29,7 +29,7 @@ namespace T.Pipes.Abstractions
     /// <param name="command">command to execute</param>
     /// <param name="parameter">parameter to pass along</param>
     /// <returns>command packet</returns>
-    T CreateCommandCancellation(string command, Exception? parameter);
+    T CreateCommandCancellation(string command, Exception? parameter = default);
 
     /// <summary>
     /// Create packet with parameter
@@ -60,7 +60,7 @@ namespace T.Pipes.Abstractions
     /// <param name="commandMessage">packet to respond to</param>
     /// <param name="parameter">parameter to pass along</param>
     /// <returns></returns>
-    T CreateResponseCancellation(T commandMessage, Exception? parameter);
+    T CreateResponseCancellation(T commandMessage, Exception? parameter = default);
 
     /// <summary>
     /// Create packet with parameter
