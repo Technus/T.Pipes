@@ -70,7 +70,12 @@ namespace T.Pipes
     /// <remarks>do not write to the pipe directly, use that instead, (or the Wrapping Client/Server)</remarks>
     public async Task WriteAsync(PipeMessage message, CancellationToken cancellationToken = default)
     {
-      await Pipe.WriteAsync(message, cancellationToken).ConfigureAwait(false);
+      using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, LifetimeCancellation);
+      if (ResponseTimeoutMs == 0)
+        cts.Cancel();
+      else if (ResponseTimeoutMs > 0)
+        cts.CancelAfter(ResponseTimeoutMs);
+      await Pipe.WriteAsync(message, cts.Token).ConfigureAwait(false);
       OnMessageSent(message);
     }
 

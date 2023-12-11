@@ -258,6 +258,19 @@ namespace T.Pipes.Test
     }
 
     [Fact]
+    public async Task CallbackTimeoutCommand()
+    {
+      var name = Guid.NewGuid().ToString();
+      await using var pipe = new H.Pipes.PipeClient<PipeMessage>(name);
+      var target = Substitute.For<IAbstract>();
+      await using var dut = new ClientCallback<IAbstract>(pipe, target);
+      dut.ResponseTimeoutMs = 200;
+
+      dut.Invoking(x => x.OnMessageReceived(new() { PacketType = PacketType.Command, Command = "Action_IAbstract", Id = 1 }))
+        .Should().Throw<OperationCanceledException>();
+    }
+
+    [Fact]
     public async Task CallbackCommand()
     {
       var name = Guid.NewGuid().ToString();
@@ -269,6 +282,7 @@ namespace T.Pipes.Test
 
       var target = Substitute.For<IAbstract>();
       await using var dut = new ClientCallback<IAbstract>(pipe, target);
+      dut.ResponseTimeoutMs = 200;
 
       dut.OnMessageReceived(new() { PacketType = PacketType.Command, Command = "Action_IAbstract", Id = 1 });
 

@@ -113,6 +113,7 @@ namespace T.Pipes
     /// </summary>
     /// <param name="callback">associated callback/pipe/packetFactory</param>
     /// <param name="message">message received</param>
+    /// <param name="cancellationToken"></param>
     /// <returns>return value/s from target</returns>
     public delegate Task CommandFunction(TCallback callback, TPacket message, CancellationToken cancellationToken);
 
@@ -384,7 +385,7 @@ namespace T.Pipes
 
     /// <summary>
     /// Filtered <see cref="OnMessageReceived(TPacket?)"/> to only fire on commands and not responses<br/>
-    /// First tries to check if the <paramref name="command"/> is a function command and calls <see cref="OnCommandFunction(TPacket, CommandFunction)"/><br/>
+    /// First tries to check if the <paramref name="command"/> is a function command and calls <see cref="OnCommandFunction(TPacket, CommandFunction, CancellationToken)"/><br/>
     /// Else calls <see cref="OnUnknownMessage(TPacket)"/>
     /// </summary>
     /// <param name="command">packet containing command</param>
@@ -392,7 +393,14 @@ namespace T.Pipes
     {
       if (Functions.TryGetValue(command.Command, out var function))
       {
-        OnCommandFunction(command, function).Wait();
+        try
+        {
+          OnCommandFunction(command, function).Wait();
+        }
+        catch (AggregateException ae) when (ae.InnerExceptions.Count == 1)
+        {
+          throw ae.InnerException!;
+        }
       }
       else
       {
@@ -409,25 +417,14 @@ namespace T.Pipes
     /// <returns></returns>
     protected virtual async Task OnCommandFunction(TPacket command, CommandFunction function, CancellationToken cancellationToken = default)
     {
-      using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, LifetimeCancellation);
-      if (ResponseTimeoutMs == 0)
-        cts.Cancel();
-      else if (ResponseTimeoutMs > 0)
-        cts.CancelAfter(ResponseTimeoutMs);
       try
       {
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, LifetimeCancellation);
+        if (ResponseTimeoutMs == 0)
+          cts.Cancel();
+        else if (ResponseTimeoutMs > 0)
+          cts.CancelAfter(ResponseTimeoutMs);
         await function.Invoke((TCallback)this, command, cts.Token).ConfigureAwait(false);
-      }
-      catch (OperationCanceledException ex) when (ex.CancellationToken == cts.Token)
-      {
-        if(cancellationToken.IsCancellationRequested)
-        {
-          throw;
-        }
-        else
-        {
-          throw new TimeoutException("Timeout expired", ex);
-        }
       }
       catch (Exception e)
       {
@@ -544,7 +541,12 @@ namespace T.Pipes
     /// <remarks>do not write to the pipe directly, use that instead, (or the Wrapping Client/Server)</remarks>
     public async Task WriteAsync(TPacket message, CancellationToken cancellationToken = default)
     {
-      await Pipe.WriteAsync(message, cancellationToken).ConfigureAwait(false);
+      using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, LifetimeCancellation);
+      if (ResponseTimeoutMs == 0)
+        cts.Cancel();
+      else if (ResponseTimeoutMs > 0)
+        cts.CancelAfter(ResponseTimeoutMs);
+      await Pipe.WriteAsync(message, cts.Token).ConfigureAwait(false);
       OnMessageSent(message);
     }
 
