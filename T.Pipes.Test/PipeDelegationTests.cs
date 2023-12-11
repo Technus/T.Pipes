@@ -240,7 +240,7 @@ namespace T.Pipes.Test
 
       await task.Should().NotCompleteWithinAsync(TimeSpan.FromMilliseconds(100));
 
-      await task.Should().ThrowAsync<NoResponseException>();//In case it was supposedly sent NoResponseException Should be thrown
+      await task.Should().ThrowAsync<NoResponseException>("In case it was supposedly sent NoResponseException should be thrown");
     }
 
     [Fact]
@@ -253,7 +253,7 @@ namespace T.Pipes.Test
 
       var task = Task.Run(dut.AsIAbstract.Action);
 
-      await task.Should().ThrowAsync<NoResponseException>();//In case it was supposedly sent NoResponseException Should be thrown
+      await task.Should().ThrowAsync<TimeoutException>("In case it was not sent, then TimeoutException should be thrown");
     }
 
     [Fact]

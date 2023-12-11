@@ -446,7 +446,9 @@ namespace T.Pipes
 
       try
       {
-        if (ResponseTimeoutMs >= 0)
+        if (ResponseTimeoutMs == 0)
+          cts.Cancel();
+        else if (ResponseTimeoutMs > 0)
           cts.CancelAfter(ResponseTimeoutMs);
 
         if (ResponseTimeoutMs >= 0 || cancellationToken.CanBeCanceled)
