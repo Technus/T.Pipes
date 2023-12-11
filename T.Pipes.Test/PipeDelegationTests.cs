@@ -1,5 +1,6 @@
 ﻿using System.Xml.Linq;
 using H.Pipes;
+using NSubstitute.Extensions;
 using T.Pipes.Test.Abstractions;
 
 namespace T.Pipes.Test
@@ -254,6 +255,24 @@ namespace T.Pipes.Test
       var task = Task.Run(dut.AsIAbstract.Action);
 
       await task.Should().ThrowAsync<TimeoutException>("In case it was not sent, then TimeoutException should be thrown");
+    }
+
+    [Fact]
+    public async Task CallbackCommand()
+    {
+      var name = Guid.NewGuid().ToString();
+      await using var dump = new H.Pipes.PipeServer<PipeMessage>(name);
+      await dump.StartAsync();
+
+      await using var pipe = new H.Pipes.PipeClient<PipeMessage>(name);
+      await pipe.ConnectAsync();
+
+      var target = Substitute.For<IAbstract>();
+      await using var dut = new ClientCallback<IAbstract>(pipe, target);
+
+      dut.OnMessageReceived(new() { PacketType = PacketType.Command, Command = "Action_IAbstract", Id = 1 });
+
+      target.Received(1).Action();
     }
 
     [Fact]

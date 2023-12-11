@@ -114,7 +114,7 @@ namespace T.Pipes
     /// <param name="callback">associated callback/pipe/packetFactory</param>
     /// <param name="message">message received</param>
     /// <returns>return value/s from target</returns>
-    public delegate Task CommandFunction(TCallback callback, TPacket message);
+    public delegate Task CommandFunction(TCallback callback, TPacket message, CancellationToken cancellationToken);
 
     private readonly Dictionary<long, TaskCompletionSource<object?>> _responses = new(16);
     private readonly SemaphoreSlim _semaphore = new(1, 1);
@@ -384,7 +384,7 @@ namespace T.Pipes
 
     /// <summary>
     /// Filtered <see cref="OnMessageReceived(TPacket?)"/> to only fire on commands and not responses<br/>
-    /// First tries to check if the <paramref name="command"/> is a function command <br/>
+    /// First tries to check if the <paramref name="command"/> is a function command and calls <see cref="OnCommandFunction(TPacket, CommandFunction)"/><br/>
     /// Else calls <see cref="OnUnknownMessage(TPacket)"/>
     /// </summary>
     /// <param name="command">packet containing command</param>
@@ -392,18 +392,46 @@ namespace T.Pipes
     {
       if (Functions.TryGetValue(command.Command, out var function))
       {
-        try
-        {
-          function.Invoke((TCallback)this, command).Wait();
-        }
-        catch (Exception e)
-        {
-          WriteAsync(PacketFactory.CreateResponseFailure(command,e)).Wait();
-        }
+        OnCommandFunction(command, function).Wait();
       }
       else
       {
         OnUnknownMessage(command);
+      }
+    }
+
+    /// <summary>
+    /// Filtered <see cref="OnMessageReceived(TPacket?)"/> to only fire on commands in <see cref="Functions"/><br/>
+    /// </summary>
+    /// <param name="command"></param>
+    /// <param name="function"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    protected virtual async Task OnCommandFunction(TPacket command, CommandFunction function, CancellationToken cancellationToken = default)
+    {
+      using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, LifetimeCancellation);
+      if (ResponseTimeoutMs == 0)
+        cts.Cancel();
+      else if (ResponseTimeoutMs > 0)
+        cts.CancelAfter(ResponseTimeoutMs);
+      try
+      {
+        await function.Invoke((TCallback)this, command, cts.Token).ConfigureAwait(false);
+      }
+      catch (OperationCanceledException ex) when (ex.CancellationToken == cts.Token)
+      {
+        if(cancellationToken.IsCancellationRequested)
+        {
+          throw;
+        }
+        else
+        {
+          throw new TimeoutException("Timeout expired", ex);
+        }
+      }
+      catch (Exception e)
+      {
+        await WriteAsync(PacketFactory.CreateResponseFailure(command, e)).ConfigureAwait(false);
       }
     }
 
@@ -441,7 +469,7 @@ namespace T.Pipes
     public async Task<T> GetResponseAsync<T>(TPacket command, CancellationToken cancellationToken = default)
     {
       var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
-      using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+      using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, LifetimeCancellation);
       CancellationTokenRegistration ctr = default;
 
       try

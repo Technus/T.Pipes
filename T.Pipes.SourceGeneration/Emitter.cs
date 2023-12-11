@@ -180,7 +180,7 @@ namespace T.Pipes.SourceGeneration
         {
           var (input, output) = GetIO(methodSymbol);
 
-          Writer.Write($$"""Functions["{{item.Key}}"] = static (callback, message) => { """);
+          Writer.Write($$"""Functions["{{item.Key}}"] = static (callback, message, token) => { """);
 
           if (!item.Value.invoke.ReturnsVoid || output.Count > 0)
           {
@@ -201,21 +201,21 @@ namespace T.Pipes.SourceGeneration
 
           if (!item.Value.invoke.ReturnsVoid || output.Count > 0)
           {
-            Writer.Write(")");
+            Writer.Write("), token");
           }
 
           Writer.Write(");");
 
           if (item.Value.invoke.ReturnsVoid && output.Count == 0)
           {
-            Writer.Write(" return callback.SendResponseAsync(message);");
+            Writer.Write(" return callback.SendResponseAsync(message, token);");
           }
 
           Writer.WriteLine(" };");
         }
         else if(item.Value.method is IEventSymbol eventSymbol)
         {
-          Writer.Write($$"""Functions["{{item.Key}}"] = static (callback, message) => { """);
+          Writer.Write($$"""Functions["{{item.Key}}"] = static (callback, message, token) => { """);
 
           if (!item.Value.invoke.ReturnsVoid)
           {
@@ -232,14 +232,14 @@ namespace T.Pipes.SourceGeneration
 
           if (!item.Value.invoke.ReturnsVoid)
           {
-            Writer.Write(")");
+            Writer.Write("), token");
           }
 
           Writer.Write(");");
 
           if (item.Value.invoke.ReturnsVoid)
           {
-            Writer.Write(" return callback.SendResponseAsync(message);");
+            Writer.Write(" return callback.SendResponseAsync(message, token);");
           }
 
           Writer.WriteLine(" };");
