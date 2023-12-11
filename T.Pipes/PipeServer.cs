@@ -66,12 +66,6 @@ namespace T.Pipes
     where TCallback : IPipeCallback<TPacket>
   {
     /// <summary>
-    /// Checks if it is running
-    /// </summary>
-    [Obsolete("Very unreliable in H.Pipes")]
-    public override bool IsConnecting => Pipe.IsStarted;
-
-    /// <summary>
     /// Same as <see cref="ServerName"/>
     /// </summary>
     public override string PipeName => Pipe.PipeName;

@@ -60,12 +60,6 @@ namespace T.Pipes.Abstractions
     Task StopAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// For servers checks if it is running
-    /// For clients if it is running and connected or connecting
-    /// </summary>
-    bool IsConnecting { get; }
-
-    /// <summary>
     /// For servers it is <see cref="ServerName"/>
     /// For clients it is the generated unique name
     /// </summary>
