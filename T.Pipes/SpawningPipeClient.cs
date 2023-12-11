@@ -13,7 +13,7 @@ namespace T.Pipes
     /// </summary>
     /// <param name="pipe"></param>
     /// <param name="callback"></param>
-    protected SpawningPipeClient(string pipe, TCallback callback) : base(new(pipe, formatter: new CerasFormatter()), callback)
+    protected SpawningPipeClient(string pipe, TCallback callback) : base(new(pipe, formatter: new Formatter()), callback)
     {
     }
 

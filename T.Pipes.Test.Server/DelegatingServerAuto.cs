@@ -28,7 +28,7 @@ namespace T.Pipes.Test.Server
 
   internal sealed class DelegatingServerAuto : DelegatingPipeServer<DelegatingCallback>
   {
-    public DelegatingServerAuto(string pipe) : this(new H.Pipes.PipeServer<PipeMessage>(pipe, formatter: new CerasFormatter()))
+    public DelegatingServerAuto(string pipe) : this(new H.Pipes.PipeServer<PipeMessage>(pipe, formatter: new Formatter()))
     {
     }
 

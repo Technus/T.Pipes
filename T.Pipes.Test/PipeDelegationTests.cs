@@ -13,7 +13,7 @@ namespace T.Pipes.Test
     public async Task CorrectClientPipe()
     {
       var name = Guid.NewGuid().ToString();
-      await using var pipe = new H.Pipes.PipeClient<PipeMessage>(name, formatter: new CerasFormatter());
+      await using var pipe = new H.Pipes.PipeClient<PipeMessage>(name, formatter: new Formatter());
       var target = Substitute.For<IAbstract>();
       await using var dut = new ClientCallback<IAbstract>(pipe, target);
 
@@ -24,7 +24,7 @@ namespace T.Pipes.Test
     public async Task CorrectServerPipe()
     {
       var name = Guid.NewGuid().ToString();
-      await using var pipe = new H.Pipes.PipeServer<PipeMessage>(name, formatter: new CerasFormatter());
+      await using var pipe = new H.Pipes.PipeServer<PipeMessage>(name, formatter: new Formatter());
       await using var dut = new ServerCallback(pipe);
 
       dut.Pipe.Should().Be(pipe);
@@ -34,7 +34,7 @@ namespace T.Pipes.Test
     public async Task CorrectClientTarget()
     {
       var name = Guid.NewGuid().ToString();
-      await using var pipe = new H.Pipes.PipeClient<PipeMessage>(name, formatter: new CerasFormatter());
+      await using var pipe = new H.Pipes.PipeClient<PipeMessage>(name, formatter: new Formatter());
       var target = Substitute.For<IAbstract>();
       await using var dut = new ClientCallback<IAbstract>(pipe, target);
 
@@ -46,7 +46,7 @@ namespace T.Pipes.Test
     public async Task CorrectServerTarget()
     {
       var name = Guid.NewGuid().ToString();
-      await using var pipe = new H.Pipes.PipeServer<PipeMessage>(name, formatter: new CerasFormatter());
+      await using var pipe = new H.Pipes.PipeServer<PipeMessage>(name, formatter: new Formatter());
       await using var dut = new ServerCallback(pipe);
 
       dut.Target.Should().Be(dut);
@@ -57,7 +57,7 @@ namespace T.Pipes.Test
     public async Task UnknownServerMessage()
     {
       var name = Guid.NewGuid().ToString();
-      await using var pipe = new H.Pipes.PipeServer<PipeMessage>(name, formatter: new CerasFormatter());
+      await using var pipe = new H.Pipes.PipeServer<PipeMessage>(name, formatter: new Formatter());
       await using var dut = new ServerCallback(pipe);
 
       dut.Invoking(x => x.OnMessageReceived(new() { })).Should().Throw<Exception>();
@@ -67,7 +67,7 @@ namespace T.Pipes.Test
     public async Task UnknownClientMessage()
     {
       var name = Guid.NewGuid().ToString();
-      await using var pipe = new H.Pipes.PipeClient<PipeMessage>(name, formatter: new CerasFormatter());
+      await using var pipe = new H.Pipes.PipeClient<PipeMessage>(name, formatter: new Formatter());
       var target = Substitute.For<IAbstract>();
       await using var dut = new ClientCallback<IAbstract>(pipe, target);
 
@@ -78,7 +78,7 @@ namespace T.Pipes.Test
     public async Task UnknownServerCommand()
     {
       var name = Guid.NewGuid().ToString();
-      await using var pipe = new H.Pipes.PipeServer<PipeMessage>(name, formatter: new CerasFormatter());
+      await using var pipe = new H.Pipes.PipeServer<PipeMessage>(name, formatter: new Formatter());
       await using var dut = new ServerCallback(pipe);
 
       dut.Invoking(x => x.OnMessageReceived(new() { PacketType = PacketType.Command })).Should().Throw<Exception>();
@@ -88,7 +88,7 @@ namespace T.Pipes.Test
     public async Task UnknownClientCommand()
     {
       var name = Guid.NewGuid().ToString();
-      await using var pipe = new H.Pipes.PipeClient<PipeMessage>(name, formatter: new CerasFormatter());
+      await using var pipe = new H.Pipes.PipeClient<PipeMessage>(name, formatter: new Formatter());
       var target = Substitute.For<IAbstract>();
       await using var dut = new ClientCallback<IAbstract>(pipe, target);
 
@@ -99,7 +99,7 @@ namespace T.Pipes.Test
     public async Task UnknownServerResponse()
     {
       var name = Guid.NewGuid().ToString();
-      await using var pipe = new H.Pipes.PipeServer<PipeMessage>(name, formatter: new CerasFormatter());
+      await using var pipe = new H.Pipes.PipeServer<PipeMessage>(name, formatter: new Formatter());
       await using var dut = new ServerCallback(pipe);
 
       dut.Invoking(x => x.OnMessageReceived(new() { PacketType = PacketType.Response })).Should().NotThrow();
@@ -109,7 +109,7 @@ namespace T.Pipes.Test
     public async Task UnknownClientResponse()
     {
       var name = Guid.NewGuid().ToString();
-      await using var pipe = new H.Pipes.PipeClient<PipeMessage>(name, formatter: new CerasFormatter());
+      await using var pipe = new H.Pipes.PipeClient<PipeMessage>(name, formatter: new Formatter());
       var target = Substitute.For<IAbstract>();
       await using var dut = new ClientCallback<IAbstract>(pipe, target);
 
@@ -120,7 +120,7 @@ namespace T.Pipes.Test
     public async Task ClearCallbackResponse()
     {
       var name = Guid.NewGuid().ToString();
-      await using var pipe = new H.Pipes.PipeServer<PipeMessage>(name, formatter: new CerasFormatter());
+      await using var pipe = new H.Pipes.PipeServer<PipeMessage>(name, formatter: new Formatter());
       await using var dut = new ServerCallback(pipe);
 
       var task = Task.Run(dut.AsIAbstract.Action);
@@ -136,7 +136,7 @@ namespace T.Pipes.Test
     public async Task ConnectedCallbackResponse()
     {
       var name = Guid.NewGuid().ToString();
-      await using var pipe = new H.Pipes.PipeServer<PipeMessage>(name, formatter: new CerasFormatter());
+      await using var pipe = new H.Pipes.PipeServer<PipeMessage>(name, formatter: new Formatter());
       await using var dut = new ServerCallback(pipe);
 
       var task = Task.Run(dut.AsIAbstract.Action);
@@ -152,7 +152,7 @@ namespace T.Pipes.Test
     public async Task DisconnectedCallbackResponse()
     {
       var name = Guid.NewGuid().ToString();
-      await using var pipe = new H.Pipes.PipeServer<PipeMessage>(name, formatter: new CerasFormatter());
+      await using var pipe = new H.Pipes.PipeServer<PipeMessage>(name, formatter: new Formatter());
       await using var dut = new ServerCallback(pipe);
 
       var task = Task.Run(dut.AsIAbstract.Action);
@@ -168,7 +168,7 @@ namespace T.Pipes.Test
     public async Task FailCallbackResponse()
     {
       var name = Guid.NewGuid().ToString();
-      await using var pipe = new H.Pipes.PipeServer<PipeMessage>(name, formatter: new CerasFormatter());
+      await using var pipe = new H.Pipes.PipeServer<PipeMessage>(name, formatter: new Formatter());
       await using var dut = new ServerCallback(pipe);
 
       var task = Task.Run(dut.AsIAbstract.Action);
@@ -185,7 +185,7 @@ namespace T.Pipes.Test
     public async Task ExceptionCallbackResponse()
     {
       var name = Guid.NewGuid().ToString();
-      await using var pipe = new H.Pipes.PipeServer<PipeMessage>(name, formatter: new CerasFormatter());
+      await using var pipe = new H.Pipes.PipeServer<PipeMessage>(name, formatter: new Formatter());
       await using var dut = new ServerCallback(pipe);
 
       var task = Task.Run(dut.AsIAbstract.Action);
@@ -202,7 +202,7 @@ namespace T.Pipes.Test
     public async Task DisposeCallbackResponse()
     {
       var name = Guid.NewGuid().ToString();
-      await using var pipe = new H.Pipes.PipeServer<PipeMessage>(name, formatter: new CerasFormatter());
+      await using var pipe = new H.Pipes.PipeServer<PipeMessage>(name, formatter: new Formatter());
       var dut = new ServerCallback(pipe);
 
       var task = Task.Run(dut.AsIAbstract.Action);
@@ -218,7 +218,7 @@ namespace T.Pipes.Test
     public async Task DisposeAsyncCallbackResponse()
     {
       var name = Guid.NewGuid().ToString();
-      await using var pipe = new H.Pipes.PipeServer<PipeMessage>(name, formatter: new CerasFormatter());
+      await using var pipe = new H.Pipes.PipeServer<PipeMessage>(name, formatter: new Formatter());
       var dut = new ServerCallback(pipe);
 
       var task = Task.Run(dut.AsIAbstract.Action);
@@ -234,7 +234,7 @@ namespace T.Pipes.Test
     public async Task TimeoutCallbackResponse()
     {
       var name = Guid.NewGuid().ToString();
-      await using var pipe = new H.Pipes.PipeServer<PipeMessage>(name, formatter: new CerasFormatter());
+      await using var pipe = new H.Pipes.PipeServer<PipeMessage>(name, formatter: new Formatter());
       await using var dut = new ServerCallback(pipe);
       dut.ResponseTimeoutMs = 200;
 
@@ -249,7 +249,7 @@ namespace T.Pipes.Test
     public async Task ShortTimeoutCallbackResponse()
     {
       var name = Guid.NewGuid().ToString();
-      await using var pipe = new H.Pipes.PipeServer<PipeMessage>(name, formatter: new CerasFormatter());
+      await using var pipe = new H.Pipes.PipeServer<PipeMessage>(name, formatter: new Formatter());
       await using var dut = new ServerCallback(pipe);
       dut.ResponseTimeoutMs = 0;
 
@@ -262,7 +262,7 @@ namespace T.Pipes.Test
     public async Task CallbackTimeoutCommand()
     {
       var name = Guid.NewGuid().ToString();
-      await using var pipe = new H.Pipes.PipeClient<PipeMessage>(name, formatter: new CerasFormatter());
+      await using var pipe = new H.Pipes.PipeClient<PipeMessage>(name, formatter: new Formatter());
       var target = Substitute.For<IAbstract>();
       await using var dut = new ClientCallback<IAbstract>(pipe, target);
       dut.ResponseTimeoutMs = 200;
@@ -275,10 +275,10 @@ namespace T.Pipes.Test
     public async Task CallbackCommand()
     {
       var name = Guid.NewGuid().ToString();
-      await using var dump = new H.Pipes.PipeServer<PipeMessage>(name, formatter: new CerasFormatter());
+      await using var dump = new H.Pipes.PipeServer<PipeMessage>(name, formatter: new Formatter());
       await dump.StartAsync();
 
-      await using var pipe = new H.Pipes.PipeClient<PipeMessage>(name, formatter: new CerasFormatter());
+      await using var pipe = new H.Pipes.PipeClient<PipeMessage>(name, formatter: new Formatter());
       await pipe.ConnectAsync();
 
       var target = Substitute.For<IAbstract>();
@@ -294,7 +294,7 @@ namespace T.Pipes.Test
     public async Task CallbackResponse()
     {
       var name = Guid.NewGuid().ToString();
-      await using var pipe = new H.Pipes.PipeServer<PipeMessage>(name, formatter: new CerasFormatter());
+      await using var pipe = new H.Pipes.PipeServer<PipeMessage>(name, formatter: new Formatter());
       await using var dut = new ServerCallback(pipe);
 
       var task = Task.Run(dut.AsIAbstract.Action);
@@ -310,7 +310,7 @@ namespace T.Pipes.Test
     public async Task CallbackResponseGet()
     {
       var name = Guid.NewGuid().ToString();
-      await using var pipe = new H.Pipes.PipeServer<PipeMessage>(name, formatter: new CerasFormatter());
+      await using var pipe = new H.Pipes.PipeServer<PipeMessage>(name, formatter: new Formatter());
       await using var dut = new ServerCallback(pipe);
 
       int result = default;
@@ -329,7 +329,7 @@ namespace T.Pipes.Test
     public async Task CallbackResponseSet()
     {
       var name = Guid.NewGuid().ToString();
-      await using var pipe = new H.Pipes.PipeServer<PipeMessage>(name, formatter: new CerasFormatter());
+      await using var pipe = new H.Pipes.PipeServer<PipeMessage>(name, formatter: new Formatter());
       await using var dut = new ServerCallback(pipe);
 
       int result = default;

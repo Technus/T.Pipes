@@ -17,7 +17,7 @@ namespace T.Pipes
     /// </summary>
     /// <param name="pipe">pipe to use</param>
     /// <param name="callback">callback to use</param>
-    public PipeClient(string pipe, TCallback callback) : base(new(pipe, formatter: new CerasFormatter()), callback)
+    public PipeClient(string pipe, TCallback callback) : base(new(pipe, formatter: new Formatter()), callback)
     {
     }
 
@@ -41,7 +41,7 @@ namespace T.Pipes
     /// </summary>
     /// <param name="pipe">pipe to use</param>
     /// <param name="callback">callback to use</param>
-    public PipeClient(string pipe, TCallback callback) : base(new(pipe), callback)
+    public PipeClient(string pipe, TCallback callback) : base(new(pipe, formatter: new Formatter()), callback)
     {
     }
 

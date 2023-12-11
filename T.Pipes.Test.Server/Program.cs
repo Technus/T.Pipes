@@ -19,8 +19,15 @@ namespace T.Pipes.Test.Server
           var target = item.Callback.AsIAbstract;
           var target1 = item.Callback.AsIAbstract_args_Int16_end_;
 
-          target.GetInt();
-          target1.GetT();
+          try
+          {
+            target.GetInt();
+            target1.GetT();
+          }
+          catch (Exception ex)
+          {
+
+          }
         }
         await Task.Delay(1000);
       }

@@ -42,7 +42,7 @@ namespace T.Pipes.Test.Client
       return c;
     }
 
-    public int GetInt() => i;
+    public int GetInt() => throw new ArgumentException("EGG");
 
     public int[] GetInts() => j;
 

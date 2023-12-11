@@ -17,7 +17,7 @@ namespace T.Pipes
     /// <param name="pipe"></param>
     /// <param name="client"></param>
     /// <param name="callback"></param>
-    protected SpawningPipeServer(string pipe, ProcessStartInfo client, TCallback callback) : base(new(pipe, formatter: new CerasFormatter()), client, callback)
+    protected SpawningPipeServer(string pipe, ProcessStartInfo client, TCallback callback) : base(new(pipe, formatter: new Formatter()), client, callback)
     {
     }
 
