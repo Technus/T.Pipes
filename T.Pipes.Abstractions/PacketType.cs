@@ -11,6 +11,10 @@ namespace T.Pipes.Abstractions
     /// <summary>
     /// Unknown/default
     /// </summary>
+    None = 0x00,
+    /// <summary>
+    /// Unknown/default
+    /// </summary>
     Undefined = 0x00,
     /// <summary>
     /// Command

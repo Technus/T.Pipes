@@ -22,7 +22,7 @@ namespace T.Pipes
     /// </summary>
     /// <param name="pipe">the same pipe as in the pipe connection holding it</param>
     /// <param name="target">the actual implementation of <typeparamref name="TTarget"/></param>
-    public DelegatingPipeClientCallback(H.Pipes.PipeClient<PipeMessage> pipe, TTarget target) : base(pipe, target)
+    protected DelegatingPipeClientCallback(H.Pipes.PipeClient<PipeMessage> pipe, TTarget target) : base(pipe, target)
     {
     }
   }
@@ -40,7 +40,7 @@ namespace T.Pipes
     /// Creates the callback, must be done with the same pipe as in the pipe connection holding it.
     /// </summary>
     /// <param name="pipe">the same pipe as in the pipe connection holding it</param>
-    public DelegatingPipeServerCallback(H.Pipes.PipeServer<PipeMessage> pipe) : base(pipe)
+    protected DelegatingPipeServerCallback(H.Pipes.PipeServer<PipeMessage> pipe) : base(pipe)
     {
     }
   }
@@ -60,7 +60,7 @@ namespace T.Pipes
     /// Creates the callback, must be done with the same pipe as in the pipe connection holding it.
     /// </summary>
     /// <param name="pipe">the same pipe as in the pipe connection holding it</param>
-    public DelegatingPipeServerCallback(H.Pipes.PipeServer<PipeMessage> pipe) : base(pipe)
+    protected DelegatingPipeServerCallback(H.Pipes.PipeServer<PipeMessage> pipe) : base(pipe)
     {
     }
   }
@@ -76,7 +76,7 @@ namespace T.Pipes
     /// Creates the callback, must be done with the same pipe as in the pipe connection holding it.
     /// </summary>
     /// <param name="pipe">the same pipe as in the pipe connection holding it</param>
-    public DelegatingPipeCallback(TPipe pipe) : base(pipe, new())
+    protected DelegatingPipeCallback(TPipe pipe) : base(pipe, new())
     {
     }
 
@@ -85,7 +85,7 @@ namespace T.Pipes
     /// </summary>
     /// <param name="pipe">the same pipe as in the pipe connection holding it</param>
     /// <param name="target">the actual implementation of <typeparamref name="TTarget"/></param>
-    public DelegatingPipeCallback(TPipe pipe, TTarget target) : base(pipe, new(), target)
+    protected DelegatingPipeCallback(TPipe pipe, TTarget target) : base(pipe, new(), target)
     {
     }
   }
@@ -127,7 +127,7 @@ namespace T.Pipes
     /// <param name="packetFactory">to create <typeparamref name="TPacket"/></param>
     /// <param name="responseTimeoutMs">response timeout in ms</param>
     /// <exception cref="InvalidOperationException">when the this is not a valid <typeparamref name="TTarget"/> or null</exception>
-    public DelegatingPipeCallback(TPipe pipe, TPacketFactory packetFactory, int responseTimeoutMs = Timeout.Infinite) : base(packetFactory)
+    protected DelegatingPipeCallback(TPipe pipe, TPacketFactory packetFactory, int responseTimeoutMs = Timeout.Infinite) : base(packetFactory)
     {
       ResponseTimeoutMs = responseTimeoutMs;
       Pipe = pipe;
@@ -150,7 +150,7 @@ namespace T.Pipes
     /// <param name="target">the actual implementation of <typeparamref name="TTarget"/></param>
     /// <param name="responseTimeoutMs">response timeout in ms</param>
     /// <exception cref="InvalidOperationException">when <paramref name="target"/> is null</exception>
-    public DelegatingPipeCallback(TPipe pipe, TPacketFactory packetFactory, TTarget target, int responseTimeoutMs = Timeout.Infinite) : base(packetFactory)
+    protected DelegatingPipeCallback(TPipe pipe, TPacketFactory packetFactory, TTarget target, int responseTimeoutMs = Timeout.Infinite) : base(packetFactory)
     {
       ResponseTimeoutMs = responseTimeoutMs;
       Pipe = pipe;
@@ -257,9 +257,13 @@ namespace T.Pipes
         _semaphore.Wait();
       if (_responses.Count > 0)
       {
-        var name = Pipe is H.Pipes.IPipeServer<TPacket> server ? $"Server Pipe: {server.PipeName}"
-          : Pipe is H.Pipes.IPipeClient<TPacket> client ? $"Server: {client.ServerName}, Pipe: {client.PipeName}"
-          : "Unknown Pipe";
+        string name = Pipe switch
+        {
+          H.Pipes.IPipeServer<TPacket> server => $"Server Pipe: {server.PipeName}",
+          H.Pipes.IPipeClient<TPacket> client => $"Server: {client.ServerName}, Pipe: {client.PipeName}",
+          _ => "Unknown Pipe",
+        };
+
         var disposingException = new ObjectDisposedException(name);
 
         foreach (var item in _responses)
@@ -402,9 +406,12 @@ namespace T.Pipes
     /// <exception cref="ArgumentException">always</exception>
     protected virtual void OnUnknownCommand(TPacket invalidMessage)
     {
-      var message = Pipe is H.Pipes.IPipeServer<TPacket> server ? $"Message unknown: {invalidMessage}, Server Pipe: {server.PipeName}"
-        : Pipe is H.Pipes.IPipeClient<TPacket> client ? $"Message unknown: {invalidMessage}, Server: {client.ServerName}, Pipe: {client.PipeName}"
-        : $"Message unknown: {invalidMessage}, Unknown Pipe";
+      var message = Pipe switch
+      {
+        H.Pipes.IPipeServer<TPacket> server => $"Message unknown: {invalidMessage}, Server Pipe: {server.PipeName}",
+        H.Pipes.IPipeClient<TPacket> client => $"Message unknown: {invalidMessage}, Server: {client.ServerName}, Pipe: {client.PipeName}",
+        _ => $"Message unknown: {invalidMessage}, Unknown Pipe",
+      };
       throw new ArgumentException(message, nameof(invalidMessage));
     }
 

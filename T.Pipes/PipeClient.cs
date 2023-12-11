@@ -6,7 +6,6 @@ using T.Pipes.Abstractions;
 
 namespace T.Pipes
 {
-
   /// <inheritdoc/>
   public class PipeClient<TCallback>
     : PipeClient<H.Pipes.PipeClient<PipeMessage>, PipeMessage, TCallback>

@@ -24,7 +24,8 @@ namespace T.Pipes
     protected CancellationTokenSource LifetimeCancellationSource { get; } = new();
 
     /// <inheritdoc/>
-    public CancellationToken LifetimeCancellation => LifetimeCancellationSource.Token;
+    public CancellationToken LifetimeCancellation 
+      => LifetimeCancellationSource.Token;
 
     /// <summary>
     /// Packet factory being used
@@ -35,10 +36,8 @@ namespace T.Pipes
     /// The base constructor
     /// </summary>
     /// <param name="packetFactory"></param>
-    protected PipeCallbackBase(TPacketFactory packetFactory)
-    {
-      PacketFactory = packetFactory;
-    }
+    protected PipeCallbackBase(TPacketFactory packetFactory) 
+      => PacketFactory = packetFactory;
 
     /// <inheritdoc/>
     public abstract void OnConnected(string connection);

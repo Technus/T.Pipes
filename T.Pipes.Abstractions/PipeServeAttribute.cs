@@ -19,6 +19,6 @@ namespace T.Pipes.Abstractions
     /// <summary>
     /// type to implement
     /// </summary>
-    public Type Type { get; } = typeof(void);
+    public Type Type { get; }
   }
 }

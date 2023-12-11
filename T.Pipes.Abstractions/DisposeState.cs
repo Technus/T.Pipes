@@ -15,6 +15,10 @@ namespace T.Pipes.Abstractions
     /// <summary>
     /// Created
     /// </summary>
+    None = 0x00,
+    /// <summary>
+    /// Created
+    /// </summary>
     New = 0x00,
     /// <summary>
     /// Disposed or disposing

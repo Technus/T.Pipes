@@ -737,7 +737,7 @@ namespace T.Pipes.SourceGeneration
       var invokeSymbol = eventSymbol.InvokeSymbol();
 
       Writer
-        .Write(invokeSymbol.ReturnType.TypeUse())//todo actual return type of event
+        .Write(invokeSymbol.ReturnType.TypeUse())
         .Write(' ');
       RenderName(eventSymbol, served, "invoke_");
       Writer.Write('(');

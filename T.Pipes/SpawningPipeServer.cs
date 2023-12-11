@@ -51,7 +51,7 @@ namespace T.Pipes
     /// <param name="pipe"></param>
     /// <param name="client"></param>
     /// <param name="callback"></param>
-    public SpawningPipeServer(TPipe pipe, ProcessStartInfo client, TCallback callback) : base(pipe, callback)
+    protected SpawningPipeServer(TPipe pipe, ProcessStartInfo client, TCallback callback) : base(pipe, callback)
       => _process = new Process { StartInfo = client };
 
     /// <summary>
@@ -138,7 +138,10 @@ namespace T.Pipes
             {
               _process.Kill();
             }
-            catch { }
+            catch
+            {
+              //Should be done anyway at this point
+            }
           }
           else throw;
         }
@@ -148,7 +151,10 @@ namespace T.Pipes
           {
             _process.Kill();
           }
-          catch { }
+          catch
+          {
+            //Should be done anyway at this point
+          }
         }
       }
       catch
@@ -157,7 +163,10 @@ namespace T.Pipes
         {
           _process.Kill();
         }
-        catch { }
+        catch
+        {
+          //Should be done anyway at this point
+        }
       }
       finally
       {
@@ -182,7 +191,10 @@ namespace T.Pipes
       {
         _process.Kill();
       }
-      catch { }
+      catch
+      {
+        //Should be done anyway at this point
+      }
       finally
       {
         _process.Dispose();
