@@ -232,10 +232,10 @@ namespace T.Pipes
     public int ResponseTimeoutMs { get; set; }
 
     /// <inheritdoc/>
-    public override void OnConnected(string connection) => Clear();
+    public override void OnConnected(string connection) => ClearResponsesWithCancelling();
 
     /// <inheritdoc/>
-    public override void OnDisconnected(string connection) => Clear();
+    public override void OnDisconnected(string connection) => ClearResponsesWithCancelling();
 
     /// <summary>
     /// Disposes own resources, not the <see cref="Pipe"/> nor the <see cref="Target"/>
@@ -284,12 +284,15 @@ namespace T.Pipes
     /// Clears the response awaiting tasks by <see cref="TaskCompletionSource{TResult}.TrySetException(Exception)"/>
     /// </summary>
     /// <param name="e">exception to pass along</param>
-    public virtual void Clear(Exception e)
+    public virtual void ClearResponsesWithFailing(Exception e)
     {
       _semaphore.Wait();
-      foreach (var item in _responses)
+      if(_responses .Count > 0)
       {
-        item.Value.TrySetException(e);
+        foreach (var item in _responses)
+        {
+          item.Value.TrySetException(e);
+        }
       }
       _responses.Clear();
       _semaphore.Release();
@@ -298,19 +301,22 @@ namespace T.Pipes
     /// <summary>
     /// Clears the response awaiting tasks by <see cref="TaskCompletionSource{TResult}.TrySetCanceled()"/>
     /// </summary>
-    public virtual void Clear()
+    public virtual void ClearResponsesWithCancelling()
     {
       _semaphore.Wait();
-      foreach (var item in _responses)
+      if (_responses.Count > 0)
       {
-        item.Value.TrySetCanceled();
+        foreach (var item in _responses)
+        {
+          item.Value.TrySetCanceled();
+        }
       }
       _responses.Clear();
       _semaphore.Release();
     }
 
     /// <inheritdoc/>
-    public override void OnExceptionOccurred(Exception e) => Clear(e);
+    public override void OnExceptionOccurred(Exception e) => ClearResponsesWithFailing(e);
 
     /// <summary>
     /// Called on each incoming message<br/>
@@ -372,12 +378,14 @@ namespace T.Pipes
         else
           OnCommandReceived(message);
       }
+      else
+        OnUnknownMessage(message);
     }
 
     /// <summary>
     /// Filtered <see cref="OnMessageReceived(TPacket?)"/> to only fire on commands and not responses<br/>
     /// First tries to check if the <paramref name="command"/> is a function command <br/>
-    /// Else calls <see cref="OnUnknownCommand(TPacket)"/>
+    /// Else calls <see cref="OnUnknownMessage(TPacket)"/>
     /// </summary>
     /// <param name="command">packet containing command</param>
     protected virtual void OnCommandReceived(TPacket command)
@@ -395,7 +403,7 @@ namespace T.Pipes
       }
       else
       {
-        OnUnknownCommand(command);
+        OnUnknownMessage(command);
       }
     }
 
@@ -404,7 +412,7 @@ namespace T.Pipes
     /// </summary>
     /// <param name="invalidMessage">the packet in question</param>
     /// <exception cref="ArgumentException">always</exception>
-    protected virtual void OnUnknownCommand(TPacket invalidMessage)
+    protected virtual void OnUnknownMessage(TPacket invalidMessage)
     {
       var message = Pipe switch
       {

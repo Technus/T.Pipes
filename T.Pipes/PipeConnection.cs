@@ -131,7 +131,7 @@ namespace T.Pipes
       }
       finally
       {
-        await StopAsync(default);
+        await StopAsync(default).ConfigureAwait(false);
       }
     }
 
