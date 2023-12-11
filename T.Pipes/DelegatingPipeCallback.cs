@@ -368,7 +368,7 @@ namespace T.Pipes
             if (message.Parameter is Exception ex)
               throw ex;
             else
-              throw new OperationCanceledException("Command Cancellation Recieved");
+              throw new OperationCanceledException("Command Cancellation Received");
           }
           finally
           {
