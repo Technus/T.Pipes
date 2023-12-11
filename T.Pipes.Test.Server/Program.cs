@@ -2,7 +2,7 @@ using T.Pipes.Test.Abstractions;
 
 namespace T.Pipes.Test.Server
 {
-  internal class Program
+  internal static class Program
   {
     private static async Task Main(string[] args)
     {

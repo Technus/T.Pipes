@@ -1,4 +1,5 @@
-﻿using Pastel;
+﻿using H.Formatters;
+using Pastel;
 using T.Pipes.Abstractions;
 using T.Pipes.Test.Abstractions;
 
@@ -10,9 +11,9 @@ namespace T.Pipes.Test.Server
     {
     }
 
-    protected override IPipeDelegatingConnection<PipeMessage> CreateProxy(string command, string name) => command switch
+    protected override IPipeDelegatingConnection<PipeMessage> CreateProxy(string command, string pipeName) => command switch
     {
-      PipeConstants.Create => new DelegatingServerAuto(name),
+      PipeConstants.Create => new DelegatingServerAuto(pipeName),
       _ => throw new ArgumentException($"Invalid {nameof(command)}: {command}".Pastel(ConsoleColor.DarkCyan), nameof(command)),
     };
 
@@ -36,7 +37,7 @@ namespace T.Pipes.Test.Server
   /// </summary>
   internal sealed class Server : SpawningPipeServer<ServerCallback>
   {
-    public Server() : this(new H.Pipes.PipeServer<PipeMessage>(PipeConstants.ServerPipeName))
+    public Server() : this(new H.Pipes.PipeServer<PipeMessage>(PipeConstants.ServerPipeName, formatter: new CerasFormatter()))
     {
     }
 

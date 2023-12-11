@@ -1,4 +1,5 @@
 ﻿using System.Threading.Tasks;
+using H.Formatters;
 
 namespace T.Pipes
 {
@@ -12,7 +13,7 @@ namespace T.Pipes
     /// </summary>
     /// <param name="pipe"></param>
     /// <param name="callback"></param>
-    protected SpawningPipeClient(string pipe, TCallback callback) : base(new(pipe), callback)
+    protected SpawningPipeClient(string pipe, TCallback callback) : base(new(pipe, formatter: new CerasFormatter()), callback)
     {
     }
 

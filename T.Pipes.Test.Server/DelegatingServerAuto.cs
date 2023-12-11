@@ -1,4 +1,5 @@
-﻿using Pastel;
+﻿using H.Formatters;
+using Pastel;
 using T.Pipes.Abstractions;
 using T.Pipes.Test.Abstractions;
 
@@ -27,7 +28,7 @@ namespace T.Pipes.Test.Server
 
   internal sealed class DelegatingServerAuto : DelegatingPipeServer<DelegatingCallback>
   {
-    public DelegatingServerAuto(string pipe) : this(new H.Pipes.PipeServer<PipeMessage>(pipe))
+    public DelegatingServerAuto(string pipe) : this(new H.Pipes.PipeServer<PipeMessage>(pipe, formatter: new CerasFormatter()))
     {
     }
 

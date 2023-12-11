@@ -1,4 +1,5 @@
-﻿using H.Pipes.Args;
+﻿using H.Formatters;
+using H.Pipes.Args;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
@@ -16,7 +17,7 @@ namespace T.Pipes
     /// </summary>
     /// <param name="pipe">pipe to use</param>
     /// <param name="callback">callback to use</param>
-    public PipeServer(string pipe, TCallback callback) : base(new(pipe), callback)
+    public PipeServer(string pipe, TCallback callback) : base(new(pipe, formatter: new CerasFormatter()), callback)
     {
     }
 
@@ -40,7 +41,7 @@ namespace T.Pipes
     /// </summary>
     /// <param name="pipe">pipe to use</param>
     /// <param name="callback">callback to use</param>
-    public PipeServer(string pipe, TCallback callback) : base(new(pipe), callback)
+    public PipeServer(string pipe, TCallback callback) : base(new(pipe, formatter: new CerasFormatter()), callback)
     {
     }
 

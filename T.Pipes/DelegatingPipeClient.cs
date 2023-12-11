@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using H.Formatters;
 using T.Pipes.Abstractions;
 
 namespace T.Pipes
@@ -15,7 +16,7 @@ namespace T.Pipes
     /// </summary>
     /// <param name="pipe">pipe to use</param>
     /// <param name="callback">callback to use</param>
-    protected DelegatingPipeClient(string pipe, TCallback callback) : base(new(pipe), callback)
+    protected DelegatingPipeClient(string pipe, TCallback callback) : base(new(pipe, formatter: new CerasFormatter()), callback)
     {
     }
 

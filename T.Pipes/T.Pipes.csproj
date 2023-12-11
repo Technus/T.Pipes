@@ -25,6 +25,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="H.Formatters.Ceras" Version="2.0.59" />
     <PackageReference Include="H.Pipes" Version="2.0.*" />
   </ItemGroup>
 

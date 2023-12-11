@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using H.Formatters;
 
 namespace T.Pipes
 {
@@ -16,7 +17,7 @@ namespace T.Pipes
     /// <param name="pipe"></param>
     /// <param name="client"></param>
     /// <param name="callback"></param>
-    protected SpawningPipeServer(string pipe, ProcessStartInfo client, TCallback callback) : base(new(pipe), client, callback)
+    protected SpawningPipeServer(string pipe, ProcessStartInfo client, TCallback callback) : base(new(pipe, formatter: new CerasFormatter()), client, callback)
     {
     }
 
