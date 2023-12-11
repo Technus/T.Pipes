@@ -139,16 +139,14 @@ namespace T.Pipes
 
       try
       {
-        if (cancellationToken.CanBeCanceled)
 #if NET5_0_OR_GREATER
-          ctr = cancellationToken.UnsafeRegister(static (x,ct) 
-            => ((TaskCompletionSource)x!).TrySetCanceled(ct), tcs);
+        ctr = cancellationToken.UnsafeRegister(static (x,ct) => ((TaskCompletionSource)x!).TrySetCanceled(ct), tcs);
 #else
-          ctr = cancellationToken.Register(static x =>
-          {
-            var (tcs, ct) = ((TaskCompletionSource<object?>, CancellationToken))x;
-            tcs.TrySetCanceled(ct);
-          }, (tcs, cancellationToken));
+        ctr = cancellationToken.Register(static x =>
+        {
+          var (tcs, ct) = ((TaskCompletionSource<object?>, CancellationToken))x;
+          tcs.TrySetCanceled(ct);
+        }, (tcs, cancellationToken));
 #endif
 
         Pipe.ClientConnected += onConnected;
@@ -200,8 +198,7 @@ namespace T.Pipes
       try
       {
 #if NET5_0_OR_GREATER
-        ctr = cts.Token.UnsafeRegister(static (x, ct)
-          => ((TaskCompletionSource)x!).TrySetCanceled(ct), tcs);
+        ctr = cts.Token.UnsafeRegister(static (x, ct) => ((TaskCompletionSource)x!).TrySetCanceled(ct), tcs);
 #else
         ctr = cts.Token.Register(static x =>
         {

@@ -471,20 +471,14 @@ namespace T.Pipes
 
       try
       {
-        if (ResponseTimeoutMs == 0)
-          cts.Cancel();
-        else if (ResponseTimeoutMs > 0)
-          cts.CancelAfter(ResponseTimeoutMs);
-
-        if (ResponseTimeoutMs >= 0 || cancellationToken.CanBeCanceled)
 #if NET5_0_OR_GREATER
-          ctr = cts.Token.UnsafeRegister(static (x,ct) => ((TaskCompletionSource<object>)x!).TrySetCanceled(ct), tcs);
+        ctr = cts.Token.UnsafeRegister(static (x,ct) => ((TaskCompletionSource<object>)x!).TrySetCanceled(ct), tcs);
 #else
-          ctr = cts.Token.Register(static x =>
-          {
-            var (tcs, ct) = ((TaskCompletionSource<object>, CancellationToken))x;
-            tcs.TrySetCanceled(ct);
-          }, (tcs, cts.Token));
+        ctr = cts.Token.Register(static x =>
+        {
+          var (tcs, ct) = ((TaskCompletionSource<object>, CancellationToken))x;
+          tcs.TrySetCanceled(ct);
+        }, (tcs, cts.Token));
 #endif
 
         await _semaphore.WaitAsync(cts.Token).ConfigureAwait(false);
