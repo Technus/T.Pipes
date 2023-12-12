@@ -62,7 +62,7 @@ namespace T.Pipes
   /// <typeparam name="TPacket"></typeparam>
   /// <typeparam name="TCallback"><see cref="IPipeCallback{TPacket}"/></typeparam>
   public class PipeClient<TPipe, TPacket, TCallback>
-    : PipeConnection<TPipe, TPacket, TCallback>
+    : PipeConnectionBase<TPipe, TPacket, TCallback>
     where TPipe : H.Pipes.IPipeClient<TPacket>
     where TCallback : IPipeCallback<TPacket>
   {
@@ -81,6 +81,7 @@ namespace T.Pipes
     /// <param name="callback">callback to use</param>
     public PipeClient(TPipe pipe, TCallback callback) : base(pipe, callback)
     {
+      Pipe.AutoReconnect = true;
       Pipe.Disconnected += OnDisconnected;
       Pipe.Connected += OnConnected;
     }
@@ -98,10 +99,15 @@ namespace T.Pipes
     }
 
     /// <inheritdoc/>
-    public override Task StartAsync(CancellationToken cancellationToken = default)
+    public override async Task StartAsync(CancellationToken cancellationToken = default)
     {
+      if(cancellationToken.IsCancellationRequested)
+        await Task.FromCanceled(cancellationToken).ConfigureAwait(false);
+      if(LifetimeCancellation.IsCancellationRequested)
+        await Task.FromCanceled(LifetimeCancellation).ConfigureAwait(false);
+
       _ = StartAndConnectAsync(cancellationToken);
-      return Task.CompletedTask;
+      await Task.CompletedTask.ConfigureAwait(false);
     }
 
     /// <inheritdoc/>
@@ -111,9 +117,15 @@ namespace T.Pipes
     /// <inheritdoc/>
     public override async Task StartAndConnectAsync(CancellationToken cancellationToken = default)
     {
+      if (cancellationToken.IsCancellationRequested)
+        await Task.FromCanceled(cancellationToken).ConfigureAwait(false);
+      if (LifetimeCancellation.IsCancellationRequested)
+        await Task.FromCanceled(LifetimeCancellation).ConfigureAwait(false);
+
+      using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, LifetimeCancellation);
       try
       {
-        await Pipe.ConnectAsync(cancellationToken).ConfigureAwait(false);
+        await Pipe.ConnectAsync(cts.Token).ConfigureAwait(false);
       }
       catch (Exception startException)
       {
@@ -132,7 +144,12 @@ namespace T.Pipes
     /// <inheritdoc/>
     protected override async Task StartAndConnectWithTimeoutInternalAsync(int timeoutMs, CancellationToken cancellationToken = default)
     {
-      using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+      if (cancellationToken.IsCancellationRequested)
+        await Task.FromCanceled(cancellationToken).ConfigureAwait(false);
+      if (LifetimeCancellation.IsCancellationRequested)
+        await Task.FromCanceled(LifetimeCancellation).ConfigureAwait(false);
+
+      using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, LifetimeCancellation);
       cts.CancelAfter(timeoutMs);
 #if NET5_0_OR_GREATER
       var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);

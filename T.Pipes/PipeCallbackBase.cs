@@ -19,15 +19,6 @@ namespace T.Pipes
     where TCallback : PipeCallbackBase<TPipe, TPacket, TPacketFactory, TCallback>
   {
     /// <summary>
-    /// Signal that it is not needed anymore
-    /// </summary>
-    protected CancellationTokenSource LifetimeCancellationSource { get; } = new();
-
-    /// <inheritdoc/>
-    public CancellationToken LifetimeCancellation 
-      => LifetimeCancellationSource.Token;
-
-    /// <summary>
     /// Packet factory being used
     /// </summary>
     protected TPacketFactory PacketFactory { get; }
@@ -53,13 +44,5 @@ namespace T.Pipes
 
     /// <inheritdoc/>
     public abstract void OnMessageSent(TPacket message);
-
-    /// <inheritdoc/>
-    protected override void DisposeCore(bool disposing, bool includeAsync)
-    {
-      base.DisposeCore(disposing, includeAsync);
-      LifetimeCancellationSource.Cancel();
-      LifetimeCancellationSource.Dispose();
-    }
   }
 }

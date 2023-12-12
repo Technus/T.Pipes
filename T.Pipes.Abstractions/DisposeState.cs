@@ -24,6 +24,7 @@ namespace T.Pipes.Abstractions
     /// In process of disposing
     /// </summary>
     Busy = 0x20,
+
     /// <summary>
     /// Sync
     /// </summary>
@@ -33,9 +34,13 @@ namespace T.Pipes.Abstractions
     /// </summary>
     Async = 0x02,
     /// <summary>
-    /// In process of disposing
+    /// Finalize
     /// </summary>
-    Destructor = 0x04,
+    Finalize = 0x04,
+    /// <summary>
+    /// Cancel
+    /// </summary>
+    Cancel = 0x08,
 
     /// <summary>
     /// Finished Disposing no need for finalization
@@ -56,10 +61,18 @@ namespace T.Pipes.Abstractions
     /// <summary>
     /// Was Finalized instead of disposing
     /// </summary>
-    Finalized = Old | Destructor,
+    Finalized = Old | Finalize,
     /// <summary>
     /// Finalizer was called
     /// </summary>
     Finalizing = Busy | Finalized,
+    /// <summary>
+    /// Was Finalized instead of disposing
+    /// </summary>
+    Cancelled = Old | Cancel,
+    /// <summary>
+    /// Finalizer was called
+    /// </summary>
+    Cancelling = Busy | Cancelled,
   }
 }

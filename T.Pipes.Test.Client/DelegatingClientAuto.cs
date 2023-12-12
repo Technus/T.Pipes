@@ -11,15 +11,8 @@ namespace T.Pipes.Test.Client
     : DelegatingPipeClientCallback<TTarget, DelegatingCallback<TTarget>>
     where TTarget : IAbstract, IAbstract<short>
   {
-    private CancellationTokenRegistration _lifetimeCancellationRegistration;
-
-    public DelegatingCallback(H.Pipes.PipeClient<PipeMessage> pipe, TTarget target) : base(pipe, target) 
-      => _lifetimeCancellationRegistration =
-#if NET5_0_OR_GREATER
-        LifetimeCancellation.UnsafeRegister(static x => ((IDisposable)x!).Dispose(), this);
-#else
-        LifetimeCancellation.Register(static x => ((IDisposable)x!).Dispose(), this);
-#endif
+    public DelegatingCallback(H.Pipes.PipeClient<PipeMessage> pipe, TTarget target) : base(pipe, target)
+    { }
 
     public override void OnMessageReceived(PipeMessage message)
     {
@@ -47,7 +40,6 @@ namespace T.Pipes.Test.Client
 
     protected override void DisposeCore(bool disposing,bool includeAsync)
     {
-      _lifetimeCancellationRegistration.Dispose();
       base.DisposeCore(disposing, includeAsync);
       Target.Dispose();
     }

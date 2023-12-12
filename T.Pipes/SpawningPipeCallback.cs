@@ -111,8 +111,7 @@ namespace T.Pipes
     /// <exception cref="InvalidOperationException"></exception>
     public override void OnMessageReceived(PipeMessage message)
     {
-      var name = message.Parameter as string;
-      if (name is null || name == string.Empty)
+      if (message.Parameter is not string name || name == string.Empty)
       {
         throw new ArgumentException("Name was not specified.", nameof(message));
       }

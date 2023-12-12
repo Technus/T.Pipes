@@ -11,6 +11,11 @@ namespace T.Pipes.Abstractions
   public interface IPipeConnection<in TMessage> : IAsyncDisposable, IDisposable
   {
     /// <summary>
+    /// Cancelled on dispose or finalize just in case, or when should be cancelled or finalized
+    /// </summary>
+    CancellationToken LifetimeCancellation { get; }
+
+    /// <summary>
     /// The Pipe Callback
     /// </summary>
     IPipeCallback<TMessage> Callback { get; }

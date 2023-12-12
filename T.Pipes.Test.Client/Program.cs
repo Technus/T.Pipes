@@ -13,7 +13,7 @@ namespace T.Pipes.Test.Client
 
       await using var client = new Client();
 
-      await client.StartAndConnectWithTimeoutAndAwaitCancellationAsync(PipeConstants.ConnectionAwaitTimeMs);
+      await client.StartAndConnectWithTimeoutAndAwaitCancellationAsync(PipeConstants.ConnectionAwaitTimeMs,client.Callback.LifetimeCancellation);
     }
   }
 }

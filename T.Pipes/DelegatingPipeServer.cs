@@ -108,7 +108,7 @@ namespace T.Pipes
     }
 
     /// <summary>
-    /// Disposes <see cref="PipeConnection{TPipe, TPacket, TCallback}.Pipe"/> and <see cref="PipeConnection{TPipe, TPacket, TCallback}.Callback"/>
+    /// Disposes <see cref="PipeConnectionBase{TPipe, TPacket, TCallback}.Pipe"/> and <see cref="PipeConnectionBase{TPipe, TPacket, TCallback}.Callback"/>
     /// </summary>
     /// <param name="disposing"></param>
     /// <param name="includeAsync"></param>
@@ -120,7 +120,7 @@ namespace T.Pipes
     }
 
     /// <summary>
-    /// Disposes <see cref="PipeConnection{TPipe, TPacket, TCallback}.Pipe"/> and <see cref="PipeConnection{TPipe, TPacket, TCallback}.Callback"/>
+    /// Disposes <see cref="PipeConnectionBase{TPipe, TPacket, TCallback}.Pipe"/> and <see cref="PipeConnectionBase{TPipe, TPacket, TCallback}.Callback"/>
     /// </summary>
     /// <returns></returns>
     protected override async ValueTask DisposeAsyncCore(bool disposing)

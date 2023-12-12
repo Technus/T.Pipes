@@ -62,7 +62,7 @@ namespace T.Pipes
   /// <typeparam name="TPacket"></typeparam>
   /// <typeparam name="TCallback"><see cref="IPipeCallback{TPacket}"/></typeparam>
   public class PipeServer<TPipe, TPacket, TCallback>
-    : PipeConnection<TPipe, TPacket, TCallback>
+    : PipeConnectionBase<TPipe, TPacket, TCallback>
     where TPipe : H.Pipes.IPipeServer<TPacket>
     where TCallback : IPipeCallback<TPacket>
   {
@@ -100,9 +100,15 @@ namespace T.Pipes
     /// <inheritdoc/>
     public override async Task StartAsync(CancellationToken cancellationToken = default)
     {
+      if (cancellationToken.IsCancellationRequested)
+        await Task.FromCanceled(cancellationToken).ConfigureAwait(false);
+      if (LifetimeCancellation.IsCancellationRequested)
+        await Task.FromCanceled(LifetimeCancellation).ConfigureAwait(false);
+
+      using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, LifetimeCancellation);
       try
       {
-        await Pipe.StartAsync(cancellationToken).ConfigureAwait(false);
+        await Pipe.StartAsync(cts.Token).ConfigureAwait(false);
       }
       catch (Exception startException)
       {
@@ -129,6 +135,13 @@ namespace T.Pipes
     /// <returns></returns>
     public override async Task StartAndConnectAsync(CancellationToken cancellationToken = default)
     {
+      if (cancellationToken.IsCancellationRequested)
+        await Task.FromCanceled(cancellationToken).ConfigureAwait(false);
+      if (LifetimeCancellation.IsCancellationRequested)
+        await Task.FromCanceled(LifetimeCancellation).ConfigureAwait(false);
+
+      using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, LifetimeCancellation);
+
 #if NET5_0_OR_GREATER
       var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
       EventHandler<ConnectionEventArgs<TPacket>> onConnected = (o, e) => tcs.TrySetResult();
@@ -136,24 +149,25 @@ namespace T.Pipes
       var tcs = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
       EventHandler<ConnectionEventArgs<TPacket>> onConnected = (o, e) => tcs.TrySetResult(null);
 #endif
+
       CancellationTokenRegistration ctr = default;
 
       try
       {
 #if NET5_0_OR_GREATER
-        ctr = cancellationToken.UnsafeRegister(static (x,ct) => ((TaskCompletionSource)x!).TrySetCanceled(ct), tcs);
+        ctr = cts.Token.UnsafeRegister(static (x,ct) => ((TaskCompletionSource)x!).TrySetCanceled(ct), tcs);
 #else
-        ctr = cancellationToken.Register(static x =>
+        ctr = cts.Token.Register(static x =>
         {
           var (tcs, ct) = ((TaskCompletionSource<object?>, CancellationToken))x;
           tcs.TrySetCanceled(ct);
-        }, (tcs, cancellationToken));
+        }, (tcs, cts.Token));
 #endif
 
         Pipe.ClientConnected += onConnected;
-        await StartAsync(cancellationToken).ConfigureAwait(false);
         try
         {
+          await Pipe.StartAsync(cts.Token).ConfigureAwait(false);
           await tcs.Task.ConfigureAwait(false);
         }
         catch (Exception tcsException)
@@ -186,6 +200,11 @@ namespace T.Pipes
     /// <inheritdoc/>
     protected override async Task StartAndConnectWithTimeoutInternalAsync(int timeoutMs, CancellationToken cancellationToken = default)
     {
+      if (cancellationToken.IsCancellationRequested)
+        await Task.FromCanceled(cancellationToken).ConfigureAwait(false);
+      if (LifetimeCancellation.IsCancellationRequested)
+        await Task.FromCanceled(LifetimeCancellation).ConfigureAwait(false);
+
       using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
       cts.CancelAfter(timeoutMs);
 #if NET5_0_OR_GREATER
