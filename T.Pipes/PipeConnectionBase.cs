@@ -1,4 +1,4 @@
-﻿using H.Formatters;
+using H.Formatters;
 using H.Pipes.Args;
 using System;
 using System.Threading;
@@ -134,6 +134,32 @@ namespace T.Pipes
       {
         await StopAsync(default).ConfigureAwait(false);
       }
+    }
+
+    /// <summary>
+    /// Should start the service and await cancellation, or Lifetime Cancellation...
+    /// Will attempt to auto reconnect until cancelled
+    /// </summary>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    public async Task StartAsService(CancellationToken cancellationToken = default)
+    {
+      using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, LifetimeCancellation);
+      while (!cts.Token.IsCancellationRequested)
+      {
+        await _noConnections.WaitAsync(cts.Token).ConfigureAwait(false);
+        _noConnections.Release();
+        cts.Token.ThrowIfCancellationRequested();
+        try
+        {
+          await StartAndConnectAsync(cts.Token).ConfigureAwait(false);
+        }
+        finally
+        {
+          await Task.Delay(10).ConfigureAwait(false);
+        }
+      }
+      cts.Token.ThrowIfCancellationRequested();
     }
 
     /// <summary>
