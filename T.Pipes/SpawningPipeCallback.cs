@@ -45,21 +45,13 @@ namespace T.Pipes
     /// </summary>
     /// <param name="pipe"></param>
     /// <param name="timeoutMs"></param>
-    protected SpawningPipeCallback(TPipe pipe, int timeoutMs = Timeout.Infinite) : base(new())
-    {
-      Pipe = pipe;
-      ResponseTimeoutMs = timeoutMs;
-    }
+    protected SpawningPipeCallback(TPipe pipe, int timeoutMs = Timeout.Infinite) : base(pipe, new()) 
+      => ResponseTimeoutMs = timeoutMs;
 
     /// <summary>
     /// The response await timeout should happen after that time
     /// </summary>
     public int ResponseTimeoutMs { get; set; }
-
-    /// <summary>
-    /// Used to access data tunnel
-    /// </summary>
-    public TPipe Pipe { get; }
 
     /// <summary>
     /// Writes to the pipe directly and calls the Callback On Write

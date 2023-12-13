@@ -24,11 +24,20 @@ namespace T.Pipes
     protected TPacketFactory PacketFactory { get; }
 
     /// <summary>
+    /// Used to access data tunnel
+    /// </summary>
+    protected TPipe Pipe { get; }
+
+    /// <summary>
     /// The base constructor
     /// </summary>
+    /// <param name="pipe"></param>
     /// <param name="packetFactory"></param>
-    protected PipeCallbackBase(TPacketFactory packetFactory) 
-      => PacketFactory = packetFactory;
+    protected PipeCallbackBase(TPipe pipe, TPacketFactory packetFactory)
+    {
+      Pipe = pipe;
+      PacketFactory = packetFactory;
+    }
 
     /// <inheritdoc/>
     public abstract void OnConnected(string connection);

@@ -128,10 +128,9 @@ namespace T.Pipes
     /// <param name="packetFactory">to create <typeparamref name="TPacket"/></param>
     /// <param name="responseTimeoutMs">response timeout in ms</param>
     /// <exception cref="InvalidOperationException">when the this is not a valid <typeparamref name="TTarget"/> or null</exception>
-    protected DelegatingPipeCallback(TPipe pipe, TPacketFactory packetFactory, int responseTimeoutMs = Timeout.Infinite) : base(packetFactory)
+    protected DelegatingPipeCallback(TPipe pipe, TPacketFactory packetFactory, int responseTimeoutMs = Timeout.Infinite) : base(pipe, packetFactory)
     {
       ResponseTimeoutMs = responseTimeoutMs;
-      Pipe = pipe;
       if (this is TTarget tt)
       {
         Target = tt;
@@ -151,10 +150,9 @@ namespace T.Pipes
     /// <param name="target">the actual implementation of <typeparamref name="TTarget"/></param>
     /// <param name="responseTimeoutMs">response timeout in ms</param>
     /// <exception cref="InvalidOperationException">when <paramref name="target"/> is null</exception>
-    protected DelegatingPipeCallback(TPipe pipe, TPacketFactory packetFactory, TTarget target, int responseTimeoutMs = Timeout.Infinite) : base(packetFactory)
+    protected DelegatingPipeCallback(TPipe pipe, TPacketFactory packetFactory, TTarget target, int responseTimeoutMs = Timeout.Infinite) : base(pipe, packetFactory)
     {
       ResponseTimeoutMs = responseTimeoutMs;
-      Pipe = pipe;
       if (target is not null)
       {
         Target = target;
@@ -224,11 +222,6 @@ namespace T.Pipes
     /// </summary>
     protected virtual void TargetDeInitAuto() { }
 
-    /// <summary>
-    /// Used to access data tunnel
-    /// </summary>
-    public TPipe Pipe { get; }
-
     /// <inheritdoc/>
     public int ResponseTimeoutMs { get; set; }
 
@@ -265,7 +258,7 @@ namespace T.Pipes
     }
 
     /// <summary>
-    /// Disposes own resources, not the <see cref="Pipe"/> nor the <see cref="Target"/>
+    /// Disposes own resources, not the <see cref="PipeCallbackBase{TPipe, TPacket, TPacketFactory, TCallback}.Pipe"/> nor the <see cref="Target"/>
     /// </summary>
     /// <returns></returns>
     protected override async ValueTask DisposeAsyncCore(bool disposing)
@@ -275,7 +268,7 @@ namespace T.Pipes
     }
 
     /// <summary>
-    /// Disposes own resources, not the <see cref="Pipe"/> nor the <see cref="Target"/>
+    /// Disposes own resources, not the <see cref="PipeCallbackBase{TPipe, TPacket, TPacketFactory, TCallback}.Pipe"/> nor the <see cref="Target"/>
     /// </summary>
     protected override void DisposeCore(bool disposing, bool includeAsync)
     {
