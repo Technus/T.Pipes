@@ -136,8 +136,7 @@ namespace T.Pipes.SourceGeneration
             {
               var type = ((TypeOfExpressionSyntax)item.Expression).Type;
               var semantic = compilation.GetSemanticModel(type);
-              var typeDef = semantic.GetSymbolInfo(type).Symbol as INamedTypeSymbol;
-              if (typeDef != null)
+              if (semantic.GetSymbolInfo(type).Symbol is INamedTypeSymbol typeDef)
               {
                 yield return typeDef;
               }
@@ -175,11 +174,10 @@ namespace T.Pipes.SourceGeneration
             {
               var type = ((TypeOfExpressionSyntax)item.Expression).Type;
               var semantic = compilation.GetSemanticModel(type);
-              var typeDef = semantic.GetSymbolInfo(type).Symbol as INamedTypeSymbol;
-              if(typeDef != null)
+              if (semantic.GetSymbolInfo(type).Symbol is INamedTypeSymbol typeDef)
               {
-                
-                foreach(var member in typeDef.GetMembers())
+
+                foreach (var member in typeDef.GetMembers())
                 {
                   yield return member;
                 }

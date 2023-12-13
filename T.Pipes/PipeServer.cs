@@ -198,7 +198,7 @@ namespace T.Pipes
     }
 
     /// <inheritdoc/>
-    protected override async Task StartAndConnectWithTimeoutInternalAsync(int timeoutMs, CancellationToken cancellationToken = default)
+    protected override async Task StartAndConnectWithTimeoutInternalAsync(int timeoutMs = 1000, CancellationToken cancellationToken = default)
     {
       if (cancellationToken.IsCancellationRequested)
         await Task.FromCanceled(cancellationToken).ConfigureAwait(false);
@@ -208,9 +208,9 @@ namespace T.Pipes
       using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
       cts.CancelAfter(timeoutMs);
 #if NET5_0_OR_GREATER
-      EventHandler<ConnectionEventArgs<TPacket>> onConnected = (o, e) => { cts.CancelAfter(Timeout.Infinite); };
+      EventHandler<ConnectionEventArgs<TPacket>> onConnected = (o, e) => cts.CancelAfter(Timeout.Infinite);
 #else
-      EventHandler<ConnectionEventArgs<TPacket>> onConnected = (o, e) => { cts.CancelAfter(Timeout.Infinite); };
+      EventHandler<ConnectionEventArgs<TPacket>> onConnected = (o, e) => cts.CancelAfter(Timeout.Infinite);
 #endif
       try
       {

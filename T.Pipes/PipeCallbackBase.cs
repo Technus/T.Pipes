@@ -21,12 +21,12 @@ namespace T.Pipes
     /// <summary>
     /// Packet factory being used
     /// </summary>
-    protected TPacketFactory PacketFactory { get; }
+    protected internal TPacketFactory PacketFactory { get; }
 
     /// <summary>
     /// Used to access data tunnel
     /// </summary>
-    protected TPipe Pipe { get; }
+    protected internal TPipe Pipe { get; }
 
     /// <summary>
     /// The base constructor

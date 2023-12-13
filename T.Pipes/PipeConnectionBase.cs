@@ -48,7 +48,6 @@ namespace T.Pipes
     {
       Pipe = pipe;
       Callback = callback;
-
       Pipe.ExceptionOccurred += OnExceptionOccurred;
       Pipe.MessageReceived += OnMessageReceived;
     }
@@ -84,6 +83,8 @@ namespace T.Pipes
     /// <inheritdoc/>
     public virtual async Task WriteAsync(TPacket value, CancellationToken cancellationToken = default)
     {
+      if(LifetimeCancellation.IsCancellationRequested)
+        await Task.FromCanceled(LifetimeCancellation);
       using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, LifetimeCancellation);
       await Pipe.WriteAsync(value, cts.Token).ConfigureAwait(false);
       Callback.OnMessageSent(value);

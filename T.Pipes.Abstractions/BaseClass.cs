@@ -14,7 +14,7 @@ namespace T.Pipes.Abstractions
     /// <summary>
     /// <see cref="CancelCallback"/>
     /// </summary>
-    private CancellationTokenRegistration _lifetimeCancellationRegistration;
+    private readonly CancellationTokenRegistration _lifetimeCancellationRegistration;
 
     /// <summary>
     /// Current dispose state
