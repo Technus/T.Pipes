@@ -198,5 +198,53 @@ namespace T.Pipes.Test
         try { await server.DisposeAsync(); } catch { }
       }
     }
+
+    [Fact]
+    public async Task PipeClientReconnect()
+    {
+      var pipeName = Guid.NewGuid().ToString();
+      await using var serverCallback = Substitute.For<IPipeCallback<PipeMessage>>();
+      await using var server = new PipeServer<IPipeCallback<PipeMessage>>(pipeName, serverCallback);
+      await using var clientCallback = Substitute.For<IPipeCallback<PipeMessage>>();
+      await using var client = new PipeClient<IPipeCallback<PipeMessage>>(pipeName, clientCallback);
+      await server.StartAsync();
+
+      var task = client.StartAsService();
+
+      await task.Should().NotCompleteWithinAsync(TimeSpan.FromSeconds(2));
+
+      await server.StopAsync();
+
+      await task.Should().NotCompleteWithinAsync(TimeSpan.FromSeconds(2));
+
+      await server.StartAsync();
+
+      await task.Should().NotCompleteWithinAsync(TimeSpan.FromSeconds(2));
+
+      await server.WriteAsync(new() { Command = "13" });
+
+      await Task.Delay(100);
+
+      clientCallback.Received(1).OnMessageReceived(Arg.Any<PipeMessage>());
+    }
+
+    [Fact]
+    public async Task PipeClientDisconnectedNoReceive()
+    {
+      var pipeName = Guid.NewGuid().ToString();
+      await using var serverCallback = Substitute.For<IPipeCallback<PipeMessage>>();
+      await using var server = new PipeServer<IPipeCallback<PipeMessage>>(pipeName, serverCallback);
+      await using var clientCallback = Substitute.For<IPipeCallback<PipeMessage>>();
+      await using var client = new PipeClient<IPipeCallback<PipeMessage>>(pipeName, clientCallback);
+      await server.StartAsync();
+
+      await server.WriteAsync(new() { Command = "13" });
+
+      var task = client.StartAsService();
+
+      await Task.Delay(100);
+
+      clientCallback.Received(0).OnMessageReceived(Arg.Any<PipeMessage>());
+    }
   }
 }

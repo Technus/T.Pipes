@@ -177,7 +177,7 @@
       clientCallback.LifetimeCancellation.Returns(cts.Token);
       await using var client = new PipeClient<IPipeCallback<PipeMessage>>(pipeName, clientCallback);
 
-      var task = client.StartAndConnectWithTimeoutAndAwaitCancellationAsync(timeoutMs: 2000);
+      var task = client.StartAndConnectWithTimeoutAndAwaitCancellationAsync(timeoutMs: 2000, cts.Token);
 
       await task.Should().CompleteWithinAsync(TimeSpan.FromSeconds(1));
       await task.Should().ThrowAsync<OperationCanceledException>();
@@ -193,7 +193,7 @@
       serverCallback.LifetimeCancellation.Returns(cts.Token);
       await using var server = new PipeServer<IPipeCallback<PipeMessage>>(pipeName, serverCallback);
 
-      var task = server.StartAndConnectWithTimeoutAndAwaitCancellationAsync(timeoutMs: 2000);
+      var task = server.StartAndConnectWithTimeoutAndAwaitCancellationAsync(timeoutMs: 2000, cts.Token);
 
       await task.Should().CompleteWithinAsync(TimeSpan.FromSeconds(1));
       await task.Should().ThrowAsync<OperationCanceledException>();
@@ -210,7 +210,7 @@
 
       await using var client = new PipeClient<IPipeCallback<PipeMessage>>(pipeName, clientCallback);
 
-      var task = Cache(() => client.StartAndConnectWithTimeoutAndAwaitCancellationAsync(timeoutMs: 2000));
+      var task = Cache(() => client.StartAndConnectWithTimeoutAndAwaitCancellationAsync(timeoutMs: 2000, cts.Token));
       await task.Should().CompleteWithinAsync(TimeSpan.FromMilliseconds(200));
       await task.Should().ThrowAsync<OperationCanceledException>();
     }
@@ -228,7 +228,7 @@
 
       await using var server = new PipeServer<IPipeCallback<PipeMessage>>(pipeName, serverCallback);
 
-      var action = () => server.StartAndConnectWithTimeoutAndAwaitCancellationAsync(timeoutMs: 2000);
+      var action = () => server.StartAndConnectWithTimeoutAndAwaitCancellationAsync(timeoutMs: 2000, cts.Token);
 
       var result = await action.Should().CompleteWithinAsync(TimeSpan.FromMilliseconds(200));
       await result.And.ThrowAsync<OperationCanceledException>();

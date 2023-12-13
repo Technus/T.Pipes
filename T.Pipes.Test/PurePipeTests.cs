@@ -185,6 +185,8 @@
 
       await client.ConnectAsync();
 
+      await Task.Delay(10);
+
       serverConnections.Should().Be(1);
       clientConnections.Should().Be(1);
 
