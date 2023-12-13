@@ -136,12 +136,7 @@ namespace T.Pipes
       }
     }
 
-    /// <summary>
-    /// Should start the service and await cancellation, or Lifetime Cancellation...
-    /// Will attempt to auto reconnect until cancelled
-    /// </summary>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
+    /// <inheritdoc/>
     public async Task StartAsService(CancellationToken cancellationToken = default)
     {
       using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, LifetimeCancellation);

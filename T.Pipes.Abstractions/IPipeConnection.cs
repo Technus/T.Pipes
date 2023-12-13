@@ -65,6 +65,14 @@ namespace T.Pipes.Abstractions
     Task StopAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Starts the Pipe as a service that will ignore most exceptions and try it's best at being alive
+    /// Should not finish and cancel on token or <see cref="IPipeCallback{TMessage}.LifetimeCancellation"/>
+    /// </summary>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    Task StartAsService(CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// For servers it is <see cref="ServerName"/>
     /// For clients it is the generated unique name
     /// </summary>
