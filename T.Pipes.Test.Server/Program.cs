@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using T.Pipes.Test.Abstractions;
 
 namespace T.Pipes.Test.Server
@@ -6,16 +7,12 @@ namespace T.Pipes.Test.Server
   {
     private static async Task Main(string[] args)
     {
-#if DEBUG
-      //Debugger.Launch();
-#endif
-
-
       await using (var server = new Server())
       {
+#if !DEBUG
         await using var client = new SurrogateProcessWrapper(new(PipeConstants.ClientExeName));
         await client.StartProcess();
-
+#endif
         await server.StartAndConnectWithTimeoutAsync(PipeConstants.ConnectionAwaitTimeMs);
 
         await using (var item = await server.Callback.Create())

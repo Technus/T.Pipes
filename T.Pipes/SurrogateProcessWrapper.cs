@@ -11,7 +11,11 @@ namespace T.Pipes
   public class SurrogateProcessWrapper : BaseClass
   {
     private readonly SemaphoreSlim _semaphore = new(1, 1);
-    private readonly Process _process;
+
+    /// <summary>
+    /// The process
+    /// </summary>
+    protected internal readonly Process _process;
 
     /// <summary>
     /// Constructs wrapper for <see cref="Process"/> using <paramref name="processStartInfo"/>
