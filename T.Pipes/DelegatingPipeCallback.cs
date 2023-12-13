@@ -233,10 +233,36 @@ namespace T.Pipes
     public int ResponseTimeoutMs { get; set; }
 
     /// <inheritdoc/>
-    public override void OnConnected(string connection) => ClearResponsesWithCancelling();
+    public override void OnConnected(string connection)
+    {
+      _semaphore.Wait();
+      if (_responses.Count > 0)
+      {
+        var exception = new NoResponseException("Connected", new InvalidOperationException("Connected while operations were pending"));
+        foreach (var item in _responses)
+        {
+          item.Value.TrySetException(exception);
+        }
+      }
+      _responses.Clear();
+      _semaphore.Release();
+    }
 
     /// <inheritdoc/>
-    public override void OnDisconnected(string connection) => ClearResponsesWithCancelling();
+    public override void OnDisconnected(string connection)
+    {
+      _semaphore.Wait();
+      if (_responses.Count > 0)
+      {
+        var exception = new NoResponseException("Disconnected", new InvalidOperationException("Disconnected while operations were pending"));
+        foreach (var item in _responses)
+        {
+          item.Value.TrySetException(exception);
+        }
+      }
+      _responses.Clear();
+      _semaphore.Release();
+    }
 
     /// <summary>
     /// Disposes own resources, not the <see cref="Pipe"/> nor the <see cref="Target"/>
@@ -269,7 +295,7 @@ namespace T.Pipes
 
         foreach (var item in _responses)
         {
-          item.Value.TrySetException(disposingException);
+          item.Value.TrySetException(new NoResponseException("Disposing", disposingException));
         }
         _responses.Clear();
       }
@@ -282,34 +308,17 @@ namespace T.Pipes
     }
 
     /// <summary>
-    /// Clears the response awaiting tasks by <see cref="TaskCompletionSource{TResult}.TrySetException(Exception)"/>
-    /// </summary>
-    /// <param name="e">exception to pass along</param>
-    public virtual void ClearResponsesWithFailing(Exception e)
-    {
-      _semaphore.Wait();
-      if(_responses .Count > 0)
-      {
-        foreach (var item in _responses)
-        {
-          item.Value.TrySetException(e);
-        }
-      }
-      _responses.Clear();
-      _semaphore.Release();
-    }
-
-    /// <summary>
     /// Clears the response awaiting tasks by <see cref="TaskCompletionSource{TResult}.TrySetCanceled()"/>
     /// </summary>
-    public virtual void ClearResponsesWithCancelling()
+    public virtual void ClearResponses(Exception? exception = default)
     {
       _semaphore.Wait();
       if (_responses.Count > 0)
       {
+        exception ??= new InvalidOperationException("Clearing while operations were pending");
         foreach (var item in _responses)
         {
-          item.Value.TrySetCanceled();
+          item.Value.TrySetException(new NoResponseException("Clearing",exception));
         }
       }
       _responses.Clear();
@@ -317,7 +326,7 @@ namespace T.Pipes
     }
 
     /// <inheritdoc/>
-    public override void OnExceptionOccurred(Exception e) => ClearResponsesWithFailing(e);
+    public override void OnExceptionOccurred(Exception e) => ClearResponses(e);
 
     /// <summary>
     /// Called on each incoming message<br/>
@@ -477,52 +486,35 @@ namespace T.Pipes
           cts.CancelAfter(ResponseTimeoutMs);
 
 #if NET5_0_OR_GREATER
-        ctr = cts.Token.UnsafeRegister(static (x,ct) => ((TaskCompletionSource<object>)x!).TrySetCanceled(ct), tcs);
+        ctr = cts.Token.UnsafeRegister(static x => ((TaskCompletionSource<object>)x!)
+          .TrySetException(new NoResponseException("Cancelled",new TimeoutException("Timed out"))), tcs);
 #else
         ctr = cts.Token.Register(static x =>
         {
-          var (tcs, ct) = ((TaskCompletionSource<object>, CancellationToken))x;
-          tcs.TrySetCanceled(ct);
-        }, (tcs, cts.Token));
+          var tcs = (TaskCompletionSource<object>)x;
+          tcs.TrySetException(new NoResponseException("Cancelled",new TimeoutException("Timed out")));
+        }, tcs);
 #endif
-
-        await _semaphore.WaitAsync(cts.Token).ConfigureAwait(false);
-        _responses.Add(command.Id, tcs);
-        _semaphore.Release();
-        await WriteAsync(command, cts.Token).ConfigureAwait(false);
         try
         {
+          await _semaphore.WaitAsync(cts.Token).ConfigureAwait(false);
+          _responses.Add(command.Id, tcs);
+          _semaphore.Release();
+          await WriteAsync(command, cts.Token).ConfigureAwait(false);
           return (T)await tcs.Task.ConfigureAwait(false);
         }
-        catch (OperationCanceledException ex) when (ex.CancellationToken == cts.Token)
+        catch (Exception ex)
         {
-          throw new NoResponseException(command.Command, ex);
-        }
-      }
-      catch (OperationCanceledException ex) when (ex.CancellationToken == cts.Token)
-      {
-        if (cancellationToken.IsCancellationRequested)
-        {
-          tcs.TrySetException(ex);
-          throw;
-        }
-        else
-        {
-          var e = new TimeoutException("Timeout expired", ex);
+          var e = new NoResponseException(command.Command, ex);
           tcs.TrySetException(e);
           throw e;
         }
-      }
-      catch (Exception e)
-      {
-        tcs.TrySetException(e);
-        throw;
       }
       finally
       {
         ctr.Dispose();
         if (!tcs.Task.IsCompleted)
-          tcs.TrySetException(new InvalidOperationException("Failed to finish gracefully."));
+          tcs.TrySetException(new NoResponseException("Finally",new InvalidOperationException("Failed to finish gracefully.")));
         await _semaphore.WaitAsync().ConfigureAwait(false);
         _responses.Remove(command.Id);
         _semaphore.Release();

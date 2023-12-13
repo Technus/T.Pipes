@@ -98,7 +98,8 @@
 
       var task = client.StartAndConnectWithTimeoutAsync(timeoutMs: 100);
 
-      await task.Should().ThrowWithinAsync<TimeoutException>(TimeSpan.FromMilliseconds(150));
+      await task.Should().CompleteWithinAsync(TimeSpan.FromMilliseconds(150));
+      task.IsCanceled.Should().BeTrue();
     }
 
     [Fact]
@@ -110,7 +111,8 @@
 
       var task = server.StartAndConnectWithTimeoutAsync(timeoutMs: 100);
 
-      await task.Should().ThrowWithinAsync<TimeoutException>(TimeSpan.FromMilliseconds(150));
+      await task.Should().CompleteWithinAsync(TimeSpan.FromMilliseconds(150));
+      task.IsCanceled.Should().BeTrue();
     }
 
     [Fact]
@@ -147,7 +149,8 @@
       var task = client.StartAndConnectWithTimeoutAsync(timeoutMs: 2000);
 
       await task.Should().NotCompleteWithinAsync(TimeSpan.FromSeconds(1));
-      await task.Should().ThrowWithinAsync<TimeoutException>(TimeSpan.FromSeconds(2));
+      await task.Should().CompleteWithinAsync(TimeSpan.FromSeconds(2));
+      task.IsCanceled.Should().BeTrue();
     }
 
     [Fact]
@@ -160,7 +163,8 @@
       var task = server.StartAndConnectWithTimeoutAsync(timeoutMs: 2000);
 
       await task.Should().NotCompleteWithinAsync(TimeSpan.FromSeconds(1));
-      await task.Should().ThrowWithinAsync<TimeoutException>(TimeSpan.FromSeconds(2));
+      await task.Should().CompleteWithinAsync(TimeSpan.FromSeconds(2));
+      task.IsCanceled.Should().BeTrue();
     }
 
     [Fact]

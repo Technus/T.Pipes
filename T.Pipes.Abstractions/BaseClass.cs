@@ -51,8 +51,13 @@ namespace T.Pipes.Abstractions
       var was = Interlocked.Exchange(ref _disposeState, (int)DisposeState.Cancelling);
       if (was == (int)DisposeState.New)
       {
-        Cancellation();
+        _lifetimeCancellationRegistration.Dispose();
+        LifetimeCancellationSource.Cancel();
+
         DisposeCore(disposing: true, includeAsync: true);
+
+        LifetimeCancellationSource.Dispose();
+
         GC.SuppressFinalize(this);
         _disposeState = (int)DisposeState.Cancelled;
       }
@@ -70,8 +75,13 @@ namespace T.Pipes.Abstractions
       var was = Interlocked.Exchange(ref _disposeState, (int)DisposeState.Finalizing);
       if (was == (int)DisposeState.New)
       {
-        Cancellation();
+        _lifetimeCancellationRegistration.Dispose();
+        LifetimeCancellationSource.Cancel();
+
         DisposeCore(disposing: false, includeAsync: true);
+
+        LifetimeCancellationSource.Dispose();
+
         _disposeState = (int)DisposeState.Finalized;
       }
       else
@@ -87,8 +97,13 @@ namespace T.Pipes.Abstractions
       var was = Interlocked.Exchange(ref _disposeState, (int)DisposeState.Disposing);
       if (was == (int)DisposeState.New)
       {
-        Cancellation();
+        _lifetimeCancellationRegistration.Dispose();
+        LifetimeCancellationSource.Cancel();
+
         DisposeCore(disposing: true, includeAsync: true);
+
+        LifetimeCancellationSource.Dispose();
+
         GC.SuppressFinalize(this);
         _disposeState = (int)DisposeState.Disposed;
       }
@@ -106,21 +121,19 @@ namespace T.Pipes.Abstractions
       var was = Interlocked.Exchange(ref _disposeState, (int)DisposeState.DisposingAsync);
       if (was == (int)DisposeState.New)
       {
-        Cancellation();
+        _lifetimeCancellationRegistration.Dispose();
+        LifetimeCancellationSource.Cancel();
+
         await DisposeAsyncCore(disposing: true).ConfigureAwait(false);
         DisposeCore(disposing: true, includeAsync: false);
+
+        LifetimeCancellationSource.Dispose();
+
         GC.SuppressFinalize(this);
         _disposeState = (int)DisposeState.DisposedAsync;
       }
       else
         throw new ObjectDisposedException(GetType().Name, $"Previously was: {(DisposeState)was}");
-    }
-
-    private void Cancellation()
-    {
-      _lifetimeCancellationRegistration.Dispose();
-      LifetimeCancellationSource.Cancel();
-      LifetimeCancellationSource.Dispose();
     }
 
     /// <summary>

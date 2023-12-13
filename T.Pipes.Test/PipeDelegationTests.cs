@@ -127,9 +127,9 @@ namespace T.Pipes.Test
 
       await task.Should().NotCompleteWithinAsync(TimeSpan.FromMilliseconds(100));
 
-      dut.ClearResponsesWithCancelling();
+      dut.ClearResponses();
 
-      await task.Should().ThrowAsync<OperationCanceledException>();
+      await task.Should().ThrowAsync<NoResponseException>();
     }
 
     [Fact]
@@ -145,7 +145,7 @@ namespace T.Pipes.Test
 
       dut.OnConnected("Egg");
 
-      await task.Should().ThrowAsync<OperationCanceledException>();
+      await task.Should().ThrowAsync<NoResponseException>();
     }
 
     [Fact]
@@ -161,24 +161,7 @@ namespace T.Pipes.Test
 
       dut.OnDisconnected("Egg");
 
-      await task.Should().ThrowAsync<OperationCanceledException>();
-    }
-
-    [Fact]
-    public async Task FailCallbackResponse()
-    {
-      var name = Guid.NewGuid().ToString();
-      await using var pipe = new H.Pipes.PipeServer<PipeMessage>(name, formatter: new Formatter());
-      await using var dut = new ServerCallback(pipe);
-
-      var task = Task.Run(dut.AsIAbstract.Action);
-
-      await task.Should().NotCompleteWithinAsync(TimeSpan.FromMilliseconds(100));
-
-      var failure = new Exception("Egg");
-      dut.ClearResponsesWithFailing(failure);
-
-      await task.Should().ThrowAsync<Exception>().WithMessage("Egg");
+      await task.Should().ThrowAsync<NoResponseException>();
     }
 
     [Fact]
@@ -195,7 +178,7 @@ namespace T.Pipes.Test
       var failure = new Exception("Egg");
       dut.OnExceptionOccurred(failure);
 
-      await task.Should().ThrowAsync<Exception>().WithMessage("Egg");
+      await task.Should().ThrowAsync<NoResponseException>();
     }
 
     [Fact]
@@ -255,7 +238,7 @@ namespace T.Pipes.Test
 
       var task = Task.Run(dut.AsIAbstract.Action);
 
-      await task.Should().ThrowAsync<TimeoutException>("In case it was not sent, then TimeoutException should be thrown");
+      await task.Should().ThrowWithinAsync<NoResponseException>(TimeSpan.FromMilliseconds(100));
     }
 
     [Fact]

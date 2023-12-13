@@ -21,6 +21,7 @@ namespace T.Pipes
     public string Command { get; set; } = string.Empty;
 
     /// <inheritdoc/>
+    [Newtonsoft.Json.JsonConverter(typeof(Formatter.PrimitiveConverter))]
     public object? Parameter { get; set; }
 
     /// <summary>

@@ -152,50 +152,17 @@ namespace T.Pipes
       using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, LifetimeCancellation);
       cts.CancelAfter(timeoutMs);
 #if NET5_0_OR_GREATER
-      var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-      EventHandler<ConnectionEventArgs<TPacket>> onConnected = (o, e) => { cts.CancelAfter(Timeout.Infinite); tcs.TrySetResult(); };
+      EventHandler<ConnectionEventArgs<TPacket>> onConnected = (o, e) => { cts.CancelAfter(Timeout.Infinite); };
 #else
-      var tcs = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
-      EventHandler<ConnectionEventArgs<TPacket>> onConnected = (o, e) => { cts.CancelAfter(Timeout.Infinite); tcs.TrySetResult(null); };
+      EventHandler<ConnectionEventArgs<TPacket>> onConnected = (o, e) => { cts.CancelAfter(Timeout.Infinite); };
 #endif
-      CancellationTokenRegistration ctr = default;
       try
       {
-#if NET5_0_OR_GREATER
-        ctr = cts.Token.UnsafeRegister(static (x, ct) => ((TaskCompletionSource)x!).TrySetCanceled(ct), tcs);
-#else
-        ctr = cts.Token.Register(static x =>
-        {
-          var (tcs, ct) = ((TaskCompletionSource<object?>, CancellationToken))x;
-          tcs.TrySetCanceled(ct);
-        }, (tcs, cts.Token));
-#endif
-
         Pipe.Connected += onConnected;
-        await Task.WhenAll(StartAndConnectAsync(cts.Token), tcs.Task).ConfigureAwait(false);
-      }
-      catch (OperationCanceledException ex) when (ex.CancellationToken == cts.Token)
-      {
-        tcs.TrySetException(ex);
-        if (cancellationToken.IsCancellationRequested)
-        {
-          throw;
-        }
-        else
-        {
-          throw new TimeoutException("Timeout expired", ex);
-        }
-      }
-      catch (Exception e)
-      {
-        tcs.TrySetException(e);
-        throw;
+        await StartAndConnectAsync(cts.Token).ConfigureAwait(false);
       }
       finally
       {
-        ctr.Dispose();
-        if (!tcs.Task.IsCompleted)
-          tcs.TrySetException(new InvalidOperationException("Failed to finish gracefully."));
         Pipe.Connected -= onConnected;
       }
     }

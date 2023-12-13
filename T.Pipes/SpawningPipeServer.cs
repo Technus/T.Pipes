@@ -47,6 +47,11 @@ namespace T.Pipes
     private readonly Process _process;
 
     /// <summary>
+    /// Timeout in ms to let process terminate on it's own
+    /// </summary>
+    protected int ProcessKillTimeout = 10000;
+
+    /// <summary>
     /// Creates a proxy producer and target requester server
     /// </summary>
     /// <param name="pipe"></param>
@@ -56,33 +61,11 @@ namespace T.Pipes
       => _process = new Process { StartInfo = client };
 
     /// <summary>
-    /// starts the process and the pipe
-    /// </summary>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
-    public override async Task StartAsync(CancellationToken cancellationToken = default)
-    {
-      await StartProcess(cancellationToken).ConfigureAwait(false);
-      await base.StartAsync(cancellationToken).ConfigureAwait(false);
-    }
-
-    /// <summary>
-    /// stops the process and the pipe
-    /// </summary>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
-    public override async Task StopAsync(CancellationToken cancellationToken = default)
-    {
-      await base.StopAsync(cancellationToken).ConfigureAwait(false);
-      await StopProcess(cancellationToken).ConfigureAwait(false);
-    }
-
-    /// <summary>
     /// Starts the client process
     /// </summary>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    protected async Task StartProcess(CancellationToken cancellationToken = default)
+    public async Task StartProcess(CancellationToken cancellationToken = default)
     {
       await StopProcess(cancellationToken).ConfigureAwait(false);
       await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
@@ -101,10 +84,10 @@ namespace T.Pipes
     /// </summary>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    protected async Task StopProcess(CancellationToken cancellationToken = default)
+    public async Task StopProcess(CancellationToken cancellationToken = default)
     {
-      using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-      cts.CancelAfter(10000);
+      using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, LifetimeCancellation);
+      cts.CancelAfter(ProcessKillTimeout);
       await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
       var closeSent = false;
       try
@@ -118,33 +101,22 @@ namespace T.Pipes
 #if NET5_0_OR_GREATER
         await _process.WaitForExitAsync(cts.Token).ConfigureAwait(false);
 #else
-        var timeout = 10;
+        var timeout = 1;
         while (!_process.WaitForExit(timeout))
         {
           if (cts.Token.IsCancellationRequested)
-            throw new OperationCanceledException("Cancelled waiting for graceful close", cts.Token);
+            cts.Token.ThrowIfCancellationRequested();
           await Task.Yield();
           if (timeout < 100)
-            timeout += 10;
+            timeout += 1;
         }
 #endif
       }
-      catch (OperationCanceledException ex) when (ex.CancellationToken == cts.Token)
+      catch
       {
-        if (cancellationToken.IsCancellationRequested)
+        if (cancellationToken.IsCancellationRequested && !closeSent)
         {
-          if (closeSent)
-          {
-            try
-            {
-              _process.Kill();
-            }
-            catch
-            {
-              //Should be done anyway at this point
-            }
-          }
-          else throw;
+          throw;
         }
         else
         {
@@ -156,17 +128,6 @@ namespace T.Pipes
           {
             //Should be done anyway at this point
           }
-        }
-      }
-      catch
-      {
-        try
-        {
-          _process.Kill();
-        }
-        catch
-        {
-          //Should be done anyway at this point
         }
       }
       finally
