@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Globalization;
+using System.Runtime.Serialization;
 using System.Text;
 using H.Formatters;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
-using Newtonsoft.Json.Serialization;
 
 namespace T.Pipes
 {
@@ -13,13 +12,19 @@ namespace T.Pipes
   /// </summary>
   public class Formatter : FormatterBase
   {
+    /// <summary>
+    /// Boxing of C# primitives for serialization
+    /// </summary>
     public class PrimitiveConverter : JsonConverter
     {
+      /// <inheritdoc/>
       public override bool CanConvert(Type objectType) => true;
 
+      /// <inheritdoc/>
       public override object? ReadJson(JsonReader reader, Type objectType, object? existingValue, JsonSerializer serializer)
         => serializer.Deserialize(reader, objectType);
 
+      /// <inheritdoc/>
       public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
       {
         if (value is not null && value.GetType() is var type && type.IsPrimitive)
@@ -48,7 +53,7 @@ namespace T.Pipes
       TypeNameHandling = TypeNameHandling.All,
       TypeNameAssemblyFormatHandling = TypeNameAssemblyFormatHandling.Simple,
       ReferenceLoopHandling = ReferenceLoopHandling.Serialize,
-      Context = new System.Runtime.Serialization.StreamingContext(System.Runtime.Serialization.StreamingContextStates.CrossAppDomain),
+      Context = new StreamingContext(StreamingContextStates.CrossAppDomain),
     };
 
     /// <inheritdoc/>
