@@ -7,7 +7,7 @@ namespace T.Pipes.Test.Client
 {
   internal sealed class ClientCallback : SpawningPipeClientCallback
   {
-    public ClientCallback(H.Pipes.PipeClient<PipeMessage> pipe) : base(pipe, PipeConstants.ConnectionAwaitTimeMs)
+    public ClientCallback(H.Pipes.PipeClient<PipeMessage> pipe) : base(pipe, PipeConstants.ResponseTimeMs)
     {
     }
 
@@ -51,8 +51,7 @@ namespace T.Pipes.Test.Client
     {
     }
 
-    private Client(H.Pipes.PipeClient<PipeMessage> pipe) : base(pipe, new(pipe))
-    {
-    }
+    private Client(H.Pipes.PipeClient<PipeMessage> pipe) : base(pipe, new(pipe)) 
+      => Pipe.AutoReconnect = false;
   }
 }

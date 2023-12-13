@@ -10,18 +10,27 @@ namespace T.Pipes.Test.Server
       //Debugger.Launch();
 #endif
 
+
       await using (var server = new Server())
       {
-        await server.StartProcess();
+        await using var client = new SurrogateProcessWrapper(new(PipeConstants.ClientExeName));
+        await client.StartProcess();
+
         await server.StartAndConnectWithTimeoutAsync(PipeConstants.ConnectionAwaitTimeMs);
 
         await using (var item = await server.Callback.Create())
         {
           var target = item.Callback.AsIAbstract;
           var target1 = item.Callback.AsIAbstract_args_Int16_end_;
-
-          target1.GetT();
-          target.GetInt();
+          try
+          {
+            target1.GetT();
+            target.GetInt();
+          }
+          catch
+          {
+            //Ignores
+          }
         }
         await Task.Delay(1000);
       }

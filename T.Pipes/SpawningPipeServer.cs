@@ -15,9 +15,8 @@ namespace T.Pipes
     /// Creates a proxy producer and target requester server
     /// </summary>
     /// <param name="pipe"></param>
-    /// <param name="client"></param>
     /// <param name="callback"></param>
-    protected SpawningPipeServer(string pipe, ProcessStartInfo client, TCallback callback) : base(new(pipe, formatter: new Formatter()), client, callback)
+    protected SpawningPipeServer(string pipe, TCallback callback) : base(new(pipe, formatter: new Formatter()), callback)
     {
     }
 
@@ -25,9 +24,8 @@ namespace T.Pipes
     /// Creates a proxy producer and target requester server
     /// </summary>
     /// <param name="pipe"></param>
-    /// <param name="client"></param>
     /// <param name="callback"></param>
-    protected SpawningPipeServer(H.Pipes.PipeServer<PipeMessage> pipe, ProcessStartInfo client, TCallback callback) : base(pipe, client, callback)
+    protected SpawningPipeServer(H.Pipes.PipeServer<PipeMessage> pipe, TCallback callback) : base(pipe, callback)
     {
     }
   }
@@ -43,98 +41,16 @@ namespace T.Pipes
     where TCallback : SpawningPipeCallback<TPipe>
     where TPipe : H.Pipes.IPipeServer<PipeMessage>
   {
-    private readonly SemaphoreSlim _semaphore = new(1, 1);
-    private readonly Process _process;
-
-    /// <summary>
-    /// Timeout in ms to let process terminate on it's own
-    /// </summary>
-    protected int ProcessKillTimeout = 10000;
 
     /// <summary>
     /// Creates a proxy producer and target requester server
     /// </summary>
     /// <param name="pipe"></param>
-    /// <param name="client"></param>
     /// <param name="callback"></param>
-    protected SpawningPipeServer(TPipe pipe, ProcessStartInfo client, TCallback callback) : base(pipe, callback)
-      => _process = new Process { StartInfo = client };
-
-    /// <summary>
-    /// Starts the client process
-    /// </summary>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
-    public async Task StartProcess(CancellationToken cancellationToken = default)
-    {
-      await StopProcess(cancellationToken).ConfigureAwait(false);
-      await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
-      try
-      {
-        _process.Start();
-      }
-      finally
-      {
-        _semaphore.Release();
-      }
+    protected SpawningPipeServer(TPipe pipe, TCallback callback) : base(pipe, callback) 
+    { 
     }
 
-    /// <summary>
-    /// Stops the client process, kills after 10s
-    /// </summary>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
-    public async Task StopProcess(CancellationToken cancellationToken = default)
-    {
-      using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, LifetimeCancellation);
-      cts.CancelAfter(ProcessKillTimeout);
-      await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
-      var closeSent = false;
-      try
-      {
-        _process.Refresh();
-        if (_process.HasExited)
-          return;
-
-        closeSent = _process.CloseMainWindow();
-
-#if NET5_0_OR_GREATER
-        await _process.WaitForExitAsync(cts.Token).ConfigureAwait(false);
-#else
-        var timeout = 1;
-        while (!_process.WaitForExit(timeout))
-        {
-          if (cts.Token.IsCancellationRequested)
-            cts.Token.ThrowIfCancellationRequested();
-          await Task.Yield();
-          if (timeout < 100)
-            timeout += 1;
-        }
-#endif
-      }
-      catch
-      {
-        if (cancellationToken.IsCancellationRequested && !closeSent)
-        {
-          throw;
-        }
-        else
-        {
-          try
-          {
-            _process.Kill();
-          }
-          catch
-          {
-            //Should be done anyway at this point
-          }
-        }
-      }
-      finally
-      {
-        _semaphore.Release();
-      }
-    }
 
     /// <summary>
     /// Disposes <see cref="PipeConnectionBase{TPipe, TPacket, TCallback}.Pipe"/> and <see cref="PipeConnectionBase{TPipe, TPacket, TCallback}.Callback"/>
@@ -145,23 +61,7 @@ namespace T.Pipes
     {
       base.DisposeCore(disposing, includeAsync);
       if (includeAsync)
-      {
         Callback.Dispose();
-        _semaphore.Wait();
-      }
-      try
-      {
-        _process.Kill();
-      }
-      catch
-      {
-        //Should be done anyway at this point
-      }
-      finally
-      {
-        _process.Dispose();
-      }
-      _semaphore.Dispose();
     }
 
     /// <summary>
@@ -172,7 +72,6 @@ namespace T.Pipes
     {
       await base.DisposeAsyncCore(disposing).ConfigureAwait(false);
       await Callback.DisposeAsync().ConfigureAwait(false);
-      await _semaphore.WaitAsync().ConfigureAwait(false);
     }
   }
 }

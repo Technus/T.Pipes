@@ -7,7 +7,7 @@ namespace T.Pipes.Test.Server
 {
   internal sealed class ServerCallback : SpawningPipeServerCallback
   {
-    public ServerCallback(H.Pipes.PipeServer<PipeMessage> pipe) : base(pipe, PipeConstants.ConnectionAwaitTimeMs)
+    public ServerCallback(H.Pipes.PipeServer<PipeMessage> pipe) : base(pipe, PipeConstants.ResponseTimeMs)
     {
     }
 
@@ -41,7 +41,7 @@ namespace T.Pipes.Test.Server
     {
     }
 
-    private Server(H.Pipes.PipeServer<PipeMessage> pipe) : base(pipe, new(PipeConstants.ClientExeName), new(pipe))
+    private Server(H.Pipes.PipeServer<PipeMessage> pipe) : base(pipe, new(pipe))
     {
     }
   }

@@ -13,8 +13,8 @@ namespace T.Pipes
     /// Creates Callback to handle Factorization of <see cref="IPipeDelegatingConnection{TMessage}"/>
     /// </summary>
     /// <param name="pipe"></param>
-    /// <param name="timeoutMs"></param>
-    protected SpawningPipeServerCallback(H.Pipes.PipeServer<PipeMessage> pipe, int timeoutMs) : base(pipe, timeoutMs)
+    /// <param name="responseTimeoutMs"></param>
+    protected SpawningPipeServerCallback(H.Pipes.PipeServer<PipeMessage> pipe, int responseTimeoutMs = Timeout.Infinite) : base(pipe, responseTimeoutMs)
     {
     }
   }
@@ -27,8 +27,8 @@ namespace T.Pipes
     /// Creates Callback to handle Factorization of <see cref="IPipeDelegatingConnection{TMessage}"/>
     /// </summary>
     /// <param name="pipe"></param>
-    /// <param name="timeoutMs"></param>
-    protected SpawningPipeClientCallback(H.Pipes.PipeClient<PipeMessage> pipe, int timeoutMs) : base(pipe, timeoutMs)
+    /// <param name="responseTimeoutMs"></param>
+    protected SpawningPipeClientCallback(H.Pipes.PipeClient<PipeMessage> pipe, int responseTimeoutMs = Timeout.Infinite) : base(pipe, responseTimeoutMs)
     {
     }
   }
@@ -44,9 +44,9 @@ namespace T.Pipes
     /// Creates Callback to handle Factorization of <see cref="IPipeDelegatingConnection{TMessage}"/>
     /// </summary>
     /// <param name="pipe"></param>
-    /// <param name="timeoutMs"></param>
-    protected SpawningPipeCallback(TPipe pipe, int timeoutMs = Timeout.Infinite) : base(pipe, new()) 
-      => ResponseTimeoutMs = timeoutMs;
+    /// <param name="responseTimeoutMs"></param>
+    protected SpawningPipeCallback(TPipe pipe, int responseTimeoutMs = Timeout.Infinite) : base(pipe, new()) 
+      => ResponseTimeoutMs = responseTimeoutMs;
 
     /// <summary>
     /// The response await timeout should happen after that time

@@ -11,8 +11,9 @@ namespace T.Pipes.Test.Client
     : DelegatingPipeClientCallback<TTarget, DelegatingCallback<TTarget>>
     where TTarget : IAbstract, IAbstract<short>
   {
-    public DelegatingCallback(H.Pipes.PipeClient<PipeMessage> pipe, TTarget target) : base(pipe, target)
-    { }
+    public DelegatingCallback(H.Pipes.PipeClient<PipeMessage> pipe, TTarget target) : base(pipe, target, PipeConstants.ResponseTimeMs)
+    { 
+    }
 
     public override void OnMessageReceived(PipeMessage message)
     {
