@@ -129,7 +129,11 @@ namespace T.Pipes.Abstractions
       if (was == (int)DisposeState.New)
       {
         _lifetimeCancellationRegistration.Dispose();
+#if NET8_0_OR_GREATER
+        await LifetimeCancellationSource.CancelAsync().ConfigureAwait(false);
+#else
         LifetimeCancellationSource.Cancel();
+#endif
 
         await DisposeAsyncCore(disposing: true).ConfigureAwait(false);
         DisposeCore(disposing: true, includeAsync: false);
