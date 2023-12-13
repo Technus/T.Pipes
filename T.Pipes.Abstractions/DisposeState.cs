@@ -37,6 +37,12 @@ namespace T.Pipes.Abstractions
     /// Finalize
     /// </summary>
     Finalize = 0x04,
+
+    /// <summary>
+    /// Any Dispose/Async/Finalize was called
+    /// </summary>
+    AnyDispose = Sync | Async | Finalize,
+
     /// <summary>
     /// Cancel
     /// </summary>
