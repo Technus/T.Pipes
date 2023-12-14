@@ -45,6 +45,11 @@ namespace T.Pipes.Abstractions
     protected bool IsDisposed => _disposeState != (int)DisposeState.New;
 
     /// <summary>
+    /// Gets the current dispose state <see cref="IsDisposed"/> as a better alternative
+    /// </summary>
+    protected DisposeState DisposeState => (DisposeState)_disposeState;
+
+    /// <summary>
     /// Can be use to dispose on cancellation of <see cref="LifetimeCancellation"/>
     /// </summary>
     [DebuggerHidden]
@@ -62,7 +67,8 @@ namespace T.Pipes.Abstractions
         LifetimeCancellationSource.Dispose();
 
         GC.SuppressFinalize(this);
-        _disposeState = (int)DisposeState.Cancelled;
+
+        _disposeState &= ~(int)DisposeState.Busy;
       }
       else //Only one cancellation allowed
         throw new ObjectDisposedException(GetType().Name, $"Cancelling, Previously was: {(DisposeState)was}");
@@ -85,10 +91,10 @@ namespace T.Pipes.Abstractions
 
         LifetimeCancellationSource.Dispose();
 
-        _disposeState = (int)DisposeState.Finalized;
+        _disposeState &= ~(int)DisposeState.Busy;
       }
       else if ((was & (int)DisposeState.AnyDispose) == 0) //Only once more
-        _disposeState |= (int)DisposeState.Finalize;
+        _disposeState |= (int)DisposeState.FinalizeAfterCancel;
       else
         throw new ObjectDisposedException(GetType().Name, $"Finalizing, Previously was: {(DisposeState)was}");
     }
@@ -110,10 +116,11 @@ namespace T.Pipes.Abstractions
         LifetimeCancellationSource.Dispose();
 
         GC.SuppressFinalize(this);
-        _disposeState = (int)DisposeState.Disposed;
+
+        _disposeState &= ~(int)DisposeState.Busy;
       }
       else if ((was & (int)DisposeState.AnyDispose) == 0) //Only once more
-        _disposeState |= (int)DisposeState.Sync;
+        _disposeState |= (int)DisposeState.SyncAfterCancel;
       else
         throw new ObjectDisposedException(GetType().Name, $"Disposing, Previously was: {(DisposeState)was}");
     }
@@ -141,10 +148,11 @@ namespace T.Pipes.Abstractions
         LifetimeCancellationSource.Dispose();
 
         GC.SuppressFinalize(this);
-        _disposeState = (int)DisposeState.DisposedAsync;
+
+        _disposeState &= ~(int)DisposeState.Busy;
       }
       else if ((was & (int)DisposeState.AnyDispose) == 0) //Only once more
-        _disposeState |= (int)DisposeState.Async;
+        _disposeState |= (int)DisposeState.AsyncAfterCancel;
       else
         throw new ObjectDisposedException(GetType().Name, $"Async Disposing, Previously was: {(DisposeState)was}");
     }

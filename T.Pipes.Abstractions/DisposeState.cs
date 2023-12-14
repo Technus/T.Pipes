@@ -1,10 +1,14 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace T.Pipes.Abstractions
 {
   /// <summary>
   /// Possible object states
   /// </summary>
+  [SuppressMessage("Minor Code Smell",
+    "S1939:Inheritance list should not be redundant",
+    Justification = "Explicit int as it is used like ref int/int in most cases.")]
   [Flags]
   public enum DisposeState : int
   {
@@ -26,42 +30,61 @@ namespace T.Pipes.Abstractions
     Busy = 0x20,
 
     /// <summary>
-    /// Sync
+    /// <see cref="IDisposable.Dispose"/>
     /// </summary>
     Sync = 0x01,
     /// <summary>
-    /// Async
+    /// <see cref="IAsyncDisposable.DisposeAsync"/>
     /// </summary>
     Async = 0x02,
     /// <summary>
-    /// Finalize
+    /// <see cref="object.Finalize"/> descendants
     /// </summary>
     Finalize = 0x04,
 
     /// <summary>
-    /// Any Dispose/Async/Finalize was called
-    /// </summary>
-    AnyDispose = Sync | Async | Finalize,
-
-    /// <summary>
-    /// Cancel
+    /// <see cref="BaseClass.LifetimeCancellation"/>
     /// </summary>
     Cancel = 0x08,
 
     /// <summary>
-    /// Finished Disposing no need for finalization
+    /// <see cref="IDisposable.Dispose"/> after cancelling <see cref="BaseClass.LifetimeCancellation"/>
+    /// </summary>
+    SyncAfterCancel = 0x100,
+    /// <summary>
+    /// <see cref="IAsyncDisposable.DisposeAsync"/> after cancelling <see cref="BaseClass.LifetimeCancellation"/>
+    /// </summary>
+    AsyncAfterCancel = 0x200,
+    /// <summary>
+    /// <see cref="object.Finalize"/> descendants after cancelling <see cref="BaseClass.LifetimeCancellation"/>
+    /// </summary>
+    FinalizeAfterCancel = 0x400,
+
+    /// <summary>
+    /// Any Dispose/Async/Finalize was called after cancelling <see cref="BaseClass.LifetimeCancellation"/>
+    /// </summary>
+    AnyDispose = SyncAfterCancel | AsyncAfterCancel | FinalizeAfterCancel | Sync | Async | Finalize,
+
+    /// <summary>
+    /// <see cref="BaseClass.LifetimeCancellation"/> was called after cancelling <see cref="BaseClass.LifetimeCancellation"/>
+    /// Should be unused...
+    /// </summary>
+    CancelAfterCancel = 0x800,
+
+    /// <summary>
+    /// Finished <see cref="IDisposable.Dispose"/> no need for finalization
     /// </summary>
     Disposed = Old | Sync,
     /// <summary>
-    /// Disposing
+    /// <see cref="IDisposable.Dispose"/> was called no need for finalization
     /// </summary>
     Disposing = Busy | Disposed,
     /// <summary>
-    /// Finished Async Disposing no need for finalization
+    /// Finished <see cref="IAsyncDisposable.DisposeAsync"/> no need for finalization
     /// </summary>
     DisposedAsync = Old | Async,
     /// <summary>
-    /// Async Disposing
+    /// <see cref="IAsyncDisposable.DisposeAsync"/> was called no need for finalization
     /// </summary>
     DisposingAsync = Busy | DisposedAsync,
     /// <summary>
@@ -73,11 +96,11 @@ namespace T.Pipes.Abstractions
     /// </summary>
     Finalizing = Busy | Finalized,
     /// <summary>
-    /// Was Finalized instead of disposing
+    /// Cancelled <see cref="BaseClass.LifetimeCancellation"/> instead of disposing no need for finalization
     /// </summary>
     Cancelled = Old | Cancel,
     /// <summary>
-    /// Finalizer was called
+    /// Finished cancelling <see cref="BaseClass.LifetimeCancellation"/> no need for finalization
     /// </summary>
     Cancelling = Busy | Cancelled,
   }
