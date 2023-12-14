@@ -151,7 +151,7 @@ namespace T.Pipes
         }
         finally
         {
-          await Task.Delay(20).ConfigureAwait(false);
+          await Task.Delay(20, cts.Token).ConfigureAwait(false);
         }
       }
       cts.Token.ThrowIfCancellationRequested();
