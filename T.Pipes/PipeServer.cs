@@ -100,10 +100,8 @@ namespace T.Pipes
     /// <inheritdoc/>
     public override async Task StartAsync(CancellationToken cancellationToken = default)
     {
-      if (cancellationToken.IsCancellationRequested)
-        await Task.FromCanceled(cancellationToken).ConfigureAwait(false);
-      if (LifetimeCancellation.IsCancellationRequested)
-        await Task.FromCanceled(LifetimeCancellation).ConfigureAwait(false);
+      cancellationToken.ThrowIfCancellationRequested();
+      LifetimeCancellation.ThrowIfCancellationRequested();
 
       using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, LifetimeCancellation);
       try
@@ -135,10 +133,8 @@ namespace T.Pipes
     /// <returns></returns>
     public override async Task StartAndConnectAsync(CancellationToken cancellationToken = default)
     {
-      if (cancellationToken.IsCancellationRequested)
-        await Task.FromCanceled(cancellationToken).ConfigureAwait(false);
-      if (LifetimeCancellation.IsCancellationRequested)
-        await Task.FromCanceled(LifetimeCancellation).ConfigureAwait(false);
+      cancellationToken.ThrowIfCancellationRequested();
+      LifetimeCancellation.ThrowIfCancellationRequested();
 
       using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, LifetimeCancellation);
 
@@ -200,10 +196,8 @@ namespace T.Pipes
     /// <inheritdoc/>
     protected override async Task StartAndConnectWithTimeoutInternalAsync(int timeoutMs = 1000, CancellationToken cancellationToken = default)
     {
-      if (cancellationToken.IsCancellationRequested)
-        await Task.FromCanceled(cancellationToken).ConfigureAwait(false);
-      if (LifetimeCancellation.IsCancellationRequested)
-        await Task.FromCanceled(LifetimeCancellation).ConfigureAwait(false);
+      cancellationToken.ThrowIfCancellationRequested();
+      LifetimeCancellation.ThrowIfCancellationRequested();
 
       using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
       cts.CancelAfter(timeoutMs);

@@ -83,8 +83,9 @@ namespace T.Pipes
     /// <inheritdoc/>
     public virtual async Task WriteAsync(TPacket value, CancellationToken cancellationToken = default)
     {
-      if(LifetimeCancellation.IsCancellationRequested)
-        await Task.FromCanceled(LifetimeCancellation);
+      cancellationToken.ThrowIfCancellationRequested();
+      LifetimeCancellation.ThrowIfCancellationRequested();
+
       using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, LifetimeCancellation);
       await Pipe.WriteAsync(value, cts.Token).ConfigureAwait(false);
       Callback.OnMessageSent(value);

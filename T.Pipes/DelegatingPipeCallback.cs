@@ -431,6 +431,7 @@ namespace T.Pipes
         cts.CancelAfter(ResponseTimeoutMs);
       try
       {
+        cts.Token.ThrowIfCancellationRequested();
         await function.Invoke((TCallback)this, command, cts.Token).ConfigureAwait(false);
       }
       catch (OperationCanceledException ex)
@@ -537,8 +538,9 @@ namespace T.Pipes
     /// <remarks>do not write to the pipe directly, use that instead, (or the Wrapping Client/Server)</remarks>
     public async Task WriteAsync(TPacket message, CancellationToken cancellationToken = default)
     {
-      if (LifetimeCancellation.IsCancellationRequested)
-        await Task.FromCanceled(LifetimeCancellation);
+      cancellationToken.ThrowIfCancellationRequested();
+      LifetimeCancellation.ThrowIfCancellationRequested();
+
       using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, LifetimeCancellation);
       if (ResponseTimeoutMs == 0)
         cts.Cancel();

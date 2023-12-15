@@ -73,8 +73,7 @@ namespace T.Pipes
         var timeout = 1;
         while (!_process.WaitForExit(timeout))
         {
-          if (cts.Token.IsCancellationRequested)
-            cts.Token.ThrowIfCancellationRequested();
+          cts.Token.ThrowIfCancellationRequested();
           await Task.Yield();
           if (timeout < 100)
             timeout += 1;
