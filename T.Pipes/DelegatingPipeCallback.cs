@@ -435,7 +435,7 @@ namespace T.Pipes
       }
       catch (OperationCanceledException ex)
       {
-        if(cts.Token.IsCancellationRequested)//Is parent is cancelled it should be a NoResponseException
+        if(cts.Token.IsCancellationRequested)//If parent is cancelled it should be a NoResponseException
           await WriteAsync(PacketFactory.CreateResponseFailure(command, new NoResponseException($"The Function {command.Command} was Cancelled externally", ex))).ConfigureAwait(false);
         else
           await WriteAsync(PacketFactory.CreateResponseCancellation(command, ex)).ConfigureAwait(false);
