@@ -236,7 +236,7 @@ namespace T.Pipes
       _semaphore.Wait();
       if (_responses.Count > 0)
       {
-        var exception = new NoResponseException("Connected", new InvalidOperationException("Connected while operations were pending"));
+        var exception = new NoResponseException(connection, new InvalidOperationException("Connected while operations were pending"));
         foreach (var item in _responses)
         {
           item.Value.TrySetException(exception);
@@ -252,7 +252,7 @@ namespace T.Pipes
       _semaphore.Wait();
       if (_responses.Count > 0)
       {
-        var exception = new NoResponseException("Disconnected", new InvalidOperationException("Disconnected while operations were pending"));
+        var exception = new NoResponseException(connection, new InvalidOperationException("Disconnected while operations were pending"));
         foreach (var item in _responses)
         {
           item.Value.TrySetException(exception);
@@ -404,7 +404,7 @@ namespace T.Pipes
         {
           OnCommandFunction(command, function).Wait();
         }
-        catch (AggregateException ae) when (ae.InnerExceptions.Count == 1)
+        catch (AggregateException ae) when (ae.InnerExceptions.Count == 1)//unpacks the exception once
         {
           throw ae.InnerException!;
         }
@@ -424,14 +424,21 @@ namespace T.Pipes
     /// <returns></returns>
     protected virtual async Task OnCommandFunction(TPacket command, CommandFunction function, CancellationToken cancellationToken = default)
     {
+      using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, LifetimeCancellation);
+      if (ResponseTimeoutMs == 0)
+        cts.Cancel();
+      else if (ResponseTimeoutMs > 0)
+        cts.CancelAfter(ResponseTimeoutMs);
       try
       {
-        using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, LifetimeCancellation);
-        if (ResponseTimeoutMs == 0)
-          cts.Cancel();
-        else if (ResponseTimeoutMs > 0)
-          cts.CancelAfter(ResponseTimeoutMs);
         await function.Invoke((TCallback)this, command, cts.Token).ConfigureAwait(false);
+      }
+      catch (OperationCanceledException ex)
+      {
+        if(cts.Token.IsCancellationRequested)//Is parent is cancelled it should be a NoResponseException
+          await WriteAsync(PacketFactory.CreateResponseFailure(command, new NoResponseException($"The Function {command.Command} was Cancelled externally", ex))).ConfigureAwait(false);
+        else
+          await WriteAsync(PacketFactory.CreateResponseCancellation(command, ex)).ConfigureAwait(false);
       }
       catch (Exception e)
       {
