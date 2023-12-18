@@ -5,7 +5,7 @@ namespace T.Pipes
   /// <inheritdoc/>
   public abstract class SpawningPipeServer<TCallback> 
     : SpawningPipeServer<H.Pipes.PipeServer<PipeMessage>, TCallback>
-    where TCallback : SpawningPipeServerCallback
+    where TCallback : SpawningPipeCallback
   {
     /// <summary>
     /// Creates a proxy producer and target requester server
@@ -34,7 +34,7 @@ namespace T.Pipes
   /// <typeparam name="TCallback"></typeparam>
   public abstract class SpawningPipeServer<TPipe, TCallback> 
     : PipeServer<TPipe, PipeMessage, TCallback>
-    where TCallback : SpawningPipeCallback<TPipe>
+    where TCallback : SpawningPipeCallback
     where TPipe : H.Pipes.IPipeServer<PipeMessage>
   {
 

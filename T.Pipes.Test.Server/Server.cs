@@ -5,9 +5,9 @@ using T.Pipes.Test.Abstractions;
 
 namespace T.Pipes.Test.Server
 {
-  internal sealed class ServerCallback : SpawningPipeServerCallback
+  internal sealed class ServerCallback : SpawningPipeCallback
   {
-    public ServerCallback(H.Pipes.PipeServer<PipeMessage> pipe) : base(pipe, PipeConstants.ResponseTimeMs)
+    public ServerCallback() : base(PipeConstants.ResponseTimeMs)
     {
     }
 
@@ -41,7 +41,7 @@ namespace T.Pipes.Test.Server
     {
     }
 
-    private Server(H.Pipes.PipeServer<PipeMessage> pipe) : base(pipe, new(pipe))
+    private Server(H.Pipes.PipeServer<PipeMessage> pipe) : base(pipe, new())
     {
     }
   }

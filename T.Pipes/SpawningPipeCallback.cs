@@ -5,47 +5,17 @@ using T.Pipes.Abstractions;
 
 namespace T.Pipes
 {
-  /// <inheritdoc/>
-  public abstract class SpawningPipeServerCallback
-    : SpawningPipeCallback<H.Pipes.PipeServer<PipeMessage>>
-  {
-    /// <summary>
-    /// Creates Callback to handle Factorization of <see cref="IPipeDelegatingConnection{TMessage}"/>
-    /// </summary>
-    /// <param name="pipe"></param>
-    /// <param name="responseTimeoutMs"></param>
-    protected SpawningPipeServerCallback(H.Pipes.PipeServer<PipeMessage> pipe, int responseTimeoutMs = Timeout.Infinite) : base(pipe, responseTimeoutMs)
-    {
-    }
-  }
-
-  /// <inheritdoc/>
-  public abstract class SpawningPipeClientCallback
-    : SpawningPipeCallback<H.Pipes.PipeClient<PipeMessage>>
-  {
-    /// <summary>
-    /// Creates Callback to handle Factorization of <see cref="IPipeDelegatingConnection{TMessage}"/>
-    /// </summary>
-    /// <param name="pipe"></param>
-    /// <param name="responseTimeoutMs"></param>
-    protected SpawningPipeClientCallback(H.Pipes.PipeClient<PipeMessage> pipe, int responseTimeoutMs = Timeout.Infinite) : base(pipe, responseTimeoutMs)
-    {
-    }
-  }
-
   /// <summary>
   /// Callback to handle Factorization of <see cref="IPipeDelegatingConnection{TMessage}"/>
   /// </summary>
-  public abstract class SpawningPipeCallback<TPipe>
-    : PipeCallbackBase<TPipe, PipeMessage, PipeMessageFactory, SpawningPipeCallback<TPipe>>
-    where TPipe : H.Pipes.IPipeConnection<PipeMessage>
+  public abstract class SpawningPipeCallback
+    : PipeCallbackBase<PipeMessage, PipeMessageFactory, SpawningPipeCallback>
   {
     /// <summary>
     /// Creates Callback to handle Factorization of <see cref="IPipeDelegatingConnection{TMessage}"/>
     /// </summary>
-    /// <param name="pipe"></param>
     /// <param name="responseTimeoutMs"></param>
-    protected SpawningPipeCallback(TPipe pipe, int responseTimeoutMs = Timeout.Infinite) : base(pipe, new()) 
+    protected SpawningPipeCallback(int responseTimeoutMs = Timeout.Infinite) : base(new()) 
       => ResponseTimeoutMs = responseTimeoutMs;
 
     /// <summary>
@@ -70,8 +40,7 @@ namespace T.Pipes
         cts.Cancel();
       else if (ResponseTimeoutMs > 0)
         cts.CancelAfter(ResponseTimeoutMs);
-      await Pipe.WriteAsync(message, cts.Token).ConfigureAwait(false);
-      OnMessageSent(message);
+      await Connection.WriteAsync(message, cts.Token).ConfigureAwait(false);
     }
 
 

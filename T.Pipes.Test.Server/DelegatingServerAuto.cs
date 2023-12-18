@@ -9,7 +9,7 @@ namespace T.Pipes.Test.Server
   [PipeServe(typeof(IAbstract<short>))]
   internal sealed partial class DelegatingCallback : DelegatingPipeServerCallback<DelegatingCallback>
   {
-    public DelegatingCallback(H.Pipes.PipeServer<PipeMessage> pipe) : base(pipe, PipeConstants.ResponseTimeMs)
+    public DelegatingCallback() : base(PipeConstants.ResponseTimeMs)
     {
     }
 
@@ -32,7 +32,7 @@ namespace T.Pipes.Test.Server
     {
     }
 
-    public DelegatingServerAuto(H.Pipes.PipeServer<PipeMessage> pipe) : base(pipe, new(pipe))
+    public DelegatingServerAuto(H.Pipes.PipeServer<PipeMessage> pipe) : base(pipe, new())
     {
     }
   }

@@ -10,7 +10,7 @@ namespace T.Pipes
   /// <typeparam name="TTargetAndCallback">both proxy target and callback, this will satisfy that requirement</typeparam>
   public abstract class DelegatingPipeServer<TTargetAndCallback>
     : DelegatingPipeServer<TTargetAndCallback, TTargetAndCallback>
-    where TTargetAndCallback : DelegatingPipeCallback<H.Pipes.PipeServer<PipeMessage>, PipeMessage, PipeMessageFactory, TTargetAndCallback, TTargetAndCallback>, IDisposable
+    where TTargetAndCallback : DelegatingPipeCallback<PipeMessage, PipeMessageFactory, TTargetAndCallback, TTargetAndCallback>, IDisposable
   {
     /// <summary>
     /// Creates the pipe server with a specified callback and pipe
@@ -35,7 +35,7 @@ namespace T.Pipes
   public abstract class DelegatingPipeServer<TTarget, TCallback>
     : DelegatingPipeServer<H.Pipes.PipeServer<PipeMessage>, TTarget, TCallback>
     where TTarget : IDisposable
-    where TCallback : DelegatingPipeCallback<H.Pipes.PipeServer<PipeMessage>, PipeMessage, PipeMessageFactory, TTarget, TCallback>
+    where TCallback : DelegatingPipeCallback<PipeMessage, PipeMessageFactory, TTarget, TCallback>
   {
     /// <summary>
     /// Creates the pipe server with a specified callback and pipe
@@ -61,7 +61,7 @@ namespace T.Pipes
     : DelegatingPipeServer<TPipe, PipeMessage, PipeMessageFactory, TTarget, TCallback>
     where TPipe : H.Pipes.IPipeServer<PipeMessage>
     where TTarget : IDisposable
-    where TCallback : DelegatingPipeCallback<TPipe, PipeMessage, PipeMessageFactory, TTarget, TCallback>
+    where TCallback : DelegatingPipeCallback<PipeMessage, PipeMessageFactory, TTarget, TCallback>
   {
     /// <summary>
     /// Creates the pipe server with a specified callback and pipe
@@ -87,10 +87,10 @@ namespace T.Pipes
     where TPacket : IPipeMessage
     where TTarget : IDisposable
     where TPacketFactory : IPipeMessageFactory<TPacket>
-    where TCallback : DelegatingPipeCallback<TPipe, TPacket, TPacketFactory, TTarget, TCallback>
+    where TCallback : DelegatingPipeCallback<TPacket, TPacketFactory, TTarget, TCallback>
   {
     /// <summary>
-    /// <see cref="DelegatingPipeCallback{TPipe, TPacket, TPacketFactory, TTarget, TCallback}.Target"/>
+    /// <see cref="DelegatingPipeCallback{TPacket, TPacketFactory, TTarget, TCallback}.Target"/>
     /// </summary>
     public TTarget Target => Callback.Target;
 

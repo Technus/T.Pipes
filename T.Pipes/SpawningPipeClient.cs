@@ -5,7 +5,7 @@ namespace T.Pipes
   /// <inheritdoc/>
   public abstract class SpawningPipeClient<TCallback> 
     : SpawningPipeClient<H.Pipes.PipeClient<PipeMessage>, TCallback>
-    where TCallback : SpawningPipeClientCallback
+    where TCallback : SpawningPipeCallback
   {
     /// <summary>
     /// Creates the Target implementation spawning code
@@ -34,7 +34,7 @@ namespace T.Pipes
   /// <typeparam name="TCallback"></typeparam>
   public abstract class SpawningPipeClient<TPipe, TCallback> 
     : PipeClient<TPipe, PipeMessage, TCallback>
-    where TCallback : SpawningPipeCallback<TPipe>
+    where TCallback : SpawningPipeCallback
     where TPipe : H.Pipes.IPipeClient<PipeMessage>
   {
     /// <summary>

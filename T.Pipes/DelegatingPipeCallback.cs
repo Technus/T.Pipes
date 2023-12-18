@@ -13,17 +13,16 @@ namespace T.Pipes
   /// <typeparam name="TTarget">target to operate on</typeparam>
   /// <typeparam name="TCallback">the final implementing type</typeparam>
   public abstract class DelegatingPipeClientCallback<TTarget, TCallback>
-    : DelegatingPipeCallback<H.Pipes.PipeClient<PipeMessage>, TTarget, TCallback>
+    : DelegatingPipeCallback<TTarget, TCallback>
     where TTarget : IDisposable
     where TCallback : DelegatingPipeClientCallback<TTarget, TCallback>
   {
     /// <summary>
     /// Creates the callback, must be done with the same pipe as in the pipe connection holding it.
     /// </summary>
-    /// <param name="pipe">the same pipe as in the pipe connection holding it</param>
     /// <param name="target">the actual implementation of <typeparamref name="TTarget"/></param>
     /// <param name="responseTimeoutMs"></param>
-    protected DelegatingPipeClientCallback(H.Pipes.PipeClient<PipeMessage> pipe, TTarget target, int responseTimeoutMs = Timeout.Infinite) : base(pipe, target, responseTimeoutMs)
+    protected DelegatingPipeClientCallback(TTarget target, int responseTimeoutMs = Timeout.Infinite) : base(target, responseTimeoutMs)
     {
     }
   }
@@ -34,15 +33,14 @@ namespace T.Pipes
   /// </summary>
   /// <typeparam name="TTargetAndCallback">target to operate on and the callback at the same time</typeparam>
   public abstract class DelegatingPipeServerCallback<TTargetAndCallback>
-    : DelegatingPipeCallback<H.Pipes.PipeServer<PipeMessage>, TTargetAndCallback, TTargetAndCallback>
-    where TTargetAndCallback : DelegatingPipeCallback<H.Pipes.PipeServer<PipeMessage>, PipeMessage, PipeMessageFactory, TTargetAndCallback, TTargetAndCallback>, IDisposable
+    : DelegatingPipeCallback<TTargetAndCallback, TTargetAndCallback>
+    where TTargetAndCallback : DelegatingPipeCallback<PipeMessage, PipeMessageFactory, TTargetAndCallback, TTargetAndCallback>, IDisposable
   {
     /// <summary>
     /// Creates the callback, must be done with the same pipe as in the pipe connection holding it.
     /// </summary>
-    /// <param name="pipe">the same pipe as in the pipe connection holding it</param>
     /// <param name="responseTimeoutMs"></param>
-    protected DelegatingPipeServerCallback(H.Pipes.PipeServer<PipeMessage> pipe, int responseTimeoutMs = Timeout.Infinite) : base(pipe, responseTimeoutMs)
+    protected DelegatingPipeServerCallback(int responseTimeoutMs = Timeout.Infinite) : base(responseTimeoutMs)
     {
     }
   }
@@ -54,43 +52,39 @@ namespace T.Pipes
   /// <typeparam name="TTarget">target to operate on</typeparam>
   /// <typeparam name="TCallback">the final implementing type</typeparam>
   public abstract class DelegatingPipeServerCallback<TTarget, TCallback>
-    : DelegatingPipeCallback<H.Pipes.PipeServer<PipeMessage>, TTarget, TCallback>
+    : DelegatingPipeCallback<TTarget, TCallback>
     where TTarget : IDisposable
-    where TCallback : DelegatingPipeCallback<H.Pipes.PipeServer<PipeMessage>, PipeMessage, PipeMessageFactory, TTarget, TCallback>
+    where TCallback : DelegatingPipeCallback<PipeMessage, PipeMessageFactory, TTarget, TCallback>
   {
     /// <summary>
     /// Creates the callback, must be done with the same pipe as in the pipe connection holding it.
     /// </summary>
-    /// <param name="pipe">the same pipe as in the pipe connection holding it</param>
     /// <param name="responseTimeoutMs"></param>
-    protected DelegatingPipeServerCallback(H.Pipes.PipeServer<PipeMessage> pipe, int responseTimeoutMs = Timeout.Infinite) : base(pipe, responseTimeoutMs)
+    protected DelegatingPipeServerCallback(int responseTimeoutMs = Timeout.Infinite) : base(responseTimeoutMs)
     {
     }
   }
 
   /// <inheritdoc/>
-  public abstract class DelegatingPipeCallback<TPipe, TTarget, TCallback>
-    : DelegatingPipeCallback<TPipe, PipeMessage, PipeMessageFactory, TTarget, TCallback>
+  public abstract class DelegatingPipeCallback<TTarget, TCallback>
+    : DelegatingPipeCallback<PipeMessage, PipeMessageFactory, TTarget, TCallback>
     where TTarget : IDisposable
-    where TPipe : H.Pipes.IPipeConnection<PipeMessage>
-    where TCallback : DelegatingPipeCallback<TPipe, PipeMessage, PipeMessageFactory, TTarget, TCallback>
+    where TCallback : DelegatingPipeCallback<PipeMessage, PipeMessageFactory, TTarget, TCallback>
   {
     /// <summary>
     /// Creates the callback, must be done with the same pipe as in the pipe connection holding it.
     /// </summary>
-    /// <param name="pipe">the same pipe as in the pipe connection holding it</param>
     /// <param name="responseTimeoutMs"></param>
-    protected DelegatingPipeCallback(TPipe pipe, int responseTimeoutMs = Timeout.Infinite) : base(pipe, new(), responseTimeoutMs)
+    protected DelegatingPipeCallback(int responseTimeoutMs = Timeout.Infinite) : base(new(), responseTimeoutMs)
     {
     }
 
     /// <summary>
     /// Creates the callback, must be done with the same pipe as in the pipe connection holding it.
     /// </summary>
-    /// <param name="pipe">the same pipe as in the pipe connection holding it</param>
     /// <param name="target">the actual implementation of <typeparamref name="TTarget"/></param>
     /// <param name="responseTimeoutMs"></param>
-    protected DelegatingPipeCallback(TPipe pipe, TTarget target, int responseTimeoutMs = Timeout.Infinite) : base(pipe, new(), target, responseTimeoutMs)
+    protected DelegatingPipeCallback(TTarget target, int responseTimeoutMs = Timeout.Infinite) : base(new(), target, responseTimeoutMs)
     {
     }
   }
@@ -100,18 +94,16 @@ namespace T.Pipes
   /// <see cref="DelegatingPipeServer{TPipe, TPacket, TPacketFactory, TTarget, TCallback}"/><br/>
   /// <see cref="DelegatingPipeClient{TPipe, TPacket, TPacketFactory, TTarget, TCallback}"/>
   /// </summary>
-  /// <typeparam name="TPipe"><see cref="H.Pipes.IPipeConnection{TPacket}"/></typeparam>
   /// <typeparam name="TPacket"><see cref="IPipeMessage"/></typeparam>
   /// <typeparam name="TPacketFactory"><see cref="IPipeMessageFactory{TPacket}"/></typeparam>
   /// <typeparam name="TTarget">target to operate on</typeparam>
   /// <typeparam name="TCallback">the final implementing type</typeparam>
-  public abstract class DelegatingPipeCallback<TPipe, TPacket, TPacketFactory, TTarget, TCallback>
-    : PipeCallbackBase<TPipe, TPacket, TPacketFactory, TCallback>, IPipeDelegatingCallback<TPacket>
+  public abstract class DelegatingPipeCallback<TPacket, TPacketFactory, TTarget, TCallback>
+    : PipeCallbackBase<TPacket, TPacketFactory, TCallback>, IPipeDelegatingCallback<TPacket>
     where TTarget : IDisposable
-    where TPipe : H.Pipes.IPipeConnection<TPacket>
     where TPacket : IPipeMessage
     where TPacketFactory : IPipeMessageFactory<TPacket>
-    where TCallback : DelegatingPipeCallback<TPipe, TPacket, TPacketFactory, TTarget, TCallback>
+    where TCallback : DelegatingPipeCallback<TPacket, TPacketFactory, TTarget, TCallback>
   {
     /// <summary>
     /// A Command function definition
@@ -129,11 +121,10 @@ namespace T.Pipes
     /// <summary>
     /// Creates the callback, must be done with the same pipe as in the pipe connection holding it.
     /// </summary>
-    /// <param name="pipe">the same pipe as in the pipe connection holding it</param>
     /// <param name="packetFactory">to create <typeparamref name="TPacket"/></param>
     /// <param name="responseTimeoutMs">response timeout in ms</param>
     /// <exception cref="InvalidOperationException">when the this is not a valid <typeparamref name="TTarget"/> or null</exception>
-    protected DelegatingPipeCallback(TPipe pipe, TPacketFactory packetFactory, int responseTimeoutMs = Timeout.Infinite) : base(pipe, packetFactory)
+    protected DelegatingPipeCallback(TPacketFactory packetFactory, int responseTimeoutMs = Timeout.Infinite) : base(packetFactory)
     {
       ResponseTimeoutMs = responseTimeoutMs;
       if (this is TTarget tt)
@@ -150,12 +141,11 @@ namespace T.Pipes
     /// <summary>
     /// Creates the callback, must be done with the same pipe as in the pipe connection holding it.
     /// </summary>
-    /// <param name="pipe">the same pipe as in the pipe connection holding it</param>
     /// <param name="packetFactory">to create <typeparamref name="TPacket"/></param>
     /// <param name="target">the actual implementation of <typeparamref name="TTarget"/></param>
     /// <param name="responseTimeoutMs">response timeout in ms</param>
     /// <exception cref="InvalidOperationException">when <paramref name="target"/> is null</exception>
-    protected DelegatingPipeCallback(TPipe pipe, TPacketFactory packetFactory, TTarget target, int responseTimeoutMs = Timeout.Infinite) : base(pipe, packetFactory)
+    protected DelegatingPipeCallback(TPacketFactory packetFactory, TTarget target, int responseTimeoutMs = Timeout.Infinite) : base(packetFactory)
     {
       ResponseTimeoutMs = responseTimeoutMs;
       if (target is not null)
@@ -263,7 +253,7 @@ namespace T.Pipes
     }
 
     /// <summary>
-    /// Disposes own resources, not the <see cref="PipeCallbackBase{TPipe, TPacket, TPacketFactory, TCallback}.Pipe"/> nor the <see cref="Target"/>
+    /// Disposes own resources, not the <see cref="PipeCallbackBase{TPacket, TPacketFactory, TCallback}.Connection"/> nor the <see cref="Target"/>
     /// </summary>
     /// <returns></returns>
     protected override async ValueTask DisposeAsyncCore(bool disposing)
@@ -273,7 +263,7 @@ namespace T.Pipes
     }
 
     /// <summary>
-    /// Disposes own resources, not the <see cref="PipeCallbackBase{TPipe, TPacket, TPacketFactory, TCallback}.Pipe"/> nor the <see cref="Target"/>
+    /// Disposes own resources, not the <see cref="PipeCallbackBase{TPacket, TPacketFactory, TCallback}.Connection"/> nor the <see cref="Target"/>
     /// </summary>
     protected override void DisposeCore(bool disposing, bool includeAsync)
     {
@@ -282,12 +272,7 @@ namespace T.Pipes
         _semaphore.Wait();
       if (_responses.Count > 0)
       {
-        string name = Pipe switch
-        {
-          H.Pipes.IPipeServer<TPacket> server => $"Server Pipe: {server.PipeName}",
-          H.Pipes.IPipeClient<TPacket> client => $"Server: {client.ServerName}, Pipe: {client.PipeName}",
-          _ => "Unknown Pipe",
-        };
+        var name = $"ServerName: {Connection.ServerName}, PipeName: {Connection.PipeName}";
 
         var disposingException = new ObjectDisposedException(name);
 
@@ -454,12 +439,7 @@ namespace T.Pipes
     /// <exception cref="ArgumentException">always</exception>
     protected virtual void OnUnknownMessage(TPacket invalidMessage)
     {
-      var message = Pipe switch
-      {
-        H.Pipes.IPipeServer<TPacket> server => $"Message unknown: {invalidMessage}, Server Pipe: {server.PipeName}",
-        H.Pipes.IPipeClient<TPacket> client => $"Message unknown: {invalidMessage}, Server: {client.ServerName}, Pipe: {client.PipeName}",
-        _ => $"Message unknown: {invalidMessage}, Unknown Pipe",
-      };
+      var message = $"Message unknown: {invalidMessage}, ServerName: {Connection.ServerName}, PipeName: {Connection.PipeName}";
       throw new ArgumentException(message, nameof(invalidMessage));
     }
 
@@ -546,8 +526,7 @@ namespace T.Pipes
         cts.Cancel();
       else if (ResponseTimeoutMs > 0)
         cts.CancelAfter(ResponseTimeoutMs);
-      await Pipe.WriteAsync(message, cts.Token).ConfigureAwait(false);
-      OnMessageSent(message);
+      await Connection.WriteAsync(message, cts.Token).ConfigureAwait(false);
     }
 
     /// <summary>

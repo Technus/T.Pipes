@@ -11,7 +11,7 @@ namespace T.Pipes.Test.Client
     : DelegatingPipeClientCallback<TTarget, DelegatingCallback<TTarget>>
     where TTarget : IAbstract, IAbstract<short>
   {
-    public DelegatingCallback(H.Pipes.PipeClient<PipeMessage> pipe, TTarget target) : base(pipe, target, PipeConstants.ResponseTimeMs)
+    public DelegatingCallback(TTarget target) : base(target, PipeConstants.ResponseTimeMs)
     { 
     }
 
@@ -53,7 +53,7 @@ namespace T.Pipes.Test.Client
     {
     }
 
-    public DelegatingClientAuto(H.Pipes.PipeClient<PipeMessage> pipe, TTarget target) : base(pipe, new(pipe, target))
+    public DelegatingClientAuto(H.Pipes.PipeClient<PipeMessage> pipe, TTarget target) : base(pipe, new(target))
     {
     }
   }

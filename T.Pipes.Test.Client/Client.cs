@@ -5,9 +5,9 @@ using T.Pipes.Test.Abstractions;
 
 namespace T.Pipes.Test.Client
 {
-  internal sealed class ClientCallback : SpawningPipeClientCallback
+  internal sealed class ClientCallback : SpawningPipeCallback
   {
-    public ClientCallback(H.Pipes.PipeClient<PipeMessage> pipe) : base(pipe, PipeConstants.ResponseTimeMs)
+    public ClientCallback() : base(PipeConstants.ResponseTimeMs)
     {
     }
 
@@ -51,7 +51,8 @@ namespace T.Pipes.Test.Client
     {
     }
 
-    private Client(H.Pipes.PipeClient<PipeMessage> pipe) : base(pipe, new(pipe)) 
-      => Pipe.AutoReconnect = false;
+    private Client(H.Pipes.PipeClient<PipeMessage> pipe) : base(pipe, new())
+    {
+    }
   }
 }

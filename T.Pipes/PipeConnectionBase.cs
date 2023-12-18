@@ -52,6 +52,7 @@ namespace T.Pipes
     {
       Pipe = pipe;
       Callback = callback;
+      Callback.Connection = this;
       Pipe.ExceptionOccurred += OnExceptionOccurred;
       Pipe.MessageReceived += OnMessageReceived;
     }
