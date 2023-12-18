@@ -14,7 +14,7 @@ namespace T.Pipes.Abstractions
     /// <summary>
     /// <see cref="CancelCallback"/>
     /// </summary>
-    private readonly CancellationTokenRegistration _lifetimeCancellationRegistration;
+    private CancellationTokenRegistration _lifetimeCancellationRegistration;
 
     /// <summary>
     /// Current dispose state
@@ -22,9 +22,9 @@ namespace T.Pipes.Abstractions
     private int _disposeState = (int)DisposeState.New;
 
     /// <summary>
-    /// Main Ctor initializing Dispose on cancellation
+    /// Initialize Dispose on cancellation
     /// </summary>
-    protected BaseClass() => _lifetimeCancellationRegistration =
+    protected void DisposeOnCancellation() => _lifetimeCancellationRegistration =
 #if NET5_0_OR_GREATER
         LifetimeCancellation.UnsafeRegister(static x => ((BaseClass)x!).CancelCallback(), this);
 #else

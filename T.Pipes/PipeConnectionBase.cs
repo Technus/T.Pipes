@@ -18,6 +18,11 @@ namespace T.Pipes
     where TPipe : H.Pipes.IPipeConnection<TPacket>
     where TCallback : IPipeCallback<TPacket>
   {
+    /// <summary>
+    /// If there are any pending operations
+    /// </summary>
+    protected SemaphoreSlim NoOperations { get; } = new(1, 1);
+
     private int _connectionCount;
     private readonly SemaphoreSlim _noConnections = new(1, 1);
 
@@ -87,7 +92,15 @@ namespace T.Pipes
       LifetimeCancellation.ThrowIfCancellationRequested();
 
       using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, LifetimeCancellation);
-      await Pipe.WriteAsync(value, cts.Token).ConfigureAwait(false);
+      await NoOperations.WaitAsync(cts.Token).ConfigureAwait(false);
+      try
+      {
+        await Pipe.WriteAsync(value, cts.Token).ConfigureAwait(false);
+      }
+      finally
+      {
+        NoOperations.Release();
+      }
       Callback.OnMessageSent(value);
     }
 
@@ -164,6 +177,7 @@ namespace T.Pipes
     /// <returns></returns>
     protected override async ValueTask DisposeAsyncCore(bool disposing)
     {
+      await NoOperations.WaitAsync().ConfigureAwait(false);
       await Pipe.DisposeAsync().ConfigureAwait(false);
       await _noConnections.WaitAsync().ConfigureAwait(false);
     }
@@ -175,12 +189,14 @@ namespace T.Pipes
     {
       if (includeAsync)
       {
+        NoOperations.Wait();
         var disposeTask = Pipe.DisposeAsync();
         if(!disposeTask.IsCompleted) 
           disposeTask.AsTask().Wait();
         _noConnections.Wait();
       }
       _noConnections.Dispose();
+      NoOperations.Dispose();
       Pipe.MessageReceived -= OnMessageReceived;
       Pipe.ExceptionOccurred -= OnExceptionOccurred;
     }

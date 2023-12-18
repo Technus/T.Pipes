@@ -106,7 +106,15 @@ namespace T.Pipes
       using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, LifetimeCancellation);
       try
       {
-        await Pipe.StartAsync(cts.Token).ConfigureAwait(false);
+        await NoOperations.WaitAsync(cts.Token).ConfigureAwait(false);
+        try
+        {
+          await Pipe.StartAsync(cts.Token).ConfigureAwait(false);
+        }
+        finally
+        {
+          NoOperations.Release();
+        }
       }
       catch (Exception startException)
       {
@@ -123,8 +131,19 @@ namespace T.Pipes
     }
 
     /// <inheritdoc/>
-    public override Task StopAsync(CancellationToken cancellationToken = default)
-      => Pipe.StopAsync(cancellationToken);
+    public override async Task StopAsync(CancellationToken cancellationToken = default)
+    {
+      using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, LifetimeCancellation);
+      await NoOperations.WaitAsync(cts.Token).ConfigureAwait(false);
+      try
+      {
+        await Pipe.StopAsync(cts.Token).ConfigureAwait(false);
+      }
+      finally
+      {
+        NoOperations.Release();
+      }
+    }
 
     /// <summary>
     /// Starts and then awaits incoming connection, stops on failure/cancellation
@@ -163,7 +182,15 @@ namespace T.Pipes
         Pipe.ClientConnected += onConnected;
         try
         {
-          await Pipe.StartAsync(cts.Token).ConfigureAwait(false);
+          await NoOperations.WaitAsync(cts.Token).ConfigureAwait(false);
+          try
+          {
+            await Pipe.StartAsync(cts.Token).ConfigureAwait(false);
+          }
+          finally
+          {
+            NoOperations.Release();
+          }
           await tcs.Task.ConfigureAwait(false);
         }
         catch (Exception tcsException)

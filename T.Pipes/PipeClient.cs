@@ -108,8 +108,19 @@ namespace T.Pipes
     }
 
     /// <inheritdoc/>
-    public override Task StopAsync(CancellationToken cancellationToken = default)
-      => Pipe.DisconnectAsync(cancellationToken);
+    public override async Task StopAsync(CancellationToken cancellationToken = default)
+    {
+      using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, LifetimeCancellation);
+      await NoOperations.WaitAsync(cts.Token).ConfigureAwait(false);
+      try
+      {
+        await Pipe.DisconnectAsync(cts.Token).ConfigureAwait(false);
+      }
+      finally
+      {
+        NoOperations.Release();
+      }
+    }
 
     /// <inheritdoc/>
     public override async Task StartAndConnectAsync(CancellationToken cancellationToken = default)
@@ -120,7 +131,15 @@ namespace T.Pipes
       using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, LifetimeCancellation);
       try
       {
-        await Pipe.ConnectAsync(cts.Token).ConfigureAwait(false);
+        await NoOperations.WaitAsync(cts.Token).ConfigureAwait(false);
+        try
+        {
+          await Pipe.ConnectAsync(cts.Token).ConfigureAwait(false);
+        }
+        finally
+        {
+          NoOperations.Release();
+        }
       }
       catch (Exception startException)
       {
