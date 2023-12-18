@@ -5,11 +5,24 @@ namespace T.Pipes.Test.Client
 {
   internal static class Program
   {
-    private static async Task Main(string[] args)
-    {
-      await using var client = new Client();
+    public static void Main(string[] args) => Start().Wait();
 
-      await client.StartAndConnectWithTimeoutAndAwaitCancellationAsync(PipeConstants.ConnectionAwaitTimeMs, client.Callback.LifetimeCancellation);
+    private static async Task Start()
+    {
+      await using (var client = new Client())
+      {
+        try
+        {
+          await client.StartAndConnectWithTimeoutAndAwaitCancellationAsync(PipeConstants.ConnectionAwaitTimeMs, client.Callback.LifetimeCancellation);
+        }
+        catch
+        {
+          //Ignores
+        }
+
+        await Task.Delay(1000);
+      }
+      await Task.Delay(5000);
     }
   }
 }

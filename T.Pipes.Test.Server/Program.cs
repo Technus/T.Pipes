@@ -5,14 +5,16 @@ namespace T.Pipes.Test.Server
 {
   internal static class Program
   {
-    private static async Task Main(string[] args)
+    public static void Main(string[] args) => Start().Wait();
+
+    private static async Task Start()
     {
+#if !DEBUG
+      await using var client = new SurrogateProcessWrapper(new(PipeConstants.ClientExeName));
+      await client.StartProcess();
+#endif
       await using (var server = new Server())
       {
-#if !DEBUG
-        await using var client = new SurrogateProcessWrapper(new(PipeConstants.ClientExeName));
-        await client.StartProcess();
-#endif
         await server.StartAndConnectWithTimeoutAsync(PipeConstants.ConnectionAwaitTimeMs);
 
         await using (var item = await server.Callback.Create())
@@ -32,6 +34,7 @@ namespace T.Pipes.Test.Server
         await Task.Delay(1000);
       }
       await Task.Delay(5000);
+      await client.StopProcess();
     }
   }
 }

@@ -23,5 +23,4 @@
   <ItemGroup>
     <ProjectReference Include="..\T.Pipes.SourceGeneration\T.Pipes.SourceGeneration.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false"/>
   </ItemGroup>
-
 </Project>
