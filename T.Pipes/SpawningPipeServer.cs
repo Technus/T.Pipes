@@ -1,8 +1,4 @@
-﻿using System;
-using System.Diagnostics;
-using System.Threading;
-using System.Threading.Tasks;
-using H.Formatters;
+﻿using System.Threading.Tasks;
 
 namespace T.Pipes
 {

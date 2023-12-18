@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Threading;
 using T.Pipes.Abstractions;
 
 namespace T.Pipes

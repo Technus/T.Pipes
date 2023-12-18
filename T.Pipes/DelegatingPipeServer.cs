@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Threading.Tasks;
-using H.Formatters;
 using T.Pipes.Abstractions;
 
 namespace T.Pipes
