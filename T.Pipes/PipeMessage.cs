@@ -28,6 +28,6 @@ namespace T.Pipes
     /// For convenience returns the same thing as debugger display
     /// </summary>
     /// <returns>debugger display string</returns>
-    public override string ToString() => $"{Id} / {Command} / {PacketType} / {Parameter}";
+    public override string ToString() => $"{Id} / {Command} / {PacketType.ToString().Replace("None, ", string.Empty)} / {Parameter}";
   }
 }
