@@ -106,6 +106,11 @@ namespace T.Pipes
     protected virtual async Task<T> ProvideProxyAsyncCore<T>(string command, string pipeName = "", CancellationToken cancellationToken = default) 
       where T : IPipeDelegatingConnection<PipeMessage>
     {
+      cancellationToken.ThrowIfCancellationRequested();
+      LifetimeCancellation.ThrowIfCancellationRequested();
+
+      using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, LifetimeCancellation);
+
       var primaryRequest = pipeName is null || pipeName == string.Empty;
       if(primaryRequest)
         pipeName = Guid.NewGuid().ToString();
@@ -113,10 +118,10 @@ namespace T.Pipes
       try
       {
         if(primaryRequest)
-          await WriteAsync(PacketFactory.CreateCommand(command, pipeName), cancellationToken).ConfigureAwait(false);
+          await WriteAsync(PacketFactory.CreateCommand(command, pipeName), cts.Token).ConfigureAwait(false);
         try
         {
-          await proxy.StartAndConnectWithTimeoutAsync(ResponseTimeoutMs, cancellationToken).ConfigureAwait(false);
+          await proxy.StartAndConnectWithTimeoutAsync(ResponseTimeoutMs, cts.Token).ConfigureAwait(false);
         }
         catch (Exception e)
         {

@@ -36,8 +36,9 @@ namespace T.Pipes
     /// <returns></returns>
     public async Task StartProcess(CancellationToken cancellationToken = default)
     {
-      await StopProcess(cancellationToken).ConfigureAwait(false);
-      await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+      using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, LifetimeCancellation);
+      await StopProcess(cts.Token).ConfigureAwait(false);
+      await _semaphore.WaitAsync(cts.Token).ConfigureAwait(false);
       try
       {
         _process.Start();
@@ -56,8 +57,7 @@ namespace T.Pipes
     public async Task StopProcess(CancellationToken cancellationToken = default)
     {
       using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, LifetimeCancellation);
-      cts.CancelAfter(ProcessKillTimeoutMs);
-      await _semaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+      await _semaphore.WaitAsync(cts.Token).ConfigureAwait(false);
       var closeSent = false;
       try
       {
@@ -67,16 +67,19 @@ namespace T.Pipes
 
         closeSent = _process.CloseMainWindow();
 
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cts.Token);
+        timeout.CancelAfter(ProcessKillTimeoutMs);
+
 #if NET5_0_OR_GREATER
-        await _process.WaitForExitAsync(cts.Token).ConfigureAwait(false);
+        await _process.WaitForExitAsync(timeout.Token).ConfigureAwait(false);
 #else
-        var timeout = 1;
-        while (!_process.WaitForExit(timeout))
+        var timeoutMs = 1;
+        while (!_process.WaitForExit(timeoutMs))
         {
-          cts.Token.ThrowIfCancellationRequested();
+          timeout.Token.ThrowIfCancellationRequested();
           await Task.Yield();
-          if (timeout < 100)
-            timeout += 1;
+          if (timeoutMs < 100)
+            timeoutMs += 1;
         }
 #endif
       }

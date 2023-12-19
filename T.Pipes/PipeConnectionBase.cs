@@ -64,7 +64,7 @@ namespace T.Pipes
     protected int IncrementConnectionCount()
     {
       var result = Interlocked.Increment(ref _connectionCount);
-      if (result == 1) _noConnections.Wait();
+      if (result == 1) _noConnections.Wait(LifetimeCancellation);
       return result;
     }
 

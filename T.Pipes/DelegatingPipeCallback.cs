@@ -223,13 +223,20 @@ namespace T.Pipes
     /// <inheritdoc/>
     public override void OnConnected(string connection)
     {
-      _semaphore.Wait();
+      _semaphore.Wait(LifetimeCancellation);
       if (_responses.Count > 0)
       {
         var exception = new NoResponseException(connection, new InvalidOperationException("Connected while operations were pending"));
         foreach (var item in _responses)
         {
-          item.Value.TrySetException(exception);
+          try
+          {
+            item.Value.TrySetException(exception);
+          }
+          finally
+          {
+            //Ignored
+          }
         }
       }
       _responses.Clear();
@@ -239,13 +246,20 @@ namespace T.Pipes
     /// <inheritdoc/>
     public override void OnDisconnected(string connection)
     {
-      _semaphore.Wait();
+      _semaphore.Wait(LifetimeCancellation);
       if (_responses.Count > 0)
       {
         var exception = new NoResponseException(connection, new InvalidOperationException("Disconnected while operations were pending"));
         foreach (var item in _responses)
         {
-          item.Value.TrySetException(exception);
+          try
+          {
+            item.Value.TrySetException(exception);
+          }
+          finally
+          {
+            //Ignored
+          }
         }
       }
       _responses.Clear();
@@ -295,13 +309,20 @@ namespace T.Pipes
     /// </summary>
     public virtual void ClearResponses(Exception? exception = default)
     {
-      _semaphore.Wait();
+      _semaphore.Wait(LifetimeCancellation);
       if (_responses.Count > 0)
       {
         exception ??= new InvalidOperationException("Clearing while operations were pending");
         foreach (var item in _responses)
         {
-          item.Value.TrySetException(new NoResponseException("Clearing",exception));
+          try
+          {
+            item.Value.TrySetException(new NoResponseException("Clearing",exception));
+          }
+          finally
+          {
+            //Ignored
+          }
         }
       }
       _responses.Clear();
@@ -321,7 +342,7 @@ namespace T.Pipes
     {
       if ((message.PacketType & PacketType.Response)!=0)//Any response
       {
-        _semaphore.Wait();
+        _semaphore.Wait(LifetimeCancellation);
         var exists = _responses.TryGetValue(message.Id, out var response);
         if (exists)
           _responses.Remove(message.Id);
@@ -484,8 +505,14 @@ namespace T.Pipes
         try
         {
           await _semaphore.WaitAsync(cts.Token).ConfigureAwait(false);
-          _responses.Add(command.Id, tcs);
-          _semaphore.Release();
+          try
+          {
+            _responses.Add(command.Id, tcs);
+          }
+          finally
+          {
+            _semaphore.Release();
+          }
           await WriteAsync(command, cts.Token).ConfigureAwait(false);
           return (T)await tcs.Task.ConfigureAwait(false);
         }
@@ -501,7 +528,7 @@ namespace T.Pipes
         ctr.Dispose();
         if (!tcs.Task.IsCompleted)
           tcs.TrySetException(new NoResponseException("Finally",new InvalidOperationException("Failed to finish gracefully.")));
-        await _semaphore.WaitAsync().ConfigureAwait(false);
+        await _semaphore.WaitAsync(LifetimeCancellation).ConfigureAwait(false);
         _responses.Remove(command.Id);
         _semaphore.Release();
       }
