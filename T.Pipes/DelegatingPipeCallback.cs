@@ -75,7 +75,7 @@ namespace T.Pipes
     /// Creates the callback, must be done with the same pipe as in the pipe connection holding it.
     /// </summary>
     /// <param name="responseTimeoutMs"></param>
-    protected DelegatingPipeCallback(int responseTimeoutMs = Timeout.Infinite) : base(new(), responseTimeoutMs)
+    protected DelegatingPipeCallback(int responseTimeoutMs = Timeout.Infinite) : base(PipeMessageFactory.Instance, responseTimeoutMs)
     {
     }
 
@@ -84,7 +84,7 @@ namespace T.Pipes
     /// </summary>
     /// <param name="target">the actual implementation of <typeparamref name="TTarget"/></param>
     /// <param name="responseTimeoutMs"></param>
-    protected DelegatingPipeCallback(TTarget target, int responseTimeoutMs = Timeout.Infinite) : base(new(), target, responseTimeoutMs)
+    protected DelegatingPipeCallback(TTarget target, int responseTimeoutMs = Timeout.Infinite) : base(PipeMessageFactory.Instance, target, responseTimeoutMs)
     {
     }
   }

@@ -15,7 +15,7 @@ namespace T.Pipes
     /// Creates Callback to handle Factorization of <see cref="IPipeDelegatingConnection{TMessage}"/>
     /// </summary>
     /// <param name="responseTimeoutMs"></param>
-    protected SpawningPipeCallback(int responseTimeoutMs = Timeout.Infinite) : base(new()) 
+    protected SpawningPipeCallback(int responseTimeoutMs = Timeout.Infinite) : base(PipeMessageFactory.Instance) 
       => ResponseTimeoutMs = responseTimeoutMs;
 
     /// <summary>

@@ -7,9 +7,21 @@ namespace T.Pipes
   /// <summary>
   /// Factory for <see cref="PipeMessage"/>
   /// </summary>
-  public struct PipeMessageFactory : IPipeMessageFactory<PipeMessage>
+  public class PipeMessageFactory : IPipeMessageFactory<PipeMessage>
   {
+    /// <summary>
+    /// Public instance to use
+    /// </summary>
+    public static PipeMessageFactory Instance { get; } = new();
+
     private long _packetId;
+
+    /// <summary>
+    /// Ctor for tests
+    /// </summary>
+    protected internal PipeMessageFactory()
+    {
+    }
 
     /// <inheritdoc/>
     public PipeMessage CreateCommand(string command) 
