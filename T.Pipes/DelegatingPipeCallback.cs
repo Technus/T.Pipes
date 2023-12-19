@@ -182,12 +182,12 @@ namespace T.Pipes
         _semaphore.Wait(LifetimeCancellation);
         if (_responses.Count > 0)
         {
-          var exception = new InvalidOperationException("Changing Target while operations were pending");
+          var exception = new NoResponseException("Target changed", new InvalidOperationException("Changing Target while operations were pending"));
           foreach (var item in _responses)
           {
             try
             {
-              item.Value.TrySetException(new NoResponseException("Target setter", exception));
+              item.Value.TrySetException(exception);
             }
             finally
             {
@@ -306,12 +306,10 @@ namespace T.Pipes
       if (_responses.Count > 0)
       {
         var name = $"ServerName: {Connection.ServerName}, PipeName: {Connection.PipeName}";
-
-        var disposingException = new ObjectDisposedException(name);
-
+        var exception = new NoResponseException("Disposing", new ObjectDisposedException(name));
         foreach (var item in _responses)
         {
-          item.Value.TrySetException(new NoResponseException("Disposing", disposingException));
+          item.Value.TrySetException(exception);
         }
         _responses.Clear();
       }
@@ -326,17 +324,21 @@ namespace T.Pipes
     /// <summary>
     /// Clears the response awaiting tasks by <see cref="TaskCompletionSource{TResult}.TrySetCanceled()"/>
     /// </summary>
-    public virtual void ClearResponses(Exception? exception = default)
+    public void ClearResponses(Exception? exception = default)
     {
       _semaphore.Wait(LifetimeCancellation);
       if (_responses.Count > 0)
       {
-        exception ??= new InvalidOperationException("Clearing while operations were pending");
+        if (exception is not NoResponseException)
+        {
+          exception ??= new InvalidOperationException("Clearing while operations were pending");
+          exception = new NoResponseException("Clearing", exception);
+        }
         foreach (var item in _responses)
         {
           try
           {
-            item.Value.TrySetException(new NoResponseException("Clearing",exception));
+            item.Value.TrySetException(exception);
           }
           finally
           {
@@ -349,7 +351,27 @@ namespace T.Pipes
     }
 
     /// <inheritdoc/>
-    public override void OnExceptionOccurred(Exception e) => ClearResponses(e);
+    public override void OnExceptionOccurred(Exception exception)
+    {
+      _semaphore.Wait(LifetimeCancellation);
+      if (_responses.Count > 0)
+      {
+        exception = new NoResponseException("Exception occured", exception);
+        foreach (var item in _responses)
+        {
+          try
+          {
+            item.Value.TrySetException(exception);
+          }
+          finally
+          {
+            //Ignored
+          }
+        }
+        _responses.Clear();
+      }
+      _semaphore.Release();
+    }
 
     /// <summary>
     /// Called on each incoming message<br/>
@@ -457,18 +479,19 @@ namespace T.Pipes
       try
       {
         cts.Token.ThrowIfCancellationRequested();
-        await function.Invoke((TCallback)this, command, cts.Token).ConfigureAwait(false);
+        await function.Invoke((TCallback)this, command, cts.Token).ConfigureAwait(false);//If all worked fine it will send response on it's own
       }
       catch (OperationCanceledException ex)
       {
-        if(cts.Token.IsCancellationRequested)//If parent is cancelled it should be a NoResponseException
-          await WriteAsync(PacketFactory.CreateResponseFailure(command, new NoResponseException($"The Function {command.Command} was Cancelled externally", ex))).ConfigureAwait(false);
+        if(cts.Token.IsCancellationRequested)//If parent token is cancelled it should be a NoResponseException to signify Pipe error
+          await WriteAsync(PacketFactory.CreateResponseFailure(command, 
+            new NoResponseException("Cancelled externally", ex)), default).ConfigureAwait(false);
         else
-          await WriteAsync(PacketFactory.CreateResponseCancellation(command, ex)).ConfigureAwait(false);
+          await WriteAsync(PacketFactory.CreateResponseCancellation(command, ex), default).ConfigureAwait(false);
       }
       catch (Exception e)
       {
-        await WriteAsync(PacketFactory.CreateResponseFailure(command, e)).ConfigureAwait(false);
+        await WriteAsync(PacketFactory.CreateResponseFailure(command, e), default).ConfigureAwait(false);
       }
     }
 
@@ -532,21 +555,26 @@ namespace T.Pipes
           {
             _semaphore.Release();
           }
-          await WriteAsync(command, cts.Token).ConfigureAwait(false);
-          return (T)await tcs.Task.ConfigureAwait(false);
         }
         catch (Exception ex)
         {
-          var e = new NoResponseException(command.Command, ex);
-          tcs.TrySetException(e);
-          throw e;
+          tcs.TrySetException(new NoResponseException("Queueing TaskCompletionSource", ex));
         }
+        try
+        {
+          await WriteAsync(command, cts.Token).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+          tcs.TrySetException(new NoResponseException("Sending Command", ex));
+        }
+        return (T)await tcs.Task.ConfigureAwait(false);
       }
       finally
       {
         ctr.Dispose();
         if (!tcs.Task.IsCompleted)
-          tcs.TrySetException(new NoResponseException("Finally",new InvalidOperationException("Failed to finish gracefully.")));
+          tcs.TrySetException(new NoResponseException("Finally block reached", new InvalidOperationException("Failed to finish gracefully.")));
         await _semaphore.WaitAsync(LifetimeCancellation).ConfigureAwait(false);
         _responses.Remove(command.Id);
         _semaphore.Release();

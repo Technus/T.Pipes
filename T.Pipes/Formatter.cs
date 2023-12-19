@@ -53,7 +53,9 @@ namespace T.Pipes
       TypeNameHandling = TypeNameHandling.All,
       TypeNameAssemblyFormatHandling = TypeNameAssemblyFormatHandling.Simple,
       ReferenceLoopHandling = ReferenceLoopHandling.Serialize,
+#pragma warning disable SYSLIB0050 // Type or member is obsolete
       Context = new StreamingContext(StreamingContextStates.CrossAppDomain),
+#pragma warning restore SYSLIB0050 // Type or member is obsolete
     };
 
     /// <inheritdoc/>

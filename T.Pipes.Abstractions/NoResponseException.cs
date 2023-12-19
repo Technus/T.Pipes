@@ -4,10 +4,10 @@ using System.Runtime.Serialization;
 namespace T.Pipes.Abstractions
 {
   /// <summary>
-  /// Thrown when command was sent but there was no response
+  /// Thrown when command response was not delivered for any reason
   /// </summary>
   [Serializable]
-  public class NoResponseException : Exception
+  public sealed class NoResponseException : Exception
   {
     /// <summary>
     /// Constructs and exception for when command was sent but there was no response
@@ -26,8 +26,10 @@ namespace T.Pipes.Abstractions
 #if NET8_0_OR_GREATER
     [Obsolete("This is being still used for remoting kindof...", DiagnosticId = "SYSLIB0051")]
 #endif
+#pragma warning disable CS0628 // New protected member declared in sealed type
     protected NoResponseException(SerializationInfo info, StreamingContext context) : base(info, context)
     {
     }
+#pragma warning restore CS0628 // New protected member declared in sealed type
   }
 }

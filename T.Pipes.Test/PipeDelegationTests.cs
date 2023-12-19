@@ -1,4 +1,4 @@
-﻿using System.Xml.Linq;
+using System.Xml.Linq;
 using H.Formatters;
 using H.Pipes;
 using NSubstitute.Extensions;
@@ -129,7 +129,7 @@ namespace T.Pipes.Test
 
       dut.ClearResponses();
 
-      await task.Should().ThrowAsync<NoResponseException>();
+      (await task.Should().ThrowAsync<NoResponseException>()).Which.InnerException.Should().NotBeOfType<NoResponseException>();
     }
 
     [Fact]
@@ -145,7 +145,7 @@ namespace T.Pipes.Test
 
       dut.OnConnected("Egg");
 
-      await task.Should().ThrowAsync<NoResponseException>();
+      (await task.Should().ThrowAsync<NoResponseException>()).Which.InnerException.Should().NotBeOfType<NoResponseException>();
     }
 
     [Fact]
@@ -161,7 +161,7 @@ namespace T.Pipes.Test
 
       dut.OnDisconnected("Egg");
 
-      await task.Should().ThrowAsync<NoResponseException>();
+      (await task.Should().ThrowAsync<NoResponseException>()).Which.InnerException.Should().NotBeOfType<NoResponseException>();
     }
 
     [Fact]
@@ -178,7 +178,7 @@ namespace T.Pipes.Test
       var failure = new Exception("Egg");
       dut.OnExceptionOccurred(failure);
 
-      await task.Should().ThrowAsync<NoResponseException>();
+      (await task.Should().ThrowAsync<NoResponseException>()).Which.InnerException.Should().NotBeOfType<NoResponseException>();
     }
 
     [Fact]
