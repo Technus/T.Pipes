@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using T.Pipes.Test.Abstractions;
+﻿using T.Pipes.Test.Abstractions;
 
 namespace T.Pipes.Test.Client
 {

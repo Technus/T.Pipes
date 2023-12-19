@@ -1,25 +1,20 @@
 ﻿using System;
-using System.Diagnostics.CodeAnalysis;
 
 namespace T.Pipes.Abstractions
 {
   /// <summary>
   /// Possible object states
   /// </summary>
-  [SuppressMessage("Minor Code Smell",
-    "S1939:Inheritance list should not be redundant",
-    Justification = "Explicit int as it is used like ref int/int in most cases.")]
   [Flags]
+#pragma warning disable S1939 // Inheritance list should not be redundant
   public enum DisposeState : int
+#pragma warning restore S1939 // Inheritance list should not be redundant
   {
     /// <summary>
     /// Created
     /// </summary>
     None = 0x00,
-    /// <summary>
-    /// Created
-    /// </summary>
-    New = 0x00,
+
     /// <summary>
     /// Disposed or disposing
     /// </summary>

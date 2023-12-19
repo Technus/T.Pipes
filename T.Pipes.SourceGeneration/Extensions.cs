@@ -12,17 +12,13 @@ namespace T.Pipes.SourceGeneration
     internal static string TypeUse(this ITypeSymbol symbol) 
       => symbol.ToDisplayString();
 
-    internal static string Prefix(this IParameterSymbol parameterSymbol)
+    internal static string Prefix(this IParameterSymbol parameterSymbol) => parameterSymbol.RefKind switch
     {
-      switch (parameterSymbol.RefKind)
-      {
-        case RefKind.Ref: return "ref ";
-        case RefKind.Out: return "out ";
-        case RefKind.In:
-        case RefKind.In + 1: return "in ";
-        default: return "";
-      }
-    }
+      RefKind.Ref => "ref ",
+      RefKind.Out => "out ",
+      RefKind.In or RefKind.In + 1 => "in ",
+      _ => "",
+    };
 
     internal static SemanticModel GetSemanticModel(this Compilation compilation, SyntaxNode syntaxNode) => compilation.GetSemanticModel(syntaxNode.SyntaxTree);
 

@@ -8,7 +8,7 @@ namespace T.Pipes.Abstractions
   /// </summary>
   [Description("Used by T.Pipes.SourceGeneration")]
   [AttributeUsage(AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Event | AttributeTargets.Class, AllowMultiple = true)]
-  public class PipeUseAttribute : Attribute
+  public sealed class PipeUseAttribute : Attribute
   {
     /// <summary>
     /// Use to decorate Client side Interface host holding the actual implementation

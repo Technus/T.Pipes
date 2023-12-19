@@ -8,7 +8,7 @@ namespace T.Pipes.Abstractions
   /// </summary>
   [Description("Used by T.Pipes.SourceGeneration")]
   [AttributeUsage(AttributeTargets.Method | AttributeTargets.Property | AttributeTargets.Event | AttributeTargets.Class, AllowMultiple = true)]
-  public class PipeServeAttribute : Attribute
+  public sealed class PipeServeAttribute : Attribute
   {
     /// <summary>
     /// Use to decorate Server side Interface host so proxy implementation

@@ -1,9 +1,3 @@
-using System.Xml.Linq;
-using H.Formatters;
-using H.Pipes;
-using NSubstitute.Extensions;
-using T.Pipes.Test.Abstractions;
-
 namespace T.Pipes.Test
 {
   [ExcludeFromCodeCoverage]

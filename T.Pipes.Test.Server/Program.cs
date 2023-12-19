@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using T.Pipes.Test.Abstractions;
 
 namespace T.Pipes.Test.Server

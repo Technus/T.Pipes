@@ -6,12 +6,15 @@ namespace T.Pipes.Abstractions
   /// Describes packet content
   /// </summary>
   [Flags]
+#pragma warning disable S1939 // Inheritance list should not be redundant
   public enum PacketType : int
+#pragma warning restore S1939 // Inheritance list should not be redundant
   {
     /// <summary>
     /// Unknown/default
     /// </summary>
     None = 0x00,
+
     /// <summary>
     /// Command
     /// </summary>

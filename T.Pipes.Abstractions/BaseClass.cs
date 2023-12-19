@@ -19,7 +19,7 @@ namespace T.Pipes.Abstractions
     /// <summary>
     /// Current dispose state
     /// </summary>
-    private int _disposeState = (int)DisposeState.New;
+    private int _disposeState = (int)DisposeState.None;
 
     /// <summary>
     /// Initialize Dispose on cancellation
@@ -42,7 +42,7 @@ namespace T.Pipes.Abstractions
     /// <summary>
     /// Check if disposed
     /// </summary>
-    protected bool IsDisposed => _disposeState != (int)DisposeState.New;
+    protected bool IsDisposed => _disposeState != (int)DisposeState.None;
 
     /// <summary>
     /// Gets the current dispose state <see cref="IsDisposed"/> as a better alternative
@@ -56,8 +56,8 @@ namespace T.Pipes.Abstractions
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void CancelCallback()
     {
-      var was = Interlocked.CompareExchange(ref _disposeState, (int)DisposeState.Cancelling, (int)DisposeState.New);
-      if (was == (int)DisposeState.New)
+      var was = Interlocked.CompareExchange(ref _disposeState, (int)DisposeState.Cancelling, (int)DisposeState.None);
+      if (was == (int)DisposeState.None)
       {
         _lifetimeCancellationRegistration.Dispose();
         LifetimeCancellationSource.Cancel();
@@ -66,7 +66,9 @@ namespace T.Pipes.Abstractions
 
         LifetimeCancellationSource.Dispose();
 
+#pragma warning disable CA1816 // Dispose methods should call SuppressFinalize
         GC.SuppressFinalize(this);
+#pragma warning restore CA1816 // Dispose methods should call SuppressFinalize
 
         _disposeState &= ~(int)DisposeState.Busy;
       }
@@ -81,8 +83,8 @@ namespace T.Pipes.Abstractions
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     protected void Finalizer()
     {
-      var was = Interlocked.CompareExchange(ref _disposeState, (int)DisposeState.Finalizing, (int)DisposeState.New);
-      if (was == (int)DisposeState.New)
+      var was = Interlocked.CompareExchange(ref _disposeState, (int)DisposeState.Finalizing, (int)DisposeState.None);
+      if (was == (int)DisposeState.None)
       {
         _lifetimeCancellationRegistration.Dispose();
         LifetimeCancellationSource.Cancel();
@@ -105,8 +107,8 @@ namespace T.Pipes.Abstractions
     [DebuggerHidden]
     public void Dispose()
     {
-      var was = Interlocked.CompareExchange(ref _disposeState, (int)DisposeState.Disposing, (int)DisposeState.New);
-      if (was == (int)DisposeState.New)
+      var was = Interlocked.CompareExchange(ref _disposeState, (int)DisposeState.Disposing, (int)DisposeState.None);
+      if (was == (int)DisposeState.None)
       {
         _lifetimeCancellationRegistration.Dispose();
         LifetimeCancellationSource.Cancel();
@@ -132,8 +134,8 @@ namespace T.Pipes.Abstractions
     [DebuggerHidden]
     public async ValueTask DisposeAsync()
     {
-      var was = Interlocked.CompareExchange(ref _disposeState, (int)DisposeState.DisposingAsync, (int)DisposeState.New);
-      if (was == (int)DisposeState.New)
+      var was = Interlocked.CompareExchange(ref _disposeState, (int)DisposeState.DisposingAsync, (int)DisposeState.None);
+      if (was == (int)DisposeState.None)
       {
         _lifetimeCancellationRegistration.Dispose();
 #if NET8_0_OR_GREATER

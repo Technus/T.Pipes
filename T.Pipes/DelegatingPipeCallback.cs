@@ -286,7 +286,7 @@ namespace T.Pipes
     }
 
     /// <summary>
-    /// Disposes own resources, not the <see cref="PipeCallbackBase{TPacket, TPacketFactory, TCallback}.Connection"/> nor the <see cref="Target"/>
+    /// Disposes own resources, not the <see cref="IPipeCallback{TPacket}.Connection"/> nor the <see cref="Target"/>
     /// </summary>
     /// <returns></returns>
     protected override async ValueTask DisposeAsyncCore(bool disposing)
@@ -296,7 +296,7 @@ namespace T.Pipes
     }
 
     /// <summary>
-    /// Disposes own resources, not the <see cref="PipeCallbackBase{TPacket, TPacketFactory, TCallback}.Connection"/> nor the <see cref="Target"/>
+    /// Disposes own resources, not the <see cref="IPipeCallback{TPacket}.Connection"/> nor the <see cref="Target"/>
     /// </summary>
     protected override void DisposeCore(bool disposing, bool includeAsync)
     {

@@ -9,5 +9,6 @@ global using System.Threading.Tasks;
 global using System.Diagnostics.CodeAnalysis;
 global using T.Pipes.Abstractions;
 global using static T.Pipes.Test.LazyUtil;
+global using T.Pipes.Test.Abstractions;
 
 //[assembly: CollectionBehavior(CollectionBehavior.CollectionPerAssembly, DisableTestParallelization = true)]

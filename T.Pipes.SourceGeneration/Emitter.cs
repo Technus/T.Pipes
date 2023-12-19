@@ -21,8 +21,10 @@ namespace T.Pipes.SourceGeneration
     {
       CancellationToken = cancellationToken;
       TypeDefinition = typeDefinition;
-      Writer = new CodegenTextWriter();
-      Writer.IndentString = "  ";
+      Writer = new CodegenTextWriter
+      {
+        IndentString = "  "
+      };
     }
 
     internal (string hintName, string source) EmitType()
