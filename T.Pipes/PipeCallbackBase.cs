@@ -10,22 +10,40 @@ namespace T.Pipes
   /// <typeparam name="TPacketFactory"></typeparam>
   /// <typeparam name="TCallback"></typeparam>
   public abstract class PipeCallbackBase<TPacket, TPacketFactory, TCallback>
-    : BaseClass, IPipeCallback<TPacket>
+    : PipeCallbackBase<TPacket, TCallback>
     where TPacket : IPipeMessage
     where TPacketFactory : IPipeMessageFactory<TPacket>
     where TCallback : PipeCallbackBase<TPacket, TPacketFactory, TCallback>
   {
-    private IPipeConnection<TPacket>? _connection;
-
     /// <summary>
     /// Packet factory being used
     /// </summary>
-    protected internal TPacketFactory PacketFactory { get; }
+    protected internal TPacketFactory PacketFactory { get; internal set; }
+
+    /// <summary>
+    /// The base constructor
+    /// </summary>
+    /// <param name="packetFactory"></param>
+    protected PipeCallbackBase(TPacketFactory packetFactory) 
+      => PacketFactory = packetFactory;
+  }
+
+  /// <summary>
+  /// Base Class for Callbacks
+  /// </summary>
+  /// <typeparam name="TPacket"></typeparam>
+  /// <typeparam name="TCallback"></typeparam>
+  public abstract class PipeCallbackBase<TPacket, TCallback>
+    : BaseClass, IPipeCallback<TPacket>
+    where TPacket : IPipeMessage
+    where TCallback : PipeCallbackBase<TPacket, TCallback>
+  {
+    private IPipeConnection<TPacket>? _connection;
 
     /// <summary>
     /// Used to access data tunnel should be set immediately after calling ctor
     /// </summary>
-    public virtual IPipeConnection<TPacket> Connection
+    public IPipeConnection<TPacket> Connection
     {
       get => _connection!;
       set
@@ -36,13 +54,6 @@ namespace T.Pipes
           throw new InvalidOperationException("Value already set");
       }
     }
-
-    /// <summary>
-    /// The base constructor
-    /// </summary>
-    /// <param name="packetFactory"></param>
-    protected PipeCallbackBase(TPacketFactory packetFactory) 
-      => PacketFactory = packetFactory;
 
     /// <inheritdoc/>
     public abstract void OnConnected(string connection);

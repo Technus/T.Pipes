@@ -333,6 +333,7 @@ namespace T.Pipes.Test
   {
     public ServerCallback() : base()
     {
+      PacketFactory = new();
     }
   }
 
@@ -355,6 +356,7 @@ namespace T.Pipes.Test
   {
     public ClientCallback(TTarget target) : base(target)
     {
+      PacketFactory = new();
     }
   }
 
