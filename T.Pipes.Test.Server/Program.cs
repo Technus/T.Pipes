@@ -34,7 +34,9 @@ namespace T.Pipes.Test.Server
         await Task.Delay(1000);
       }
       await Task.Delay(5000);
+#if !DEBUG
       await client.StopProcess();
+#endif
     }
   }
 }
