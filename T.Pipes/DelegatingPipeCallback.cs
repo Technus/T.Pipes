@@ -155,7 +155,7 @@ namespace T.Pipes
 
       if (_target is null)
       {
-        throw new InvalidCastException($"In fact target is not {typeof(TTarget).FullName}");
+        throw new InvalidOperationException($"In fact target is not {typeof(TTarget).FullName}");
       }
     }
 
@@ -179,6 +179,25 @@ namespace T.Pipes
           TargetDeInit(Target);
         }
 
+        _semaphore.Wait(LifetimeCancellation);
+        if (_responses.Count > 0)
+        {
+          var exception = new InvalidOperationException("Changing Target while operations were pending");
+          foreach (var item in _responses)
+          {
+            try
+            {
+              item.Value.TrySetException(new NoResponseException("Target setter", exception));
+            }
+            finally
+            {
+              //Ignored
+            }
+          }
+          _responses.Clear();
+        }
+        _semaphore.Release();
+
         _target = value;
 
         if (Target is not null)
@@ -188,7 +207,7 @@ namespace T.Pipes
         }
         else
         {
-          throw new InvalidCastException($"In fact target is not {typeof(TTarget).FullName}");
+          throw new InvalidOperationException($"In fact target is not {typeof(TTarget).FullName}");
         }
       }
     }
@@ -238,8 +257,8 @@ namespace T.Pipes
             //Ignored
           }
         }
+        _responses.Clear();
       }
-      _responses.Clear();
       _semaphore.Release();
     }
 
@@ -261,8 +280,8 @@ namespace T.Pipes
             //Ignored
           }
         }
+        _responses.Clear();
       }
-      _responses.Clear();
       _semaphore.Release();
     }
 
@@ -324,8 +343,8 @@ namespace T.Pipes
             //Ignored
           }
         }
+        _responses.Clear();
       }
-      _responses.Clear();
       _semaphore.Release();
     }
 
