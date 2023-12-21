@@ -29,8 +29,8 @@ namespace T.Pipes.Abstractions
     /// <summary>
     /// Triggers on exceptions in the pipe
     /// </summary>
-    /// <param name="e">exception that was raised</param>
-    void OnExceptionOccurred(Exception e);
+    /// <param name="exception">exception that was raised</param>
+    void OnExceptionOccurred(Exception exception);
 
     /// <summary>
     /// Triggers when receiving

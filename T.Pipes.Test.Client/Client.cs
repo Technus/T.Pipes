@@ -34,10 +34,10 @@ namespace T.Pipes.Test.Client
       base.OnDisconnected(connection);
     }
 
-    public override void OnExceptionOccurred(Exception e)
+    public override void OnExceptionOccurred(Exception exception)
     {
       LifetimeCancellationSource.Cancel();
-      base.OnExceptionOccurred(e);
+      base.OnExceptionOccurred(exception);
     }
   }
 

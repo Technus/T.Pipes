@@ -62,7 +62,7 @@ namespace T.Pipes
     public abstract void OnDisconnected(string connection);
 
     /// <inheritdoc/>
-    public abstract void OnExceptionOccurred(Exception e);
+    public abstract void OnExceptionOccurred(Exception exception);
 
     /// <inheritdoc/>
     public abstract void OnMessageReceived(TPacket message);

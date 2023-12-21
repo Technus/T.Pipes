@@ -43,23 +43,20 @@ namespace T.Pipes
       await Connection.WriteAsync(message, cts.Token).ConfigureAwait(false);
     }
 
-
     /// <summary>
     /// disposes created Proxies
     /// </summary>
     public override void OnConnected(string connection) { }
-
 
     /// <summary>
     /// disposes created Proxies
     /// </summary>
     public override void OnDisconnected(string connection) { }
 
-
     /// <summary>
     /// disposes created Proxies
     /// </summary>
-    public override void OnExceptionOccurred(Exception e) { }
+    public override void OnExceptionOccurred(Exception exception) { }
 
     /// <summary>
     /// No-op handling of sent messages
