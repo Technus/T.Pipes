@@ -356,7 +356,7 @@ namespace T.Pipes
       _semaphore.Wait(LifetimeCancellation);
       if (_responses.Count > 0)
       {
-        exception = new NoResponseException("Exception occured", exception);
+        exception = new NoResponseException("Exception occurred", exception);
         foreach (var item in _responses)
         {
           try
