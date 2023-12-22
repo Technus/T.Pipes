@@ -569,18 +569,28 @@ namespace T.Pipes
         cts.CancelAfter(ResponseTimeoutMs);
 
 #if NET5_0_OR_GREATER
-      await using var ctr = cts.Token.UnsafeRegister(static x => ((TaskCompletionSource<object>)x!)
-        .TrySetException(new NoResponseException("Cancelled", new TimeoutException("Timed out"))), tcs).ConfigureAwait(false);
+      await using var ctr = cts.Token.UnsafeRegister(static x =>
+      {
+        var state = ((TaskCompletionSource<object> tcs, CancellationToken cancellationToken, CancellationToken lifetimeCancellation))x;
+        if (state.tcs.Task.IsCompleted || state.cancellationToken.IsCancellationRequested || state.lifetimeCancellation.IsCancellationRequested)
+          return;
+        state.tcs.TrySetException(new NoResponseException("Cancelled", new TimeoutException("Timed out")));
+      }, (tcs, cancellationToken, LifetimeCancellation)).ConfigureAwait(false);
 #else
       using var ctr = cts.Token.Register(static x =>
         {
-          var tcs = (TaskCompletionSource<object>)x;
-          tcs.TrySetException(new NoResponseException("Cancelled",new TimeoutException("Timed out")));
-        }, tcs);
+          var state = ((TaskCompletionSource<object> tcs, CancellationToken cancellationToken, CancellationToken lifetimeCancellation))x;
+          if (state.tcs.Task.IsCompleted || state.cancellationToken.IsCancellationRequested || state.lifetimeCancellation.IsCancellationRequested)
+            return;
+          state.tcs.TrySetException(new NoResponseException("Cancelled",new TimeoutException("Timed out")));
+        }, (tcs, cancellationToken, LifetimeCancellation));
 #endif
 
       try
       {
+        if(tcs.Task.IsCompleted)
+          return (T)await tcs.Task.ConfigureAwait(false);
+
         try
         {
           await _semaphore.WaitAsync(cts.Token).ConfigureAwait(false);
@@ -598,6 +608,9 @@ namespace T.Pipes
           tcs.TrySetException(new NoResponseException("Queueing TaskCompletionSource", ex));
           return (T)await tcs.Task.ConfigureAwait(false);
         }
+
+        if (tcs.Task.IsCompleted)
+          return (T)await tcs.Task.ConfigureAwait(false);
 
         try
         {

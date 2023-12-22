@@ -139,7 +139,7 @@ namespace T.Pipes.Test
 
       dut.OnConnected("Egg");
 
-      (await task.Should().ThrowAsync<NoResponseException>()).Which.InnerException.Should().NotBeOfType<NoResponseException>();
+      (await task.Should().ThrowAsync<NoResponseException>()).Which.InnerException.Should().BeOfType<InvalidOperationException>();
     }
 
     [Fact]
@@ -155,7 +155,7 @@ namespace T.Pipes.Test
 
       dut.OnDisconnected("Egg");
 
-      (await task.Should().ThrowAsync<NoResponseException>()).Which.InnerException.Should().NotBeOfType<NoResponseException>();
+      (await task.Should().ThrowAsync<NoResponseException>()).Which.InnerException.Should().BeOfType<InvalidOperationException>();
     }
 
     [Fact]
@@ -172,7 +172,7 @@ namespace T.Pipes.Test
       var failure = new Exception("Egg");
       dut.OnExceptionOccurred(failure);
 
-      (await task.Should().ThrowAsync<NoResponseException>()).Which.InnerException.Should().NotBeOfType<NoResponseException>();
+      (await task.Should().ThrowAsync<NoResponseException>()).Which.InnerException.Should().BeOfType<Exception>().Which.Message.Should().Be("Egg");
     }
 
     [Fact]
@@ -188,7 +188,7 @@ namespace T.Pipes.Test
 
       dut.Dispose();
 
-      await task.Should().ThrowAsync<ObjectDisposedException>();
+      (await task.Should().ThrowAsync<NoResponseException>()).Which.InnerException.Should().BeOfType<ObjectDisposedException>();
     }
 
     [Fact]
@@ -204,7 +204,7 @@ namespace T.Pipes.Test
 
       await dut.DisposeAsync();
 
-      await task.Should().ThrowAsync<ObjectDisposedException>();
+      (await task.Should().ThrowAsync<NoResponseException>()).Which.InnerException.Should().BeOfType<ObjectDisposedException>();
     }
 
     [Fact]
@@ -219,7 +219,7 @@ namespace T.Pipes.Test
 
       await task.Should().NotCompleteWithinAsync(TimeSpan.FromMilliseconds(100));
 
-      await task.Should().ThrowAsync<NoResponseException>("In case it was supposedly sent NoResponseException should be thrown");
+      (await task.Should().ThrowAsync<NoResponseException>("In case it was supposedly sent NoResponseException should be thrown")).Which.InnerException.Should().BeOfType<TimeoutException>();
     }
 
     [Fact]
@@ -232,16 +232,31 @@ namespace T.Pipes.Test
 
       var task = Task.Run(dut.AsIAbstract.Action);
 
-      await task.Should().ThrowWithinAsync<NoResponseException>(TimeSpan.FromMilliseconds(100));
+      (await task.Should().ThrowWithinAsync<NoResponseException>(TimeSpan.FromMilliseconds(100))).Which.InnerException.Should().BeOfType<TimeoutException>();
     }
 
     [Fact]
-    public async Task CallbackTimeoutCommand()
+    public async Task CallbackTimeoutCommandWithoutAutoReconnect()
     {
       var name = Guid.NewGuid().ToString();
       var target = Substitute.For<IAbstract>();
       await using var dut = new ClientCallback<IAbstract>(target);
       await using var pipe = new PipeClient<ClientCallback<IAbstract>>(name, dut);
+      pipe.Pipe.AutoReconnect = false;
+      dut.ResponseTimeoutMs = 200;
+
+      dut.Invoking(x => x.OnMessageReceived(new() { PacketType = PacketType.Command, Command = "Action_IAbstract", Id = 1 }))
+        .Should().Throw<AggregateException>().Which.InnerExceptions.Count.Should().Be(2, "because the command and the fallback response should fail");
+    }
+
+    [Fact]
+    public async Task CallbackTimeoutCommandWithAutoReconnect()
+    {
+      var name = Guid.NewGuid().ToString();
+      var target = Substitute.For<IAbstract>();
+      await using var dut = new ClientCallback<IAbstract>(target);
+      await using var pipe = new PipeClient<ClientCallback<IAbstract>>(name, dut);
+      pipe.Pipe.AutoReconnect = true;
       dut.ResponseTimeoutMs = 200;
 
       dut.Invoking(x => x.OnMessageReceived(new() { PacketType = PacketType.Command, Command = "Action_IAbstract", Id = 1 }))

@@ -428,14 +428,21 @@ namespace T.Pipes
         cts.CancelAfter(ResponseTimeoutMs);
 
 #if NET5_0_OR_GREATER
-      await using var ctr = cts.Token.UnsafeRegister(static x => ((TaskCompletionSource<object>)x!)
-          .TrySetException(new NoResponseException("Cancelled", new TimeoutException("Timed out"))), tcs).ConfigureAwait(false);
+      await using var ctr = cts.Token.UnsafeRegister(static x =>
+      {
+        var state = ((TaskCompletionSource<object> tcs, CancellationToken cancellationToken, CancellationToken lifetimeCancellation))x;
+        if (state.tcs.Task.IsCompleted || state.cancellationToken.IsCancellationRequested || state.lifetimeCancellation.IsCancellationRequested)
+          return;
+        state.tcs.TrySetException(new NoResponseException("Cancelled", new TimeoutException("Timed out")));
+      }, (tcs, cancellationToken, LifetimeCancellation)).ConfigureAwait(false);
 #else
       using var ctr = cts.Token.Register(static x =>
-      {
-        var tcs = (TaskCompletionSource<object>)x;
-        tcs.TrySetException(new NoResponseException("Cancelled", new TimeoutException("Timed out")));
-      }, tcs);
+        {
+          var state = ((TaskCompletionSource<object> tcs, CancellationToken cancellationToken, CancellationToken lifetimeCancellation))x;
+          if (state.tcs.Task.IsCompleted || state.cancellationToken.IsCancellationRequested || state.lifetimeCancellation.IsCancellationRequested)
+            return;
+          state.tcs.TrySetException(new NoResponseException("Cancelled",new TimeoutException("Timed out")));
+        }, (tcs, cancellationToken, LifetimeCancellation));
 #endif
 
       var pipeName = Guid.NewGuid().ToString();
@@ -444,6 +451,9 @@ namespace T.Pipes
 
       try
       {
+        if (tcs.Task.IsCompleted)
+          await tcs.Task.ConfigureAwait(false);
+
         try
         {
           proxy = (T)CreateProxy(command, pipeName);
@@ -456,6 +466,9 @@ namespace T.Pipes
           tcs.TrySetException(e);
           throw e;
         }
+
+        if (tcs.Task.IsCompleted)
+          await tcs.Task.ConfigureAwait(false);
 
         try
         {
@@ -476,6 +489,9 @@ namespace T.Pipes
           throw e;
         }
 
+        if (tcs.Task.IsCompleted)
+          await tcs.Task.ConfigureAwait(false);
+
         try
         {
           await WriteAsync(message, cts.Token).ConfigureAwait(false);
@@ -487,20 +503,7 @@ namespace T.Pipes
           throw e;
         }
 
-        try
-        {
-          await tcs.Task.ConfigureAwait(false);//Wait for response if all went ok then it means client is started
-        }
-        catch (NoResponseException)
-        {
-          throw;
-        }
-        catch (Exception ex)
-        {
-          var e = new NoResponseException("Awaiting Response", ex);
-          tcs.TrySetException(e);
-          throw e;
-        }
+        await tcs.Task.ConfigureAwait(false);//Wait for response if all went ok then it means client is started
 
         try
         {
