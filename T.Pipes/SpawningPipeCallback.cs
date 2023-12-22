@@ -296,7 +296,7 @@ namespace T.Pipes
         var ex = new ArgumentException("Name was not specified.", nameof(command));
         try
         {
-          await WriteAsync(PacketFactory.CreateResponseFailure(command, new NoResponseException("Invalid Pipe Name", ex)), default).ConfigureAwait(false);
+          await WriteAsync(PacketFactory.CreateResponseFailure(command, new NoResponseException("Invalid Pipe Name externally", ex)), default).ConfigureAwait(false);
           return;
         }
         catch (Exception e)
@@ -314,7 +314,7 @@ namespace T.Pipes
       {
         try
         {
-          await WriteAsync(PacketFactory.CreateResponseFailure(command, new NoResponseException("Cancelled", ex)), default).ConfigureAwait(false);
+          await WriteAsync(PacketFactory.CreateResponseFailure(command, new NoResponseException("Cancelled externally", ex)), default).ConfigureAwait(false);
           return;
         }
         catch (Exception e)
@@ -342,7 +342,7 @@ namespace T.Pipes
         {
           try
           {
-            await WriteAsync(PacketFactory.CreateResponseFailure(command, new NoResponseException("Creating proxy", ex)), default).ConfigureAwait(false);
+            await WriteAsync(PacketFactory.CreateResponseFailure(command, new NoResponseException("Creating proxy externally", ex)), default).ConfigureAwait(false);
             return;
           }
           catch (Exception e)
@@ -361,7 +361,7 @@ namespace T.Pipes
         {
           try
           {
-            await WriteAsync(PacketFactory.CreateResponseFailure(command, new NoResponseException("Connecting", ex)), default).ConfigureAwait(false);
+            await WriteAsync(PacketFactory.CreateResponseFailure(command, new NoResponseException("Connecting externally", ex)), default).ConfigureAwait(false);
             return;
           }
           catch (Exception e)
