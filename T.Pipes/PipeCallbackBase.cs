@@ -69,5 +69,16 @@ namespace T.Pipes
 
     /// <inheritdoc/>
     public abstract void OnMessageSent(TPacket message);
+
+    /// <summary>
+    /// Handler for unhandled commands, should always throw to indicate unknown command
+    /// </summary>
+    /// <param name="invalidMessage">the packet in question</param>
+    /// <exception cref="ArgumentException">always</exception>
+    protected internal virtual void OnUnknownMessage(TPacket invalidMessage)
+    {
+      var message = $"Message unknown: {invalidMessage}, ServerName: {Connection.ServerName}, PipeName: {Connection.PipeName}";
+      throw new ArgumentException(message, nameof(invalidMessage));
+    }
   }
 }

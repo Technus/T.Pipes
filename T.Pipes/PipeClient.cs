@@ -80,6 +80,7 @@ namespace T.Pipes
     /// <param name="callback">callback to use</param>
     public PipeClient(TPipe pipe, TCallback callback) : base(pipe, callback)
     {
+      Pipe.AutoReconnect = false;
       Pipe.Disconnected += OnDisconnected;
       Pipe.Connected += OnConnected;
     }

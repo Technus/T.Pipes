@@ -1,6 +1,9 @@
-﻿using System;
+using System;
+using System.Collections.Generic;
+using System.Runtime.ConstrainedExecution;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 using T.Pipes.Abstractions;
 
 namespace T.Pipes
@@ -11,6 +14,9 @@ namespace T.Pipes
   public abstract class SpawningPipeCallback
     : PipeCallbackBase<PipeMessage, PipeMessageFactory, SpawningPipeCallback>
   {
+    private readonly Dictionary<long, TaskCompletionSource<object?>> _responses = new(16);
+    private readonly SemaphoreSlim _semaphore = new(1, 1);
+
     /// <summary>
     /// Creates Callback to handle Factorization of <see cref="IPipeDelegatingConnection{TMessage}"/>
     /// </summary>
@@ -46,17 +52,163 @@ namespace T.Pipes
     /// <summary>
     /// disposes created Proxies
     /// </summary>
-    public override void OnConnected(string connection) { }
+    public override void OnConnected(string connection)
+    {
+      try
+      {
+        _semaphore.Wait(LifetimeCancellation);
+      }
+      catch
+      {
+        return;
+      }
+      if (_responses.Count > 0)
+      {
+        var exception = new NoResponseException(connection, new InvalidOperationException("Connected while operations were pending"));
+        foreach (var item in _responses)
+        {
+          try
+          {
+            item.Value.TrySetException(exception);
+          }
+          finally
+          {
+            //Ignored
+          }
+        }
+        _responses.Clear();
+      }
+      _semaphore.Release();
+    }
 
     /// <summary>
     /// disposes created Proxies
     /// </summary>
-    public override void OnDisconnected(string connection) { }
+    public override void OnDisconnected(string connection)
+    {
+      try
+      {
+        _semaphore.Wait(LifetimeCancellation);
+      }
+      catch
+      {
+        return;
+      }
+      if (_responses.Count > 0)
+      {
+        var exception = new NoResponseException(connection, new InvalidOperationException("Disconnected while operations were pending"));
+        foreach (var item in _responses)
+        {
+          try
+          {
+            item.Value.TrySetException(exception);
+          }
+          finally
+          {
+            //Ignored
+          }
+        }
+        _responses.Clear();
+      }
+      _semaphore.Release();
+    }
 
     /// <summary>
-    /// disposes created Proxies
+    /// Disposes own resources, not the <see cref="IPipeCallback{TPacket}.Connection"/> nor the <see cref="Target"/>
     /// </summary>
-    public override void OnExceptionOccurred(Exception exception) { }
+    /// <returns></returns>
+    protected override async ValueTask DisposeAsyncCore(bool disposing)
+    {
+      await base.DisposeAsyncCore(disposing).ConfigureAwait(false);
+      await _semaphore.WaitAsync().ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Disposes own resources, not the <see cref="IPipeCallback{TPacket}.Connection"/> nor the <see cref="Target"/>
+    /// </summary>
+    protected override void DisposeCore(bool disposing, bool includeAsync)
+    {
+      base.DisposeCore(disposing, includeAsync);
+      if (includeAsync)
+        _semaphore.Wait();
+      if (_responses.Count > 0)
+      {
+        var name = $"ServerName: {Connection.ServerName}, PipeName: {Connection.PipeName}";
+        var exception = new NoResponseException("Disposing", new ObjectDisposedException(name));
+        foreach (var item in _responses)
+        {
+          item.Value.TrySetException(exception);
+        }
+        _responses.Clear();
+      }
+      _semaphore.Dispose();
+    }
+
+    /// <summary>
+    /// Clears the response awaiting tasks by <see cref="TaskCompletionSource{TResult}.TrySetCanceled()"/>
+    /// </summary>
+    public void ClearResponses(Exception? exception = default)
+    {
+      try
+      {
+        _semaphore.Wait(LifetimeCancellation);
+      }
+      catch
+      {
+        return;
+      }
+      if (_responses.Count > 0)
+      {
+        if (exception is not NoResponseException)
+        {
+          exception ??= new InvalidOperationException("Clearing while operations were pending");
+          exception = new NoResponseException("Clearing", exception);
+        }
+        foreach (var item in _responses)
+        {
+          try
+          {
+            item.Value.TrySetException(exception);
+          }
+          finally
+          {
+            //Ignored
+          }
+        }
+        _responses.Clear();
+      }
+      _semaphore.Release();
+    }
+
+    /// <inheritdoc/>
+    public override void OnExceptionOccurred(Exception exception)
+    {
+      try
+      {
+        _semaphore.Wait(LifetimeCancellation);
+      }
+      catch
+      {
+        return;
+      }
+      if (_responses.Count > 0)
+      {
+        exception = new NoResponseException("Exception occurred", exception);
+        foreach (var item in _responses)
+        {
+          try
+          {
+            item.Value.TrySetException(exception);
+          }
+          finally
+          {
+            //Ignored
+          }
+        }
+        _responses.Clear();
+      }
+      _semaphore.Release();
+    }
 
     /// <summary>
     /// No-op handling of sent messages
@@ -66,80 +218,337 @@ namespace T.Pipes
 
     /// <summary>
     /// Handles creation of Proxies
-    /// Calls <see cref="ProvideProxyAsyncCore{T}(string, string, CancellationToken)"/> with broad generic type
+    /// Calls <see cref="OnProvideProxyCommandAsync{T}(string, string, CancellationToken)"/> with broad generic type
     /// </summary>
     /// <param name="message"></param>
     /// <exception cref="InvalidOperationException"></exception>
     public override void OnMessageReceived(PipeMessage message)
     {
-      if (message.Parameter is not string name || name == string.Empty)
+      if ((message.PacketType & PacketType.Response) != 0)//Any response
       {
-        throw new ArgumentException("Name was not specified.", nameof(message));
+        try
+        {
+          _semaphore.Wait(LifetimeCancellation);
+        }
+        catch
+        {
+          return;
+        }
+        var exists = _responses.TryGetValue(message.Id, out var response);
+        if (exists)
+          _responses.Remove(message.Id);
+        _semaphore.Release();
+        if (exists)
+        {
+          if (message.PacketType == PacketType.ResponseFailure)
+            response!.TrySetException((Exception)message.Parameter!);
+          else if (message.PacketType == PacketType.ResponseCancellation)
+          {
+            if (message.Parameter is Exception ex)
+              response!.TrySetException(ex);
+            else
+              response!.TrySetCanceled();
+          }
+          else
+            response!.TrySetResult(message.Parameter);
+        }
       }
-      _ = ProvideProxyAsyncCore<IPipeDelegatingConnection<PipeMessage>>(message.Command, name);
+      else if ((message.PacketType & PacketType.Command) != 0)//Any command
+      {
+        if (message.PacketType == PacketType.Command)
+        {
+          OnCommandReceived(message);
+        }
+        else
+          throw new InvalidOperationException("Failure or Cancellation commands are not supported");
+      }
+      else OnUnknownMessage(message);
     }
 
     /// <summary>
-    /// Calls <see cref="ProvideProxyAsyncCore{T}(string, string, CancellationToken)"/>
-    /// Will attempt to cast result to <typeparamref name="T"/>
-    /// Use it to expose ready instances
+    /// Filtered <see cref="OnMessageReceived(PipeMessage)"/> to only fire on commands and not responses<br/>
+    /// Else calls <see cref="PipeCallbackBase{TPacket, TCallback}.OnUnknownMessage(TPacket)"/>
     /// </summary>
-    /// <param name="command"></param>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
-    protected virtual Task<T> ProvideProxyAsync<T>(string command, CancellationToken cancellationToken = default)
-      where T : IPipeDelegatingConnection<PipeMessage>
-      => ProvideProxyAsyncCore<T>(command, string.Empty, cancellationToken);
-
-    /// <summary>
-    /// Calls <see cref="CreateProxy(string, string)"/> and initializes it
-    /// Will attempt to cast result to <typeparamref name="T"/>
-    /// Use it to expose ready instances
-    /// </summary>
-    /// <param name="command"></param>
-    /// <param name="pipeName">name for the pipe, leave empty when making a request</param>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
-    protected virtual async Task<T> ProvideProxyAsyncCore<T>(string command, string pipeName = "", CancellationToken cancellationToken = default) 
-      where T : IPipeDelegatingConnection<PipeMessage>
+    /// <param name="command">packet containing command</param>
+    protected virtual void OnCommandReceived(PipeMessage command)
     {
-      cancellationToken.ThrowIfCancellationRequested();
-      LifetimeCancellation.ThrowIfCancellationRequested();
-
-      using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, LifetimeCancellation);
-
-      var primaryRequest = pipeName is null || pipeName == string.Empty;
-      if(primaryRequest)
-        pipeName = Guid.NewGuid().ToString();
-      var proxy = (T)CreateProxy(command, pipeName!);
       try
       {
-        if(primaryRequest)
-          await WriteAsync(PacketFactory.CreateCommand(command, pipeName), cts.Token).ConfigureAwait(false);
+        OnProvideProxyCommandAsync<IPipeDelegatingConnection<PipeMessage>>(command).Wait();
+      }
+      catch (AggregateException ae) when (ae.InnerExceptions.Count == 1)//unpacks the exception once
+      {
+        throw ae.InnerException!;
+      }
+    }
+
+    /// <summary>
+    /// Called on Command to create Delegating Proxy
+    /// </summary>
+    /// <param name="command"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    protected virtual async Task OnProvideProxyCommandAsync<T>(PipeMessage command, CancellationToken cancellationToken = default) 
+      where T : class, IPipeDelegatingConnection<PipeMessage>
+    {
+      if (command.Parameter is not string name || name == string.Empty)
+      {
+        var ex = new ArgumentException("Name was not specified.", nameof(command));
+        try
+        {
+          await WriteAsync(PacketFactory.CreateResponseFailure(command, new NoResponseException("Invalid Pipe Name", ex)), default).ConfigureAwait(false);
+          return;
+        }
+        catch (Exception e)
+        {
+          throw new AggregateException(e, ex);
+        }
+      }
+
+      try
+      {
+        cancellationToken.ThrowIfCancellationRequested();
+        LifetimeCancellation.ThrowIfCancellationRequested();
+      }
+      catch (Exception ex)
+      {
+        try
+        {
+          await WriteAsync(PacketFactory.CreateResponseFailure(command, new NoResponseException("Cancelled", ex)), default).ConfigureAwait(false);
+          return;
+        }
+        catch (Exception e)
+        {
+          throw new AggregateException(e, ex);
+        }
+      }
+
+      using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, LifetimeCancellation);
+      if (ResponseTimeoutMs == 0)
+        cts.Cancel();
+      else if (ResponseTimeoutMs > 0)
+        cts.CancelAfter(ResponseTimeoutMs);
+
+      T? proxy = default;
+      try
+      {
+        try
+        {
+          proxy = (T)CreateProxy(command.Command, name!);
+          if (proxy is null)
+            throw new InvalidOperationException("Crated proxy was null");
+        }
+        catch (Exception ex)
+        {
+          try
+          {
+            await WriteAsync(PacketFactory.CreateResponseFailure(command, new NoResponseException("Creating proxy", ex)), default).ConfigureAwait(false);
+            return;
+          }
+          catch (Exception e)
+          {
+            throw new AggregateException(e, ex);
+          }
+        }
+
+        await WriteAsync(PacketFactory.CreateResponse(command), cts.Token).ConfigureAwait(false);
+
         try
         {
           await proxy.StartAndConnectWithTimeoutAsync(ResponseTimeoutMs, cts.Token).ConfigureAwait(false);
         }
-        catch (Exception e)
+        catch (Exception ex)
         {
-          if(primaryRequest)
-            throw new NoResponseException(command, e);
-          else 
-            throw;
+          try
+          {
+            await WriteAsync(PacketFactory.CreateResponseFailure(command, new NoResponseException("Connecting", ex)), default).ConfigureAwait(false);
+            return;
+          }
+          catch (Exception e)
+          {
+            throw new AggregateException(e, ex);
+          }
         }
-        return proxy;
+
+        proxy = default;//So it wont get Disposed
       }
-      catch
+      finally
       {
-        await proxy.StopAsync(default).ConfigureAwait(false);
-        throw;
+        if(proxy is not null)
+          await proxy.DisposeAsync().ConfigureAwait(false);
       }
     }
 
     /// <summary>
+    /// Server logic to initialize Delegating Proxy
+    /// </summary>
+    /// <param name="command"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    public virtual T CreateProxy<T>(string command, CancellationToken cancellationToken = default)
+      where T : class, IPipeDelegatingConnection<PipeMessage>
+    {
+      try
+      {
+        return CreateProxyAsync<T>(command, cancellationToken).Result;
+      }
+      catch (AggregateException ae) when (ae.InnerExceptions.Count == 1)//unpacks the exception once
+      {
+        throw ae.InnerException!;
+      }
+    }
+
+#nullable disable
+
+    /// <summary>
+    /// Server logic to initialize Delegating Proxy
+    /// </summary>
+    /// <param name="command"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    public virtual async Task<T> CreateProxyAsync<T>(string command, CancellationToken cancellationToken = default)
+      where T : class, IPipeDelegatingConnection<PipeMessage>
+    {
+      try
+      {
+        cancellationToken.ThrowIfCancellationRequested();
+        LifetimeCancellation.ThrowIfCancellationRequested();
+      }
+      catch (Exception ex)
+      {
+        throw new NoResponseException("Cancelled", ex);
+      }
+
+      var tcs = new TaskCompletionSource<object>();
+
+      using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, LifetimeCancellation);
+      if (ResponseTimeoutMs == 0)
+        cts.Cancel();
+      else if (ResponseTimeoutMs > 0)
+        cts.CancelAfter(ResponseTimeoutMs);
+
+#if NET5_0_OR_GREATER
+      await using var ctr = cts.Token.UnsafeRegister(static x => ((TaskCompletionSource<object>)x!)
+          .TrySetException(new NoResponseException("Cancelled", new TimeoutException("Timed out"))), tcs).ConfigureAwait(false);
+#else
+      using var ctr = cts.Token.Register(static x =>
+      {
+        var tcs = (TaskCompletionSource<object>)x;
+        tcs.TrySetException(new NoResponseException("Cancelled", new TimeoutException("Timed out")));
+      }, tcs);
+#endif
+
+      var pipeName = Guid.NewGuid().ToString();
+      var message = PacketFactory.CreateCommand(command, pipeName);
+      T proxy = default;
+
+      try
+      {
+        try
+        {
+          proxy = (T)CreateProxy(command, pipeName);
+          if (proxy is null)
+            throw new InvalidOperationException("Crated proxy was null");
+        }
+        catch (Exception ex)
+        {
+          var e = new NoResponseException("Creating Proxy", ex);
+          tcs.TrySetException(e);
+          throw e;
+        }
+
+        try
+        {
+          await _semaphore.WaitAsync(cts.Token).ConfigureAwait(false);
+          try
+          {
+            _responses.Add(message.Id, tcs);
+          }
+          finally
+          {
+            _semaphore.Release();
+          }
+        }
+        catch (Exception ex)
+        {
+          var e = new NoResponseException("Queueing TaskCompletionSource", ex);
+          tcs.TrySetException(e);
+          throw e;
+        }
+
+        try
+        {
+          await WriteAsync(message, cts.Token).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+          var e = new NoResponseException("Sending Command", ex);
+          tcs.TrySetException(e);
+          throw e;
+        }
+
+        try
+        {
+          await tcs.Task.ConfigureAwait(false);//Wait for response if all went ok then it means client is started
+        }
+        catch (NoResponseException)
+        {
+          throw;
+        }
+        catch (Exception ex)
+        {
+          var e = new NoResponseException("Awaiting Response", ex);
+          tcs.TrySetException(e);
+          throw e;
+        }
+
+        try
+        {
+          await proxy.StartAndConnectWithTimeoutAsync(ResponseTimeoutMs, cts.Token).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+          var e = new NoResponseException("Connecting", ex);
+          tcs.TrySetException(e);
+          throw e;
+        }
+
+        try
+        {
+          return proxy;
+        }
+        finally
+        {
+          proxy = default;//So it wont get Disposed
+        }
+      }
+      finally
+      {
+        if (!tcs.Task.IsCompleted)
+          tcs.TrySetException(new NoResponseException("Finally block reached", new InvalidOperationException("Failed to finish gracefully.")));
+
+        if (proxy is not null)
+          await proxy.DisposeAsync().ConfigureAwait(false);
+
+        try
+        {
+          await _semaphore.WaitAsync(LifetimeCancellation).ConfigureAwait(false);
+          _responses.Remove(message.Id);
+          _semaphore.Release();
+        }
+        catch
+        {
+          //Ignored
+        }
+      }
+    }
+
+#nullable restore
+
+    /// <summary>
     /// Create instances of <see cref="IPipeDelegatingConnection{TMessage}"/>
-    /// It will be later cast to final type or the base interface by <see cref="ProvideProxyAsyncCore{T}(string, string, CancellationToken)"/>
-    /// It will be later initialized by <see cref="ProvideProxyAsyncCore{T}(string, string, CancellationToken)"/>
+    /// It will be later cast to final type or the base interface by <see cref="OnProvideProxyCommandAsync{T}(string, string, CancellationToken)"/>
+    /// It will be later initialized by <see cref="OnProvideProxyCommandAsync{T}(string, string, CancellationToken)"/>
     /// Custom logic needs to be provided to dispose elsewhere.
     /// </summary>
     /// <param name="command"></param>

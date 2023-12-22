@@ -242,7 +242,14 @@ namespace T.Pipes
     /// <inheritdoc/>
     public override void OnConnected(string connection)
     {
-      _semaphore.Wait(LifetimeCancellation);
+      try
+      {
+        _semaphore.Wait(LifetimeCancellation);
+      }
+      catch
+      {
+        return;
+      }
       if (_responses.Count > 0)
       {
         var exception = new NoResponseException(connection, new InvalidOperationException("Connected while operations were pending"));
@@ -265,7 +272,14 @@ namespace T.Pipes
     /// <inheritdoc/>
     public override void OnDisconnected(string connection)
     {
-      _semaphore.Wait(LifetimeCancellation);
+      try
+      {
+        _semaphore.Wait(LifetimeCancellation);
+      }
+      catch
+      {
+        return;
+      }
       if (_responses.Count > 0)
       {
         var exception = new NoResponseException(connection, new InvalidOperationException("Disconnected while operations were pending"));
@@ -326,7 +340,14 @@ namespace T.Pipes
     /// </summary>
     public void ClearResponses(Exception? exception = default)
     {
-      _semaphore.Wait(LifetimeCancellation);
+      try
+      {
+        _semaphore.Wait(LifetimeCancellation);
+      }
+      catch
+      {
+        return;
+      }
       if (_responses.Count > 0)
       {
         if (exception is not NoResponseException)
@@ -353,7 +374,14 @@ namespace T.Pipes
     /// <inheritdoc/>
     public override void OnExceptionOccurred(Exception exception)
     {
-      _semaphore.Wait(LifetimeCancellation);
+      try
+      {
+        _semaphore.Wait(LifetimeCancellation);
+      }
+      catch
+      {
+        return;
+      }
       if (_responses.Count > 0)
       {
         exception = new NoResponseException("Exception occurred", exception);
@@ -383,7 +411,14 @@ namespace T.Pipes
     {
       if ((message.PacketType & PacketType.Response)!=0)//Any response
       {
-        _semaphore.Wait(LifetimeCancellation);
+        try
+        {
+          _semaphore.Wait(LifetimeCancellation);
+        }
+        catch
+        {
+          return;
+        }
         var exists = _responses.TryGetValue(message.Id, out var response);
         if (exists)
           _responses.Remove(message.Id);
@@ -440,7 +475,7 @@ namespace T.Pipes
     /// <summary>
     /// Filtered <see cref="OnMessageReceived(TPacket?)"/> to only fire on commands and not responses<br/>
     /// First tries to check if the <paramref name="command"/> is a function command and calls <see cref="OnCommandFunction(TPacket, CommandFunction, CancellationToken)"/><br/>
-    /// Else calls <see cref="OnUnknownMessage(TPacket)"/>
+    /// Else calls <see cref="PipeCallbackBase{TPacket, TCallback}.OnUnknownMessage(TPacket)"/>
     /// </summary>
     /// <param name="command">packet containing command</param>
     protected virtual void OnCommandReceived(TPacket command)
@@ -483,27 +518,29 @@ namespace T.Pipes
       }
       catch (OperationCanceledException ex)
       {
-        if(cts.Token.IsCancellationRequested)//If parent token is cancelled it should be a NoResponseException to signify Pipe error
-          await WriteAsync(PacketFactory.CreateResponseFailure(command, 
-            new NoResponseException("Cancelled externally", ex)), default).ConfigureAwait(false);
-        else
-          await WriteAsync(PacketFactory.CreateResponseCancellation(command, ex), default).ConfigureAwait(false);
+        try
+        {
+          if (cts.Token.IsCancellationRequested)//If parent token is cancelled it should be a NoResponseException to signify Pipe error
+            await WriteAsync(PacketFactory.CreateResponseFailure(command, new NoResponseException("Cancelled externally", ex)), default).ConfigureAwait(false);
+          else
+            await WriteAsync(PacketFactory.CreateResponseCancellation(command, ex), default).ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+          throw new AggregateException(e,ex);
+        }
       }
-      catch (Exception e)
+      catch (Exception ex)
       {
-        await WriteAsync(PacketFactory.CreateResponseFailure(command, e), default).ConfigureAwait(false);
+        try
+        {
+          await WriteAsync(PacketFactory.CreateResponseFailure(command, ex), default).ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+          throw new AggregateException(e, ex);
+        }
       }
-    }
-
-    /// <summary>
-    /// Handler for unhandled commands, should always throw to indicate unknown command
-    /// </summary>
-    /// <param name="invalidMessage">the packet in question</param>
-    /// <exception cref="ArgumentException">always</exception>
-    protected virtual void OnUnknownMessage(TPacket invalidMessage)
-    {
-      var message = $"Message unknown: {invalidMessage}, ServerName: {Connection.ServerName}, PipeName: {Connection.PipeName}";
-      throw new ArgumentException(message, nameof(invalidMessage));
     }
 
     /// <summary>
@@ -524,26 +561,26 @@ namespace T.Pipes
     public async Task<T> GetResponseAsync<T>(TPacket command, CancellationToken cancellationToken = default)
     {
       var tcs = new TaskCompletionSource<object>(TaskCreationOptions.RunContinuationsAsynchronously);
-      using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, LifetimeCancellation);
-      CancellationTokenRegistration ctr = default;
 
-      try
-      {
-        if (ResponseTimeoutMs == 0)
-          cts.Cancel();
-        else if (ResponseTimeoutMs > 0)
-          cts.CancelAfter(ResponseTimeoutMs);
+      using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, LifetimeCancellation);
+      if (ResponseTimeoutMs == 0)
+        cts.Cancel();
+      else if (ResponseTimeoutMs > 0)
+        cts.CancelAfter(ResponseTimeoutMs);
 
 #if NET5_0_OR_GREATER
-        ctr = cts.Token.UnsafeRegister(static x => ((TaskCompletionSource<object>)x!)
-          .TrySetException(new NoResponseException("Cancelled",new TimeoutException("Timed out"))), tcs);
+      await using var ctr = cts.Token.UnsafeRegister(static x => ((TaskCompletionSource<object>)x!)
+        .TrySetException(new NoResponseException("Cancelled", new TimeoutException("Timed out"))), tcs).ConfigureAwait(false);
 #else
-        ctr = cts.Token.Register(static x =>
+      using var ctr = cts.Token.Register(static x =>
         {
           var tcs = (TaskCompletionSource<object>)x;
           tcs.TrySetException(new NoResponseException("Cancelled",new TimeoutException("Timed out")));
         }, tcs);
 #endif
+
+      try
+      {
         try
         {
           await _semaphore.WaitAsync(cts.Token).ConfigureAwait(false);
@@ -559,7 +596,9 @@ namespace T.Pipes
         catch (Exception ex)
         {
           tcs.TrySetException(new NoResponseException("Queueing TaskCompletionSource", ex));
+          return (T)await tcs.Task.ConfigureAwait(false);
         }
+
         try
         {
           await WriteAsync(command, cts.Token).ConfigureAwait(false);
@@ -567,17 +606,26 @@ namespace T.Pipes
         catch (Exception ex)
         {
           tcs.TrySetException(new NoResponseException("Sending Command", ex));
+          return (T)await tcs.Task.ConfigureAwait(false);
         }
+
         return (T)await tcs.Task.ConfigureAwait(false);
       }
       finally
       {
-        ctr.Dispose();
         if (!tcs.Task.IsCompleted)
           tcs.TrySetException(new NoResponseException("Finally block reached", new InvalidOperationException("Failed to finish gracefully.")));
-        await _semaphore.WaitAsync(LifetimeCancellation).ConfigureAwait(false);
-        _responses.Remove(command.Id);
-        _semaphore.Release();
+
+        try
+        {
+          await _semaphore.WaitAsync(LifetimeCancellation).ConfigureAwait(false);
+          _responses.Remove(command.Id);
+          _semaphore.Release();
+        }
+        catch
+        {
+          //Ignored
+        }
       }
     }
 
