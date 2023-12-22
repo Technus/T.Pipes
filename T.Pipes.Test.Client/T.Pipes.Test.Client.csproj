@@ -11,6 +11,10 @@
     <CompilerGeneratedFilesOutputPath>obj/Generated</CompilerGeneratedFilesOutputPath>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(TargetFramework)'=='netstandard2.0'">
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\T.Pipes.Test.Abstractions\T.Pipes.Test.Abstractions.csproj" />
     <ProjectReference Include="..\T.Pipes\T.Pipes.csproj" />
