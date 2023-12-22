@@ -1,5 +1,4 @@
-﻿using Pastel;
-using T.Pipes.Abstractions;
+﻿using T.Pipes.Abstractions;
 using T.Pipes.Test.Abstractions;
 
 namespace T.Pipes.Test.Server
@@ -13,20 +12,20 @@ namespace T.Pipes.Test.Server
     protected override IPipeDelegatingConnection<PipeMessage> CreateProxy(string command, string pipeName) => command switch
     {
       PipeConstants.Create => new DelegatingServerAuto(pipeName),
-      _ => throw new ArgumentException($"Invalid {nameof(command)}: {command}".Pastel(ConsoleColor.DarkCyan), nameof(command)),
+      _ => throw new ArgumentException($"Invalid {nameof(command)}: {command}", nameof(command)),
     };
 
     public Task<DelegatingServerAuto> Create() => CreateProxyAsync<DelegatingServerAuto>(PipeConstants.Create);
 
     public override void OnMessageReceived(PipeMessage message)
     {
-      Console.WriteLine(("I: " + message.ToString()).Pastel(ConsoleColor.Cyan));
+      ("I: " + message.ToString()).WriteLine(ConsoleColor.Cyan);
       base.OnMessageReceived(message);
     }
 
     public override void OnMessageSent(PipeMessage message)
     {
-      Console.WriteLine(("O: " + message.ToString()).Pastel(ConsoleColor.Cyan));
+      ("O: " + message.ToString()).WriteLine(ConsoleColor.Cyan);
       base.OnMessageSent(message);
     }
   }

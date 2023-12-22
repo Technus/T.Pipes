@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFrameworks>net8.0;net6.0;net48;net7.0;</TargetFrameworks>
+    <TargetFrameworks>net8.0;net6.0;net48;net7.0;netstandard2.0</TargetFrameworks>
     <LangVersion>latest</LangVersion>
     <PlatformTarget>x86</PlatformTarget>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -10,10 +10,6 @@
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <CompilerGeneratedFilesOutputPath>obj/Generated</CompilerGeneratedFilesOutputPath>
   </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Pastel" Version="4.2.0" />
-  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\T.Pipes.Test.Abstractions\T.Pipes.Test.Abstractions.csproj" />

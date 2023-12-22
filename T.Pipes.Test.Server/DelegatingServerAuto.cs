@@ -1,5 +1,4 @@
-﻿using Pastel;
-using T.Pipes.Abstractions;
+﻿using T.Pipes.Abstractions;
 using T.Pipes.Test.Abstractions;
 
 namespace T.Pipes.Test.Server
@@ -14,13 +13,13 @@ namespace T.Pipes.Test.Server
 
     public override void OnMessageReceived(PipeMessage message)
     {
-      Console.WriteLine(("I: " + message.ToString()).Pastel(ConsoleColor.Cyan).PastelBg(ConsoleColor.DarkCyan));
+      ("I: " + message.ToString()).WriteLine(ConsoleColor.Cyan, ConsoleColor.DarkCyan);
       base.OnMessageReceived(message);
     }
 
     public override void OnMessageSent(PipeMessage message)
     {
-      Console.WriteLine(("O: " + message.ToString()).Pastel(ConsoleColor.Cyan).PastelBg(ConsoleColor.DarkCyan));
+      ("O: " + message.ToString()).WriteLine(ConsoleColor.Cyan, ConsoleColor.DarkCyan);
       base.OnMessageSent(message);
     }
   }
