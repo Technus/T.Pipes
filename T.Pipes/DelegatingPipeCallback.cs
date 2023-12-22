@@ -521,7 +521,18 @@ namespace T.Pipes
         try
         {
           if (cts.Token.IsCancellationRequested)//If parent token is cancelled it should be a NoResponseException to signify Pipe error
-            await WriteAsync(PacketFactory.CreateResponseFailure(command, new NoResponseException("Cancelled externally", ex)), default).ConfigureAwait(false);
+          {
+            if(cancellationToken.IsCancellationRequested)
+              await WriteAsync(PacketFactory.CreateResponseFailure(command, new NoResponseException("Cancelled externally", ex)), default).ConfigureAwait(false);
+            else if(LifetimeCancellation.IsCancellationRequested)
+            {
+              var name = $"ServerName: {Connection.ServerName}, PipeName: {Connection.PipeName}";
+              var exception = new NoResponseException("Disposing", new ObjectDisposedException(name,ex));
+              await WriteAsync(PacketFactory.CreateResponseFailure(command, new NoResponseException("Disposed externally", exception)), default).ConfigureAwait(false);
+            }
+            else
+              await WriteAsync(PacketFactory.CreateResponseFailure(command, new NoResponseException("Timed out externally", new TimeoutException("Timed out",ex))), default).ConfigureAwait(false);
+          }
           else
             await WriteAsync(PacketFactory.CreateResponseCancellation(command, ex), default).ConfigureAwait(false);
         }
