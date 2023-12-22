@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.Serialization;
 using System.Text;
 using H.Formatters;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 
 namespace T.Pipes
 {
@@ -15,7 +17,7 @@ namespace T.Pipes
     /// <summary>
     /// Boxing of C# primitives for serialization
     /// </summary>
-    public class PrimitiveConverter : JsonConverter
+    public sealed class PrimitiveConverter : JsonConverter
     {
       /// <inheritdoc/>
       public override bool CanConvert(Type objectType) => true;
@@ -41,6 +43,34 @@ namespace T.Pipes
     }
 
     /// <summary>
+    /// Helper for some simple types
+    /// </summary>
+    public sealed class RemotingSerializationBinder : DefaultSerializationBinder
+    {
+      private const string CoreLibAssembly = "System.Private.CoreLib";
+      private const string MscorlibAssembly = "mscorlib";
+
+      /// <inheritdoc/>
+      public override Type BindToType(string? assemblyName, string typeName)
+      {
+#if NET5_0_OR_GREATER || NETCOREAPP
+        if (assemblyName == MscorlibAssembly)
+        {
+          assemblyName = CoreLibAssembly;
+          typeName = typeName.Replace(MscorlibAssembly, CoreLibAssembly);
+        }
+#else
+        if (assemblyName == CoreLibAssembly)
+        {
+          assemblyName = MscorlibAssembly;
+          typeName = typeName.Replace(CoreLibAssembly, MscorlibAssembly);
+        }
+#endif
+        return base.BindToType(assemblyName, typeName);
+      }
+    }
+
+    /// <summary>
     /// Default: UTF8.
     /// </summary>
     public Encoding Encoding { get; set; } = Encoding.UTF8;
@@ -50,6 +80,7 @@ namespace T.Pipes
     /// </summary>
     public JsonSerializerSettings Settings { get; set; } = new()
     {
+      SerializationBinder = new RemotingSerializationBinder(),
       TypeNameHandling = TypeNameHandling.All,
       TypeNameAssemblyFormatHandling = TypeNameAssemblyFormatHandling.Simple,
       ReferenceLoopHandling = ReferenceLoopHandling.Serialize,

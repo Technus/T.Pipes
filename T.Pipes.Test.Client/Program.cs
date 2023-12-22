@@ -8,6 +8,7 @@ namespace T.Pipes.Test.Client
 
     private static async Task Start()
     {
+      $"Client Core: {typeof(byte).Assembly.FullName}".WriteLine(ConsoleColor.Green);
       await using (var client = new Client())
       {
         try

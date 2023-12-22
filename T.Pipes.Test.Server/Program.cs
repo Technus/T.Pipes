@@ -8,6 +8,7 @@ namespace T.Pipes.Test.Server
 
     private static async Task Start()
     {
+      $"Server Core: {typeof(byte).Assembly.FullName}".WriteLine(ConsoleColor.Green);
 #if !DEBUG
       await using var client = new SurrogateProcessWrapper(new(PipeConstants.ClientExeName));
       await client.StartProcess();
