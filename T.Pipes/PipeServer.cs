@@ -168,7 +168,7 @@ namespace T.Pipes
 
       try
       {
-#if NET5_0_OR_GREATER
+#if NET6_0_OR_GREATER
         ctr = cts.Token.UnsafeRegister(static (x,ct) => ((TaskCompletionSource)x!).TrySetCanceled(ct), tcs);
 #else
         ctr = cts.Token.Register(static x =>
