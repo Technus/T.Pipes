@@ -1,4 +1,7 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
+using System.Threading;
 using T.Pipes.Abstractions;
 
 namespace T.Pipes
@@ -55,6 +58,15 @@ namespace T.Pipes
       }
     }
 
+    /// <summary>
+    /// Writes to the pipe
+    /// </summary>
+    /// <param name="message"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    /// <remarks>do not write directly, use that instead, as a common point to add timeout and stuff</remarks>
+    public abstract Task WriteAsync(TPacket message, CancellationToken cancellationToken = default);
+
     /// <inheritdoc/>
     public abstract void OnConnected(string connection);
 
@@ -79,6 +91,26 @@ namespace T.Pipes
     {
       var message = $"Message unknown: {invalidMessage}, ServerName: {Connection.ServerName}, PipeName: {Connection.PipeName}";
       throw new ArgumentException(message, nameof(invalidMessage));
+    }
+
+    /// <summary>
+    /// Helper to create disposed exception
+    /// </summary>
+    /// <returns></returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    protected ObjectDisposedException CreateDisposingException()
+    {
+      return new ObjectDisposedException($"ServerName: {Connection.ServerName}, PipeName: {Connection.PipeName}");
+    }
+
+    /// <summary>
+    /// Helper to create disposed exception
+    /// </summary>
+    /// <returns></returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    protected ObjectDisposedException CreateDisposedException(Exception exception)
+    {
+      return new ObjectDisposedException($"ServerName: {Connection.ServerName}, PipeName: {Connection.PipeName}", exception);
     }
   }
 }

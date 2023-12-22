@@ -134,7 +134,7 @@ namespace T.Pipes
 
       if (_target is null)
       {
-        throw new InvalidCastException($"In fact this is not {typeof(TTarget).FullName}");
+        throw new InvalidCastException($"This is not {typeof(TTarget).FullName}");
       }
     }
 
@@ -155,7 +155,7 @@ namespace T.Pipes
 
       if (_target is null)
       {
-        throw new InvalidOperationException($"In fact target is not {typeof(TTarget).FullName}");
+        throw new InvalidOperationException($"Target is not {typeof(TTarget).FullName}");
       }
     }
 
@@ -182,7 +182,7 @@ namespace T.Pipes
         _semaphore.Wait(LifetimeCancellation);
         if (_responses.Count > 0)
         {
-          var exception = new NoResponseException("Target changed", new InvalidOperationException("Changing Target while operations were pending"));
+          var exception = new LocalNoResponseException("Target changed", new InvalidOperationException("Changing Target while operations were pending"));
           foreach (var item in _responses)
           {
             try
@@ -207,7 +207,7 @@ namespace T.Pipes
         }
         else
         {
-          throw new InvalidOperationException($"In fact target is not {typeof(TTarget).FullName}");
+          throw new InvalidOperationException($"Target is not {typeof(TTarget).FullName}");
         }
       }
     }
@@ -252,7 +252,7 @@ namespace T.Pipes
       }
       if (_responses.Count > 0)
       {
-        var exception = new NoResponseException(connection, new InvalidOperationException("Connected while operations were pending"));
+        var exception = new LocalNoResponseException("Connected", new InvalidOperationException("Connection occured while operations were pending"));
         foreach (var item in _responses)
         {
           try
@@ -282,7 +282,7 @@ namespace T.Pipes
       }
       if (_responses.Count > 0)
       {
-        var exception = new NoResponseException(connection, new InvalidOperationException("Disconnected while operations were pending"));
+        var exception = new LocalNoResponseException("Disconnected", new InvalidOperationException("Disconnection occured while operations were pending"));
         foreach (var item in _responses)
         {
           try
@@ -319,8 +319,7 @@ namespace T.Pipes
         _semaphore.Wait();
       if (_responses.Count > 0)
       {
-        var name = $"ServerName: {Connection.ServerName}, PipeName: {Connection.PipeName}";
-        var exception = new NoResponseException("Disposing", new ObjectDisposedException(name));
+        var exception = new LocalNoResponseException("Disposing", CreateDisposingException());
         foreach (var item in _responses)
         {
           item.Value.TrySetException(exception);
@@ -350,10 +349,9 @@ namespace T.Pipes
       }
       if (_responses.Count > 0)
       {
-        if (exception is not NoResponseException)
+        if (exception is not LocalNoResponseException)
         {
-          exception ??= new InvalidOperationException("Clearing while operations were pending");
-          exception = new NoResponseException("Clearing", exception);
+          exception = new LocalNoResponseException("Clearing", exception ?? new InvalidOperationException("Clearing while operations were pending"));
         }
         foreach (var item in _responses)
         {
@@ -384,7 +382,7 @@ namespace T.Pipes
       }
       if (_responses.Count > 0)
       {
-        exception = new NoResponseException("Exception occurred", exception);
+        exception = new LocalNoResponseException("Exception occurred", exception);
         foreach (var item in _responses)
         {
           try
@@ -446,9 +444,16 @@ namespace T.Pipes
           {
             throw (Exception)message.Parameter!;
           }
-          finally
+          catch (Exception ex)
           {
-            WriteAsync(PacketFactory.CreateResponse(message)).Wait();
+            try
+            {
+              WriteAsync(PacketFactory.CreateResponse(message)).Wait();
+            }
+            catch (Exception e)
+            {
+              throw new AggregateException(e,ex);
+            }
           }
         }
         else if (message.PacketType == PacketType.CommandCancellation)
@@ -460,9 +465,16 @@ namespace T.Pipes
             else
               throw new OperationCanceledException("Command Cancellation Received");
           }
-          finally
+          catch (Exception ex)
           {
-            WriteAsync(PacketFactory.CreateResponse(message)).Wait();
+            try
+            {
+              WriteAsync(PacketFactory.CreateResponse(message)).Wait();
+            }
+            catch (Exception e)
+            {
+              throw new AggregateException(e, ex);
+            }
           }
         }
         else
@@ -520,18 +532,17 @@ namespace T.Pipes
       {
         try
         {
-          if (cts.Token.IsCancellationRequested)//If parent token is cancelled it should be a NoResponseException to signify Pipe error
+          if (cts.Token.IsCancellationRequested)//If parent token is cancelled it should be a RemoteNoResponseException to signify Pipe error
           {
             if(cancellationToken.IsCancellationRequested)
-              await WriteAsync(PacketFactory.CreateResponseFailure(command, new NoResponseException("Cancelled externally", ex)), default).ConfigureAwait(false);
+              await WriteAsync(PacketFactory.CreateResponseFailure(command, new RemoteNoResponseException("Cancelled", ex)), default).ConfigureAwait(false);
             else if(LifetimeCancellation.IsCancellationRequested)
             {
-              var name = $"ServerName: {Connection.ServerName}, PipeName: {Connection.PipeName}";
-              var exception = new NoResponseException("Disposing", new ObjectDisposedException(name,ex));
-              await WriteAsync(PacketFactory.CreateResponseFailure(command, new NoResponseException("Disposed externally", exception)), default).ConfigureAwait(false);
+              var exception = new RemoteNoResponseException("Disposed", CreateDisposedException(ex));
+              await WriteAsync(PacketFactory.CreateResponseFailure(command, exception), default).ConfigureAwait(false);
             }
             else
-              await WriteAsync(PacketFactory.CreateResponseFailure(command, new NoResponseException("Timed out externally", new TimeoutException("Timed out",ex))), default).ConfigureAwait(false);
+              await WriteAsync(PacketFactory.CreateResponseFailure(command, new RemoteNoResponseException("Cancelled", new TimeoutException("Timed out",ex))), default).ConfigureAwait(false);
           }
           else
             await WriteAsync(PacketFactory.CreateResponseCancellation(command, ex), default).ConfigureAwait(false);
@@ -585,7 +596,7 @@ namespace T.Pipes
         var state = ((TaskCompletionSource<object> tcs, CancellationToken cancellationToken, CancellationToken lifetimeCancellation))x;
         if (state.tcs.Task.IsCompleted || state.cancellationToken.IsCancellationRequested || state.lifetimeCancellation.IsCancellationRequested)
           return;
-        state.tcs.TrySetException(new NoResponseException("Cancelled", new TimeoutException("Timed out")));
+        state.tcs.TrySetException(new LocalNoResponseException("Cancelled", new TimeoutException("Timed out")));
       }, (tcs, cancellationToken, LifetimeCancellation)).ConfigureAwait(false);
 #else
       using var ctr = cts.Token.Register(static x =>
@@ -593,7 +604,7 @@ namespace T.Pipes
           var state = ((TaskCompletionSource<object> tcs, CancellationToken cancellationToken, CancellationToken lifetimeCancellation))x;
           if (state.tcs.Task.IsCompleted || state.cancellationToken.IsCancellationRequested || state.lifetimeCancellation.IsCancellationRequested)
             return;
-          state.tcs.TrySetException(new NoResponseException("Cancelled",new TimeoutException("Timed out")));
+          state.tcs.TrySetException(new LocalNoResponseException("Cancelled",new TimeoutException("Timed out")));
         }, (tcs, cancellationToken, LifetimeCancellation));
 #endif
 
@@ -616,7 +627,7 @@ namespace T.Pipes
         }
         catch (Exception ex)
         {
-          tcs.TrySetException(new NoResponseException("Queueing TaskCompletionSource", ex));
+          tcs.TrySetException(new LocalNoResponseException("Queueing TaskCompletionSource", ex));
           return (T)await tcs.Task.ConfigureAwait(false);
         }
 
@@ -629,7 +640,7 @@ namespace T.Pipes
         }
         catch (Exception ex)
         {
-          tcs.TrySetException(new NoResponseException("Sending Command", ex));
+          tcs.TrySetException(new LocalNoResponseException("Sending Command", ex));
           return (T)await tcs.Task.ConfigureAwait(false);
         }
 
@@ -638,7 +649,7 @@ namespace T.Pipes
       finally
       {
         if (!tcs.Task.IsCompleted)
-          tcs.TrySetException(new NoResponseException("Finally block reached", new InvalidOperationException("Failed to finish gracefully.")));
+          tcs.TrySetException(new LocalNoResponseException("Finally block reached", new InvalidOperationException("Failed to finish gracefully.")));
 
         try
         {
@@ -655,18 +666,9 @@ namespace T.Pipes
 
 #nullable restore
 
-    /// <summary>
-    /// Writes to the pipe directly and calls the Callback On Write
-    /// </summary>
-    /// <param name="message"></param>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
-    /// <remarks>do not write to the pipe directly, use that instead, (or the Wrapping Client/Server)</remarks>
-    public async Task WriteAsync(TPacket message, CancellationToken cancellationToken = default)
+    /// <inheritdoc/>
+    public override async Task WriteAsync(TPacket message, CancellationToken cancellationToken = default)
     {
-      cancellationToken.ThrowIfCancellationRequested();
-      LifetimeCancellation.ThrowIfCancellationRequested();
-
       using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, LifetimeCancellation);
       if (ResponseTimeoutMs == 0)
         cts.Cancel();

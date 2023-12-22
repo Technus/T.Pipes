@@ -1,9 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.Runtime.ConstrainedExecution;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Xml.Linq;
 using T.Pipes.Abstractions;
 
 namespace T.Pipes
@@ -29,18 +27,10 @@ namespace T.Pipes
     /// </summary>
     public int ResponseTimeoutMs { get; set; }
 
-    /// <summary>
-    /// Writes to the pipe directly and calls the Callback On Write
-    /// </summary>
-    /// <param name="message"></param>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
-    /// <remarks>do not write to the pipe directly, use that instead, (or the Wrapping Client/Server)</remarks>
-    public async Task WriteAsync(PipeMessage message, CancellationToken cancellationToken = default)
-    {
-      cancellationToken.ThrowIfCancellationRequested();
-      LifetimeCancellation.ThrowIfCancellationRequested();
 
+    /// <inheritdoc/>
+    public override async Task WriteAsync(PipeMessage message, CancellationToken cancellationToken = default)
+    {
       using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, LifetimeCancellation);
       if (ResponseTimeoutMs == 0)
         cts.Cancel();
@@ -64,7 +54,7 @@ namespace T.Pipes
       }
       if (_responses.Count > 0)
       {
-        var exception = new NoResponseException(connection, new InvalidOperationException("Connected while operations were pending"));
+        var exception = new LocalNoResponseException("Connected", new InvalidOperationException("Connection occured while operations were pending"));
         foreach (var item in _responses)
         {
           try
@@ -96,7 +86,7 @@ namespace T.Pipes
       }
       if (_responses.Count > 0)
       {
-        var exception = new NoResponseException(connection, new InvalidOperationException("Disconnected while operations were pending"));
+        var exception = new LocalNoResponseException("Disconnected", new InvalidOperationException("Disconnection occured while operations were pending"));
         foreach (var item in _responses)
         {
           try
@@ -114,7 +104,7 @@ namespace T.Pipes
     }
 
     /// <summary>
-    /// Disposes own resources, not the <see cref="IPipeCallback{TPacket}.Connection"/> nor the <see cref="Target"/>
+    /// Disposes own resources, not the <see cref="IPipeCallback{TPacket}.Connection"/>
     /// </summary>
     /// <returns></returns>
     protected override async ValueTask DisposeAsyncCore(bool disposing)
@@ -124,7 +114,7 @@ namespace T.Pipes
     }
 
     /// <summary>
-    /// Disposes own resources, not the <see cref="IPipeCallback{TPacket}.Connection"/> nor the <see cref="Target"/>
+    /// Disposes own resources, not the <see cref="IPipeCallback{TPacket}.Connection"/>
     /// </summary>
     protected override void DisposeCore(bool disposing, bool includeAsync)
     {
@@ -133,8 +123,7 @@ namespace T.Pipes
         _semaphore.Wait();
       if (_responses.Count > 0)
       {
-        var name = $"ServerName: {Connection.ServerName}, PipeName: {Connection.PipeName}";
-        var exception = new NoResponseException("Disposing", new ObjectDisposedException(name));
+        var exception = new LocalNoResponseException("Disposing", CreateDisposingException());
         foreach (var item in _responses)
         {
           item.Value.TrySetException(exception);
@@ -159,10 +148,9 @@ namespace T.Pipes
       }
       if (_responses.Count > 0)
       {
-        if (exception is not NoResponseException)
+        if (exception is not LocalNoResponseException)
         {
-          exception ??= new InvalidOperationException("Clearing while operations were pending");
-          exception = new NoResponseException("Clearing", exception);
+          exception = new LocalNoResponseException("Clearing", exception ?? new InvalidOperationException("Clearing while operations were pending"));
         }
         foreach (var item in _responses)
         {
@@ -193,7 +181,7 @@ namespace T.Pipes
       }
       if (_responses.Count > 0)
       {
-        exception = new NoResponseException("Exception occurred", exception);
+        exception = new LocalNoResponseException("Exception occurred", exception);
         foreach (var item in _responses)
         {
           try
@@ -218,7 +206,7 @@ namespace T.Pipes
 
     /// <summary>
     /// Handles creation of Proxies
-    /// Calls <see cref="OnProvideProxyCommandAsync{T}(string, string, CancellationToken)"/> with broad generic type
+    /// Calls <see cref="OnProvideProxyCommandAsync{T}(PipeMessage, CancellationToken)"/> with broad generic type
     /// </summary>
     /// <param name="message"></param>
     /// <exception cref="InvalidOperationException"></exception>
@@ -296,7 +284,7 @@ namespace T.Pipes
         var ex = new ArgumentException("Name was not specified.", nameof(command));
         try
         {
-          await WriteAsync(PacketFactory.CreateResponseFailure(command, new NoResponseException("Invalid Pipe Name externally", ex)), default).ConfigureAwait(false);
+          await WriteAsync(PacketFactory.CreateResponseFailure(command, new RemoteNoResponseException("Invalid Pipe Name", ex)), default).ConfigureAwait(false);
           return;
         }
         catch (Exception e)
@@ -308,13 +296,29 @@ namespace T.Pipes
       try
       {
         cancellationToken.ThrowIfCancellationRequested();
+      }
+      catch (Exception ex)
+      {
+        try
+        {
+          await WriteAsync(PacketFactory.CreateResponseFailure(command, new RemoteNoResponseException("Cancelled", ex)), default).ConfigureAwait(false);
+          return;
+        }
+        catch (Exception e)
+        {
+          throw new AggregateException(e, ex);
+        }
+      }
+
+      try
+      {
         LifetimeCancellation.ThrowIfCancellationRequested();
       }
       catch (Exception ex)
       {
         try
         {
-          await WriteAsync(PacketFactory.CreateResponseFailure(command, new NoResponseException("Cancelled externally", ex)), default).ConfigureAwait(false);
+          await WriteAsync(PacketFactory.CreateResponseFailure(command, new RemoteNoResponseException("Disposed", CreateDisposedException(ex))), default).ConfigureAwait(false);
           return;
         }
         catch (Exception e)
@@ -342,7 +346,7 @@ namespace T.Pipes
         {
           try
           {
-            await WriteAsync(PacketFactory.CreateResponseFailure(command, new NoResponseException("Creating proxy externally", ex)), default).ConfigureAwait(false);
+            await WriteAsync(PacketFactory.CreateResponseFailure(command, new RemoteNoResponseException("Creating proxy", ex)), default).ConfigureAwait(false);
             return;
           }
           catch (Exception e)
@@ -361,7 +365,7 @@ namespace T.Pipes
         {
           try
           {
-            await WriteAsync(PacketFactory.CreateResponseFailure(command, new NoResponseException("Connecting externally", ex)), default).ConfigureAwait(false);
+            await WriteAsync(PacketFactory.CreateResponseFailure(command, new RemoteNoResponseException("Connecting", ex)), default).ConfigureAwait(false);
             return;
           }
           catch (Exception e)
@@ -412,11 +416,18 @@ namespace T.Pipes
       try
       {
         cancellationToken.ThrowIfCancellationRequested();
+      }
+      catch (Exception ex)
+      {
+        throw new LocalNoResponseException("Cancelled", ex);
+      }
+      try
+      {
         LifetimeCancellation.ThrowIfCancellationRequested();
       }
       catch (Exception ex)
       {
-        throw new NoResponseException("Cancelled", ex);
+        throw new LocalNoResponseException("Cancelled", CreateDisposedException(ex));
       }
 
       var tcs = new TaskCompletionSource<object>();
@@ -433,7 +444,7 @@ namespace T.Pipes
         var state = ((TaskCompletionSource<object> tcs, CancellationToken cancellationToken, CancellationToken lifetimeCancellation))x;
         if (state.tcs.Task.IsCompleted || state.cancellationToken.IsCancellationRequested || state.lifetimeCancellation.IsCancellationRequested)
           return;
-        state.tcs.TrySetException(new NoResponseException("Cancelled", new TimeoutException("Timed out")));
+        state.tcs.TrySetException(new LocalNoResponseException("Cancelled", new TimeoutException("Timed out")));
       }, (tcs, cancellationToken, LifetimeCancellation)).ConfigureAwait(false);
 #else
       using var ctr = cts.Token.Register(static x =>
@@ -441,7 +452,7 @@ namespace T.Pipes
           var state = ((TaskCompletionSource<object> tcs, CancellationToken cancellationToken, CancellationToken lifetimeCancellation))x;
           if (state.tcs.Task.IsCompleted || state.cancellationToken.IsCancellationRequested || state.lifetimeCancellation.IsCancellationRequested)
             return;
-          state.tcs.TrySetException(new NoResponseException("Cancelled",new TimeoutException("Timed out")));
+          state.tcs.TrySetException(new LocalNoResponseException("Cancelled",new TimeoutException("Timed out")));
         }, (tcs, cancellationToken, LifetimeCancellation));
 #endif
 
@@ -462,7 +473,7 @@ namespace T.Pipes
         }
         catch (Exception ex)
         {
-          var e = new NoResponseException("Creating Proxy", ex);
+          var e = new LocalNoResponseException("Creating Proxy", ex);
           tcs.TrySetException(e);
           throw e;
         }
@@ -484,7 +495,7 @@ namespace T.Pipes
         }
         catch (Exception ex)
         {
-          var e = new NoResponseException("Queueing TaskCompletionSource", ex);
+          var e = new LocalNoResponseException("Queueing TaskCompletionSource", ex);
           tcs.TrySetException(e);
           throw e;
         }
@@ -498,7 +509,7 @@ namespace T.Pipes
         }
         catch (Exception ex)
         {
-          var e = new NoResponseException("Sending Command", ex);
+          var e = new LocalNoResponseException("Sending Command", ex);
           tcs.TrySetException(e);
           throw e;
         }
@@ -511,7 +522,7 @@ namespace T.Pipes
         }
         catch (Exception ex)
         {
-          var e = new NoResponseException("Connecting", ex);
+          var e = new LocalNoResponseException("Awaiting Connection", ex);
           tcs.TrySetException(e);
           throw e;
         }
@@ -528,7 +539,7 @@ namespace T.Pipes
       finally
       {
         if (!tcs.Task.IsCompleted)
-          tcs.TrySetException(new NoResponseException("Finally block reached", new InvalidOperationException("Failed to finish gracefully.")));
+          tcs.TrySetException(new LocalNoResponseException("Finally block reached", new InvalidOperationException("Failed to finish gracefully.")));
 
         if (proxy is not null)
           await proxy.DisposeAsync().ConfigureAwait(false);
@@ -550,8 +561,8 @@ namespace T.Pipes
 
     /// <summary>
     /// Create instances of <see cref="IPipeDelegatingConnection{TMessage}"/>
-    /// It will be later cast to final type or the base interface by <see cref="OnProvideProxyCommandAsync{T}(string, string, CancellationToken)"/>
-    /// It will be later initialized by <see cref="OnProvideProxyCommandAsync{T}(string, string, CancellationToken)"/>
+    /// It will be later cast to final type or the base interface by <see cref="OnProvideProxyCommandAsync{T}(PipeMessage, CancellationToken)"/>
+    /// It will be later initialized by <see cref="OnProvideProxyCommandAsync{T}(PipeMessage, CancellationToken)"/>
     /// Custom logic needs to be provided to dispose elsewhere.
     /// </summary>
     /// <param name="command"></param>

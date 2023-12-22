@@ -88,10 +88,8 @@ namespace T.Pipes
     /// <inheritdoc/>
     public virtual async Task WriteAsync(TPacket value, CancellationToken cancellationToken = default)
     {
-      cancellationToken.ThrowIfCancellationRequested();
-      LifetimeCancellation.ThrowIfCancellationRequested();
-
       using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, LifetimeCancellation);
+      cts.Token.ThrowIfCancellationRequested();
       await NoOperations.WaitAsync(cts.Token).ConfigureAwait(false);
       try
       {
