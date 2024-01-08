@@ -259,16 +259,7 @@ namespace T.Pipes
     /// </summary>
     /// <param name="command">packet containing command</param>
     protected virtual void OnCommandReceived(PipeMessage command)
-    {
-      try
-      {
-        OnProvideProxyCommandAsync<IPipeDelegatingConnection<PipeMessage>>(command).Wait();
-      }
-      catch (AggregateException ae) when (ae.InnerExceptions.Count == 1)//unpacks the exception once
-      {
-        throw ae.InnerException!;
-      }
-    }
+      => Task.Run(() => OnProvideProxyCommandAsync<IPipeDelegatingConnection<PipeMessage>>(command));// The error handling of Provider === sending response by the OnProvideProxyCommandAsync, else it throws on this side
 
     /// <summary>
     /// Called on Command to create Delegating Proxy

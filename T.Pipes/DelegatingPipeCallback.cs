@@ -494,14 +494,7 @@ namespace T.Pipes
     {
       if (Functions.TryGetValue(command.Command, out var function))
       {
-        try
-        {
-          OnCommandFunction(command, function).Wait();
-        }
-        catch (AggregateException ae) when (ae.InnerExceptions.Count == 1)//unpacks the exception once
-        {
-          throw ae.InnerException!;
-        }
+        Task.Run(() => OnCommandFunction(command, function));// The error handling of Target === sending response by the OnCommandFunction, else it throws on this side
       }
       else
       {
