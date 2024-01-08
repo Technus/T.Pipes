@@ -46,7 +46,11 @@ namespace T.Pipes.Test.Client
 
     public int[] GetInts() => j;
 
-    public (string a, string b) GetStrings() => ("John", "Paul");
+    public (string a, string b) GetStrings()
+    {
+      Get?.Invoke("2nd");
+      return ("John", "Paul");
+    }
 
     public short GetT() => 2137;
 
