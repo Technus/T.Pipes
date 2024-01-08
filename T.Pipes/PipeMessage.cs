@@ -8,7 +8,7 @@ namespace T.Pipes
   /// Generic Uniquely identifiable message
   /// </summary>
   [Serializable]
-  [DebuggerDisplay("{Id} / {Command} / {Parameter}")]
+  [DebuggerDisplay("{Id} / {Command / {PacketType.ToString().Replace(\"None, \", string.Empty)} / {Parameter}")]
   public class PipeMessage : IPipeMessage
   {
     /// <inheritdoc/>

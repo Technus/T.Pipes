@@ -17,11 +17,10 @@ namespace T.Pipes
     private long _packetId;
 
     /// <summary>
-    /// Ctor for tests
+    /// Ctor exposed for tests and derived classes
     /// </summary>
-    protected internal PipeMessageFactory()
-    {
-    }
+    protected internal PipeMessageFactory() 
+      => _packetId = (long)new Random().Next() * 819200000;
 
     /// <inheritdoc/>
     public PipeMessage CreateCommand(string command) 
