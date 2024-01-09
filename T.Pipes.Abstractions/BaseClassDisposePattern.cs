@@ -10,7 +10,7 @@ namespace T.Pipes.Abstractions
   /// Base patterns.
   /// </summary>
 #pragma warning disable S3881 // "IDisposable" should be implemented correctly
-  public abstract class BaseClass : IAsyncDisposable, IDisposable
+  public abstract partial class BaseClass : IAsyncDisposable, IDisposable
 #pragma warning restore S3881 // "IDisposable" should be implemented correctly
   {
     /// <summary>
@@ -80,7 +80,7 @@ namespace T.Pipes.Abstractions
         _disposeState &= ~(int)DisposeState.Busy;
       }
       else //Only one cancellation allowed
-        throw new ObjectDisposedException(GetType().Name, $"Cancelling, Previously was: {(DisposeState)was}");
+        throw new ObjectDisposedException(GetType().Name, $"Cancelling, Dispose State was: {(DisposeState)was}");
     }
 
     /// <summary>
@@ -105,7 +105,7 @@ namespace T.Pipes.Abstractions
       else if ((was & (int)DisposeState.AnyDispose) == 0) //Only once more
         _disposeState |= (int)DisposeState.FinalizeAfterCancel;
       else
-        throw new ObjectDisposedException(GetType().Name, $"Finalizing, Previously was: {(DisposeState)was}");
+        throw new ObjectDisposedException(GetType().Name, $"Finalizing, Dispose State was: {(DisposeState)was}");
     }
 
     /// <summary>
@@ -132,7 +132,7 @@ namespace T.Pipes.Abstractions
         _disposeState |= (int)DisposeState.SyncAfterCancel;
       else
 #pragma warning disable S3877 // Exceptions should not be thrown from unexpected methods
-        throw new ObjectDisposedException(GetType().Name, $"Disposing, Previously was: {(DisposeState)was}");
+        throw new ObjectDisposedException(GetType().Name, $"Disposing, Dispose State was: {(DisposeState)was}");
 #pragma warning restore S3877 // Exceptions should not be thrown from unexpected methods
     }
 
@@ -165,7 +165,7 @@ namespace T.Pipes.Abstractions
       else if ((was & (int)DisposeState.AnyDispose) == 0) //Only once more
         _disposeState |= (int)DisposeState.AsyncAfterCancel;
       else
-        throw new ObjectDisposedException(GetType().Name, $"Async Disposing, Previously was: {(DisposeState)was}");
+        throw new ObjectDisposedException(GetType().Name, $"Async Disposing, Dispose State was: {(DisposeState)was}");
     }
 
     /// <summary>
@@ -196,7 +196,7 @@ namespace T.Pipes.Abstractions
     {
       if (IsDisposed)
       {
-        throw new ObjectDisposedException(GetType().Name, $"Disposed Check, Previously was: {(DisposeState)_disposeState}");
+        throw new ObjectDisposedException(GetType().Name, $"Disposed Check, Dispose State is: {(DisposeState)_disposeState}");
       }
     }
 
@@ -234,7 +234,7 @@ namespace T.Pipes.Abstractions
       ThrowIfDisposed();
       if (predicate())
       {
-        throw new ObjectDisposedException(GetType().Name, $"Predicate Check, Previously was: {(DisposeState)_disposeState}");
+        throw new ObjectDisposedException(GetType().Name, $"Predicate Check, Dispose State is: {(DisposeState)_disposeState}");
       }
     }
 
@@ -278,7 +278,7 @@ namespace T.Pipes.Abstractions
       ThrowIfDisposed();
       if (predicate.Invoke((T)this))
       {
-        throw new ObjectDisposedException(GetType().Name, $"Function Predicate Check, Previously was: {(DisposeState)_disposeState}");
+        throw new ObjectDisposedException(GetType().Name, $"Function Predicate Check, Dispose State is: {(DisposeState)_disposeState}");
       }
     }
 
@@ -310,116 +310,6 @@ namespace T.Pipes.Abstractions
       {
         throw new ObjectDisposedException(GetType().Name, message.ToString());
       }
-    }
-
-    /// <summary>
-    /// Safety wrapper for property get
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="property"></param>
-    /// <param name="propertyName"></param>
-    /// <returns></returns>
-    /// <exception cref="ArgumentNullException"></exception>
-    protected virtual T GetPropertyValue<T>(T? property, [CallerMemberName] string? propertyName = null)
-    {
-      ThrowIfDisposed();
-      return property ?? throw new ArgumentNullException(propertyName);
-    }
-
-    /// <summary>
-    /// Safety wrapper for property get
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="property"></param>
-    /// <param name="propertyName"></param>
-    /// <returns></returns>
-    /// <exception cref="ArgumentNullException"></exception>
-    protected virtual T GetReadonlyProperty<T>(ref readonly T? property, [CallerMemberName] string? propertyName = null)
-    {
-      ThrowIfDisposed();
-      return property ?? throw new ArgumentNullException(propertyName);
-    }
-
-    /// <summary>
-    /// Safety wrapper for property get
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="property"></param>
-    /// <param name="propertyName"></param>
-    /// <returns></returns>
-    /// <exception cref="ArgumentNullException"></exception>
-    protected virtual T GetProperty<T>(ref T? property, [CallerMemberName] string? propertyName = null)
-    {
-      ThrowIfDisposed();
-      return property ?? throw new ArgumentNullException(propertyName);
-    }
-
-    /// <summary>
-    /// Safety wrapper for property set
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="property"></param>
-    /// <param name="value"></param>
-    /// <param name="propertyName"></param>
-    protected virtual void SetProperty<T>(ref T? property, T value, [CallerMemberName] string? propertyName = null)
-    {
-      ThrowIfDisposed();
-      property = value ?? throw new ArgumentNullException(propertyName);
-    }
-
-    /// <summary>
-    /// Safety wrapper for property get
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="property"></param>
-    /// <param name="propertyName"></param>
-    /// <returns></returns>
-    /// <exception cref="ArgumentNullException"></exception>
-    protected virtual T? GetOptionalPropertyValue<T>(T? property, [CallerMemberName] string? propertyName = null)
-    {
-      ThrowIfDisposed();
-      return property;
-    }
-
-    /// <summary>
-    /// Safety wrapper for property get
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="property"></param>
-    /// <param name="propertyName"></param>
-    /// <returns></returns>
-    /// <exception cref="ArgumentNullException"></exception>
-    protected virtual T? GetOptionalReadonlyProperty<T>(ref readonly T? property, [CallerMemberName] string? propertyName = null)
-    {
-      ThrowIfDisposed();
-      return property;
-    }
-
-    /// <summary>
-    /// Safety wrapper for property get
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="property"></param>
-    /// <param name="propertyName"></param>
-    /// <returns></returns>
-    /// <exception cref="ArgumentNullException"></exception>
-    protected virtual T? GetOptionalProperty<T>(ref T? property, [CallerMemberName] string? propertyName = null)
-    {
-      ThrowIfDisposed();
-      return property;
-    }
-
-    /// <summary>
-    /// Safety wrapper for property set
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    /// <param name="property"></param>
-    /// <param name="value"></param>
-    /// <param name="propertyName"></param>
-    protected virtual void SetOptionalProperty<T>(ref T? property, T? value, [CallerMemberName] string? propertyName = null)
-    {
-      ThrowIfDisposed();
-      property = value;
     }
   }
 }
