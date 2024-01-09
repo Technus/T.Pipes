@@ -162,7 +162,9 @@ namespace T.Pipes
     /// <summary>
     /// Static Collection of Command functions
     /// </summary>
+#pragma warning disable S2743 // Static fields should not be used in generic types but it is fine since we expect the commands to be auto generated.
     public static Dictionary<string, CommandFunction> Functions { get; } = [];
+#pragma warning restore S2743 // Static fields should not be used in generic types but it is fine since we expect the commands to be auto generated.
 
     /// <summary>
     /// For client an instance of <typeparamref name="TTarget"/>

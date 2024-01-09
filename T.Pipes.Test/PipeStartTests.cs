@@ -171,7 +171,7 @@
     public async Task PipeClientCallbackLifetimeCancellationWait()
     {
       var pipeName = Guid.NewGuid().ToString();
-      var cts = new CancellationTokenSource();
+      using var cts = new CancellationTokenSource();
       cts.Cancel();
       await using var clientCallback = Substitute.For<IPipeCallback<PipeMessage>>();
       clientCallback.LifetimeCancellation.Returns(cts.Token);
@@ -187,7 +187,7 @@
     public async Task PipeServerCallbackLifetimeCancellationWait()
     {
       var pipeName = Guid.NewGuid().ToString();
-      var cts = new CancellationTokenSource();
+      using var cts = new CancellationTokenSource();
       cts.Cancel();
       await using var serverCallback = Substitute.For<IPipeCallback<PipeMessage>>();
       serverCallback.LifetimeCancellation.Returns(cts.Token);
@@ -203,7 +203,7 @@
     public async Task PipeClientCallbackLifetimeCancellationAfterWait()
     {
       var pipeName = Guid.NewGuid().ToString();
-      var cts = new CancellationTokenSource();
+      using var cts = new CancellationTokenSource();
       cts.CancelAfter(100);
       await using var clientCallback = Substitute.For<IPipeCallback<PipeMessage>>();
       clientCallback.LifetimeCancellation.Returns(cts.Token);
@@ -220,7 +220,7 @@
     {
       var pipeName = Guid.NewGuid().ToString();
 
-      var cts = new CancellationTokenSource();
+      using var cts = new CancellationTokenSource();
       cts.CancelAfter(100);
 
       await using var serverCallback = Substitute.For<IPipeCallback<PipeMessage>>();

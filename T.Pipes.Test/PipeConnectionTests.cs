@@ -151,7 +151,14 @@ namespace T.Pipes.Test
       }
       finally
       {
-        try { await client.DisposeAsync(); } catch { }
+        try 
+        { 
+          await client.DisposeAsync(); 
+        } 
+        catch 
+        { 
+          // No action required
+        }
       }
     }
 
@@ -195,7 +202,14 @@ namespace T.Pipes.Test
       }
       finally
       {
-        try { await server.DisposeAsync(); } catch { }
+        try
+        {
+          await server.DisposeAsync();
+        }
+        catch
+        {
+          // No action required
+        }
       }
     }
 
@@ -240,7 +254,7 @@ namespace T.Pipes.Test
 
       await server.WriteAsync(new() { Command = "13" });
 
-      var task = client.StartAsService();
+      _ = client.StartAsService();
 
       await Task.Delay(100);
 

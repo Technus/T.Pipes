@@ -9,7 +9,9 @@ namespace T.Pipes.Abstractions
   /// <summary>
   /// Base patterns.
   /// </summary>
+#pragma warning disable S3881 // "IDisposable" should be implemented correctly
   public abstract class BaseClass : IAsyncDisposable, IDisposable
+#pragma warning restore S3881 // "IDisposable" should be implemented correctly
   {
     /// <summary>
     /// <see cref="CancelCallback"/>
@@ -71,9 +73,9 @@ namespace T.Pipes.Abstractions
 
         LifetimeCancellationSource.Dispose();
 
-#pragma warning disable CA1816 // Dispose methods should call SuppressFinalize
+#pragma warning disable CA1816, S3971 // Dispose methods should call SuppressFinalize
         GC.SuppressFinalize(this);
-#pragma warning restore CA1816 // Dispose methods should call SuppressFinalize
+#pragma warning restore CA1816, S3971 // Dispose methods should call SuppressFinalize
 
         _disposeState &= ~(int)DisposeState.Busy;
       }
@@ -129,7 +131,9 @@ namespace T.Pipes.Abstractions
       else if ((was & (int)DisposeState.AnyDispose) == 0) //Only once more
         _disposeState |= (int)DisposeState.SyncAfterCancel;
       else
+#pragma warning disable S3877 // Exceptions should not be thrown from unexpected methods
         throw new ObjectDisposedException(GetType().Name, $"Disposing, Previously was: {(DisposeState)was}");
+#pragma warning restore S3877 // Exceptions should not be thrown from unexpected methods
     }
 
     /// <summary>
@@ -197,6 +201,30 @@ namespace T.Pipes.Abstractions
     }
 
     /// <summary>
+    /// Throws error when it is disposed or being disposed
+    /// </summary>
+    /// <exception cref="ObjectDisposedException"></exception>
+    protected virtual void ThrowIfDisposed(string message)
+    {
+      if (IsDisposed)
+      {
+        throw new ObjectDisposedException(GetType().Name, message);
+      }
+    }
+
+    /// <summary>
+    /// Throws error when it is disposed or being disposed
+    /// </summary>
+    /// <exception cref="ObjectDisposedException"></exception>
+    protected virtual void ThrowIfDisposed(IFormattable message)
+    {
+      if (IsDisposed)
+      {
+        throw new ObjectDisposedException(GetType().Name, message.ToString());
+      }
+    }
+
+    /// <summary>
     /// This also throws when the supplied predicate is true
     /// </summary>
     /// <param name="predicate"></param>
@@ -204,9 +232,39 @@ namespace T.Pipes.Abstractions
     protected virtual void ThrowIfDisposed(Func<bool> predicate)
     {
       ThrowIfDisposed();
-      if (predicate.Invoke())
+      if (predicate())
       {
         throw new ObjectDisposedException(GetType().Name, $"Predicate Check, Previously was: {(DisposeState)_disposeState}");
+      }
+    }
+
+    /// <summary>
+    /// This also throws when the supplied predicate is true
+    /// </summary>
+    /// <param name="predicate"></param>
+    /// <param name="message"></param>
+    /// <exception cref="ObjectDisposedException"></exception>
+    protected virtual void ThrowIfDisposed(Func<bool> predicate, string message)
+    {
+      ThrowIfDisposed(message);
+      if (predicate.Invoke())
+      {
+        throw new ObjectDisposedException(GetType().Name, message);
+      }
+    }
+
+    /// <summary>
+    /// This also throws when the supplied predicate is true
+    /// </summary>
+    /// <param name="predicate"></param>
+    /// <param name="message"></param>
+    /// <exception cref="ObjectDisposedException"></exception>
+    protected virtual void ThrowIfDisposed(Func<bool> predicate, IFormattable message)
+    {
+      ThrowIfDisposed(message);
+      if (predicate.Invoke())
+      {
+        throw new ObjectDisposedException(GetType().Name, message.ToString());
       }
     }
 
@@ -221,6 +279,36 @@ namespace T.Pipes.Abstractions
       if (predicate.Invoke((T)this))
       {
         throw new ObjectDisposedException(GetType().Name, $"Function Predicate Check, Previously was: {(DisposeState)_disposeState}");
+      }
+    }
+
+    /// <summary>
+    /// This also throws when the supplied predicate is true
+    /// </summary>
+    /// <param name="predicate">using this as a parameter so maybe it can be a static lambda</param>
+    /// <param name="message"></param>
+    /// <exception cref="ObjectDisposedException"></exception>
+    protected virtual void ThrowIfDisposed<T>(Func<T, bool> predicate, string message) where T : BaseClass
+    {
+      ThrowIfDisposed(message);
+      if (predicate.Invoke((T)this))
+      {
+        throw new ObjectDisposedException(GetType().Name, message);
+      }
+    }
+
+    /// <summary>
+    /// This also throws when the supplied predicate is true
+    /// </summary>
+    /// <param name="predicate">using this as a parameter so maybe it can be a static lambda</param>
+    /// <param name="message"></param>
+    /// <exception cref="ObjectDisposedException"></exception>
+    protected virtual void ThrowIfDisposed<T>(Func<T, bool> predicate, IFormattable message) where T : BaseClass
+    {
+      ThrowIfDisposed(message);
+      if (predicate.Invoke((T)this))
+      {
+        throw new ObjectDisposedException(GetType().Name, message.ToString());
       }
     }
 

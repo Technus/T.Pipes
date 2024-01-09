@@ -132,6 +132,7 @@ namespace T.Pipes.SourceGeneration
       {
         switch (item.Expression.Kind())
         {
+          //TODO SyntaxKind.StringLiteralExpression
           case SyntaxKind.TypeOfExpression:
             {
               var type = ((TypeOfExpressionSyntax)item.Expression).Type;
@@ -141,12 +142,6 @@ namespace T.Pipes.SourceGeneration
                 yield return typeDef;
               }
               break;
-            }
-          case SyntaxKind.StringLiteralExpression:
-            {
-              //TODO
-              reportDiagnostic(Diagnostic.Create(InvalidParametersDescriptor, attribute.GetLocation()));
-              yield break;
             }
           default:
             {
@@ -170,6 +165,7 @@ namespace T.Pipes.SourceGeneration
       {
         switch (item.Expression.Kind())
         {
+          //TODO SyntaxKind.StringLiteralExpression
           case SyntaxKind.TypeOfExpression:
             {
               var type = ((TypeOfExpressionSyntax)item.Expression).Type;
@@ -183,12 +179,6 @@ namespace T.Pipes.SourceGeneration
                 }
               }
               break;
-            }
-          case SyntaxKind.StringLiteralExpression:
-            {
-              //TODO
-              reportDiagnostic(Diagnostic.Create(InvalidParametersDescriptor, attribute.GetLocation()));
-              yield break;
             }
           default:
             {

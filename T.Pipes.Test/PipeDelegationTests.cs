@@ -340,10 +340,8 @@ namespace T.Pipes.Test
   [PipeServe(typeof(IAbstract))]
   internal sealed partial class ServerCallback : DelegatingPipeServerCallback<ServerCallback>
   {
-    public ServerCallback() : base()
-    {
-      PacketFactory = new();
-    }
+    public ServerCallback() : base() 
+      => PacketFactory = new();
   }
 
   [ExcludeFromCodeCoverage]
@@ -363,10 +361,8 @@ namespace T.Pipes.Test
   internal sealed partial class ClientCallback<TTarget> : DelegatingPipeClientCallback<TTarget, ClientCallback<TTarget>>
     where TTarget : IAbstract
   {
-    public ClientCallback(TTarget target) : base(target)
-    {
-      PacketFactory = new();
-    }
+    public ClientCallback(TTarget target) : base(target) 
+      => PacketFactory = new();
   }
 
   [ExcludeFromCodeCoverage]

@@ -98,19 +98,15 @@ namespace T.Pipes
     /// </summary>
     /// <returns></returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    protected ObjectDisposedException CreateDisposingException()
-    {
-      return new ObjectDisposedException($"ServerName: {Connection.ServerName}, PipeName: {Connection.PipeName}");
-    }
+    protected ObjectDisposedException CreateDisposingException() 
+      => new ObjectDisposedException($"ServerName: {Connection.ServerName}, PipeName: {Connection.PipeName}");
 
     /// <summary>
     /// Helper to create disposed exception
     /// </summary>
     /// <returns></returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    protected ObjectDisposedException CreateDisposedException(Exception exception)
-    {
-      return new ObjectDisposedException($"ServerName: {Connection.ServerName}, PipeName: {Connection.PipeName}", exception);
-    }
+    protected ObjectDisposedException CreateDisposedException(Exception exception) 
+      => new ObjectDisposedException($"ServerName: {Connection.ServerName}, PipeName: {Connection.PipeName}", exception);
   }
 }

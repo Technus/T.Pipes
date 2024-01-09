@@ -691,17 +691,15 @@ namespace T.Pipes.SourceGeneration
     private void RenderTypeSyntaxName()
     {
       Writer.Write(TypeDefinition.TypeDeclarationSyntax.Identifier);
-      if(TypeDefinition.TypeDeclarationSyntax.TypeParameterList is not null)
+      if (TypeDefinition.TypeDeclarationSyntax.TypeParameterList is not null && 
+        TypeDefinition.TypeDeclarationSyntax.TypeParameterList.Parameters.Count > 0)
       {
-        if (TypeDefinition.TypeDeclarationSyntax.TypeParameterList.Parameters.Count > 0)
+        Writer.Write("_args");
+        foreach (var item in TypeDefinition.TypeDeclarationSyntax.TypeParameterList.Parameters)
         {
-          Writer.Write("_args");
-          foreach (var item in TypeDefinition.TypeDeclarationSyntax.TypeParameterList.Parameters)
-          {
-            Writer.Write('_').Write(item.Identifier);
-          }
-          Writer.Write("_end_");
+          Writer.Write('_').Write(item.Identifier);
         }
+        Writer.Write("_end_");
       }
     }
 
@@ -714,13 +712,6 @@ namespace T.Pipes.SourceGeneration
       RenderTypeName(symbol.ContainingType, served);
     }
 
-    private string GetName(ISymbol symbol, bool served, string prefix = "")
-    {
-      var sb = new StringBuilder();
-      RenderName(sb, symbol, served, prefix);
-      return sb.ToString();
-    }
-
     private void RenderName(StringBuilder writer, ISymbol symbol, bool served, string prefix = "")
     {
       writer
@@ -728,6 +719,13 @@ namespace T.Pipes.SourceGeneration
         .Append(symbol.Name)
         .Append('_');
       RenderTypeName(writer, symbol.ContainingType, served);
+    }
+
+    private string GetName(ISymbol symbol, bool served, string prefix = "")
+    {
+      var sb = new StringBuilder();
+      RenderName(sb, symbol, served, prefix);
+      return sb.ToString();
     }
 
     private void RenderSignature(IEventSymbol eventSymbol, bool served)

@@ -58,7 +58,7 @@ namespace T.Pipes.Abstractions
     /// </summary>
     /// <param name="message"></param>
     /// <param name="innerException"></param>
-    internal NoResponseException(string message, Exception innerException) : base(message, innerException)
+    protected NoResponseException(string message, Exception innerException) : base(message, innerException)
     {
     }
 
@@ -70,7 +70,7 @@ namespace T.Pipes.Abstractions
 #if NET8_0_OR_GREATER
     [Obsolete("This is being still used for remoting kindof...", DiagnosticId = "SYSLIB0051")]
 #endif
-    internal NoResponseException(SerializationInfo info, StreamingContext context) : base(info, context)
+    protected NoResponseException(SerializationInfo info, StreamingContext context) : base(info, context)
     {
     }
   }
