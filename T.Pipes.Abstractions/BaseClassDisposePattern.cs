@@ -247,7 +247,7 @@ namespace T.Pipes.Abstractions
     protected virtual void ThrowIfDisposed(Func<bool> predicate, string message)
     {
       ThrowIfDisposed(message);
-      if (predicate.Invoke())
+      if (predicate())
       {
         throw new ObjectDisposedException(GetType().Name, message);
       }
@@ -262,7 +262,7 @@ namespace T.Pipes.Abstractions
     protected virtual void ThrowIfDisposed(Func<bool> predicate, IFormattable message)
     {
       ThrowIfDisposed(message);
-      if (predicate.Invoke())
+      if (predicate())
       {
         throw new ObjectDisposedException(GetType().Name, message.ToString());
       }
@@ -276,7 +276,7 @@ namespace T.Pipes.Abstractions
     protected virtual void ThrowIfDisposed<T>(Func<T, bool> predicate) where T : BaseClass
     {
       ThrowIfDisposed();
-      if (predicate.Invoke((T)this))
+      if (predicate((T)this))
       {
         throw new ObjectDisposedException(GetType().Name, $"Function Predicate Check, Dispose State is: {(DisposeState)_disposeState}");
       }
@@ -291,7 +291,7 @@ namespace T.Pipes.Abstractions
     protected virtual void ThrowIfDisposed<T>(Func<T, bool> predicate, string message) where T : BaseClass
     {
       ThrowIfDisposed(message);
-      if (predicate.Invoke((T)this))
+      if (predicate((T)this))
       {
         throw new ObjectDisposedException(GetType().Name, message);
       }
@@ -306,7 +306,7 @@ namespace T.Pipes.Abstractions
     protected virtual void ThrowIfDisposed<T>(Func<T, bool> predicate, IFormattable message) where T : BaseClass
     {
       ThrowIfDisposed(message);
-      if (predicate.Invoke((T)this))
+      if (predicate((T)this))
       {
         throw new ObjectDisposedException(GetType().Name, message.ToString());
       }
