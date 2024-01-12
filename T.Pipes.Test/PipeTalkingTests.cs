@@ -49,23 +49,23 @@
       await server.StartAsync();
       await client.StartAndConnectAsync();
 
-      await serverCallback.Received(0).OnMessageReceived(Arg.Any<string>());
-      await clientCallback.Received(0).OnMessageReceived(Arg.Any<string>());
+      await serverCallback.Received(0).OnMessageReceived(Arg.Any<string>(), Arg.Any<CancellationToken>());
+      await clientCallback.Received(0).OnMessageReceived(Arg.Any<string>(), Arg.Any<CancellationToken>());
 
       await client.WriteAsync("clientSent");
 
       await Task.Delay(100);
 
-      await serverCallback.Received(1).OnMessageReceived("clientSent");
+      await serverCallback.Received(1).OnMessageReceived("clientSent", Arg.Any<CancellationToken>());
       serverCallback.ClearReceivedCalls();
-      await clientCallback.Received(0).OnMessageReceived(Arg.Any<string>());
+      await clientCallback.Received(0).OnMessageReceived(Arg.Any<string>(), Arg.Any<CancellationToken>());
 
       await server.WriteAsync("serverSent");
 
       await Task.Delay(100);
 
-      await serverCallback.Received(0).OnMessageReceived(Arg.Any<string>());
-      await clientCallback.Received(1).OnMessageReceived("serverSent");
+      await serverCallback.Received(0).OnMessageReceived(Arg.Any<string>(), Arg.Any<CancellationToken>());
+      await clientCallback.Received(1).OnMessageReceived("serverSent", Arg.Any<CancellationToken>());
       clientCallback.ClearReceivedCalls();
     }
   }

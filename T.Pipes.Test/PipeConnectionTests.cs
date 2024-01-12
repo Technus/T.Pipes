@@ -239,7 +239,7 @@ namespace T.Pipes.Test
 
       await Task.Delay(100);
 
-      await clientCallback.Received(1).OnMessageReceived(Arg.Any<PipeMessage>());
+      await clientCallback.Received(1).OnMessageReceived(Arg.Any<PipeMessage>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -258,7 +258,7 @@ namespace T.Pipes.Test
 
       await Task.Delay(100);
 
-      await clientCallback.Received(0).OnMessageReceived(Arg.Any<PipeMessage>());
+      await clientCallback.Received(0).OnMessageReceived(Arg.Any<PipeMessage>(), Arg.Any<CancellationToken>());
     }
   }
 }
