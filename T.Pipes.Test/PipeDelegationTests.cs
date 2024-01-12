@@ -241,6 +241,7 @@ namespace T.Pipes.Test
       var name = Guid.NewGuid().ToString();
       var target = Substitute.For<IAbstract>();
       await using var dut = new ClientCallback<IAbstract>(target);
+      dut.PacketFactory = new PipeMessageFactory(0);
       await using var pipe = new PipeClient<ClientCallback<IAbstract>>(name, dut);
       pipe.Pipe.AutoReconnect = false;
       dut.ResponseTimeoutMs = 200;
@@ -255,6 +256,7 @@ namespace T.Pipes.Test
       var name = Guid.NewGuid().ToString();
       var target = Substitute.For<IAbstract>();
       await using var dut = new ClientCallback<IAbstract>(target);
+      dut.PacketFactory = new PipeMessageFactory(0);
       await using var pipe = new PipeClient<ClientCallback<IAbstract>>(name, dut);
       pipe.Pipe.AutoReconnect = true;
       dut.ResponseTimeoutMs = 200;
@@ -287,6 +289,7 @@ namespace T.Pipes.Test
     {
       var name = Guid.NewGuid().ToString();
       await using var dut = new ServerCallback();
+      dut.PacketFactory = new PipeMessageFactory(0);
       await using var pipe = new PipeServer<ServerCallback>(name, dut);
 
       var task = Task.Run(dut.AsIAbstract.Action);
@@ -303,6 +306,7 @@ namespace T.Pipes.Test
     {
       var name = Guid.NewGuid().ToString();
       await using var dut = new ServerCallback();
+      dut.PacketFactory = new PipeMessageFactory(0);
       await using var pipe = new PipeServer<ServerCallback>(name, dut);
 
       int result = default;
@@ -322,6 +326,7 @@ namespace T.Pipes.Test
     {
       var name = Guid.NewGuid().ToString();
       await using var dut = new ServerCallback();
+      dut.PacketFactory = new PipeMessageFactory(0);
       await using var pipe = new PipeServer<ServerCallback>(name, dut);
 
       int result = default;

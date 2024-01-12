@@ -9,18 +9,29 @@ namespace T.Pipes
   /// </summary>
   public class PipeMessageFactory : IPipeMessageFactory<PipeMessage>
   {
+    private const int _numericWhitespace = 819200000;
+
     /// <summary>
     /// Public instance to use
     /// </summary>
     public static PipeMessageFactory Instance { get; } = new();
 
-    private long _packetId;
+    /// <summary>
+    /// Packet ID to increment and use in packets
+    /// </summary>
+    protected long _packetId;
 
     /// <summary>
     /// Ctor exposed for tests and derived classes
     /// </summary>
-    protected internal PipeMessageFactory() 
-      => _packetId = (long)new Random().Next() * 819200000;
+    protected internal PipeMessageFactory(long start)
+      => _packetId = start;
+
+    /// <summary>
+    /// Ctor exposed for tests and derived classes
+    /// </summary>
+    protected internal PipeMessageFactory() : this((long)new Random().Next() * _numericWhitespace)
+    { }
 
     /// <inheritdoc/>
     public PipeMessage CreateCommand(string command) 
