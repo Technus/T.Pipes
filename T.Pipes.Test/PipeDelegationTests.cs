@@ -54,7 +54,7 @@ namespace T.Pipes.Test
       await using var dut = new ServerCallback();
       await using var pipe = new PipeServer<ServerCallback>(name, dut);
 
-      dut.Invoking(x => x.OnMessageReceived(new() { })).Should().Throw<Exception>();
+      await dut.OnMessageReceived(new() { }).Should().ThrowAsync<Exception>();
     }
 
     [Fact]
@@ -65,7 +65,7 @@ namespace T.Pipes.Test
       await using var dut = new ClientCallback<IAbstract>(target);
       await using var pipe = new PipeClient<ClientCallback<IAbstract>>(name, dut);
 
-      dut.Invoking(x => x.OnMessageReceived(new(){ })).Should().Throw<Exception>();
+      await dut.OnMessageReceived(new() { }).Should().ThrowAsync<Exception>();
     }
 
     [Fact]
@@ -75,7 +75,7 @@ namespace T.Pipes.Test
       await using var dut = new ServerCallback();
       await using var pipe = new PipeServer<ServerCallback>(name, dut);
 
-      dut.Invoking(x => x.OnMessageReceived(new() { PacketType = PacketType.Command })).Should().Throw<Exception>();
+      await dut.OnMessageReceived(new() { PacketType = PacketType.Command }).Should().ThrowAsync<Exception>();
     }
 
     [Fact]
@@ -86,7 +86,7 @@ namespace T.Pipes.Test
       await using var dut = new ClientCallback<IAbstract>(target);
       await using var pipe = new PipeClient<ClientCallback<IAbstract>>(name, dut);
 
-      dut.Invoking(x => x.OnMessageReceived(new() { PacketType = PacketType.Command })).Should().Throw<Exception>();
+      await dut.OnMessageReceived(new() { PacketType = PacketType.Command }).Should().ThrowAsync<Exception>();
     }
 
     [Fact]
@@ -96,7 +96,7 @@ namespace T.Pipes.Test
       await using var dut = new ServerCallback();
       await using var pipe = new PipeServer<ServerCallback>(name, dut);
 
-      dut.Invoking(x => x.OnMessageReceived(new() { PacketType = PacketType.Response })).Should().NotThrow();
+      await dut.OnMessageReceived(new() { PacketType = PacketType.Response }).Should().NotThrowAsync();
     }
 
     [Fact]
@@ -107,7 +107,7 @@ namespace T.Pipes.Test
       await using var dut = new ClientCallback<IAbstract>(target);
       await using var pipe = new PipeClient<ClientCallback<IAbstract>>(name, dut);
 
-      dut.Invoking(x => x.OnMessageReceived(new() { PacketType = PacketType.Response })).Should().NotThrow();
+      await dut.OnMessageReceived(new() { PacketType = PacketType.Response }).Should().NotThrowAsync();
     }
 
     [Fact]
@@ -246,8 +246,11 @@ namespace T.Pipes.Test
       pipe.Pipe.AutoReconnect = false;
       dut.ResponseTimeoutMs = 200;
 
-      dut.Invoking(x => x.OnMessageReceived(new() { PacketType = PacketType.Command, Command = "Action_IAbstract", Id = 1 }))
-        .Should().Throw<AggregateException>().Which.InnerExceptions.Count.Should().Be(2, "because the command and the fallback response should fail");
+      var task = dut.OnMessageReceived(new() { PacketType = PacketType.Command, Command = "Action_IAbstract", Id = 1 });
+
+      var exception = await task.Should().ThrowAsync<AggregateException>();
+
+      exception.Which.InnerExceptions.Count.Should().Be(2, "because the command and the fallback response should fail");
     }
 
     [Fact]
@@ -261,8 +264,8 @@ namespace T.Pipes.Test
       pipe.Pipe.AutoReconnect = true;
       dut.ResponseTimeoutMs = 200;
 
-      dut.Invoking(x => x.OnMessageReceived(new() { PacketType = PacketType.Command, Command = "Action_IAbstract", Id = 1 }))
-        .Should().Throw<OperationCanceledException>();
+      await dut.OnMessageReceived(new() { PacketType = PacketType.Command, Command = "Action_IAbstract", Id = 1 })
+        .Should().ThrowAsync<OperationCanceledException>();
     }
 
     [Fact]
@@ -278,8 +281,8 @@ namespace T.Pipes.Test
       await using var pipe = new PipeClient<ClientCallback<IAbstract>>(name, dut);
       await pipe.StartAsync();
       dut.ResponseTimeoutMs = 200;
-      
-      dut.OnMessageReceived(new() { PacketType = PacketType.Command, Command = "Action_IAbstract", Id = 1 });
+
+      await dut.OnMessageReceived(new() { PacketType = PacketType.Command, Command = "Action_IAbstract", Id = 1 });
       
       target.Received(1).Action();
     }
@@ -296,7 +299,7 @@ namespace T.Pipes.Test
 
       await task.Should().NotCompleteWithinAsync(TimeSpan.FromMilliseconds(100));
 
-      dut.OnMessageReceived(new() { PacketType = PacketType.Response, Command = "Action_IAbstract", Id = 1 });/// Id should be 1 here when using <see cref="PipeMessageFactory"/>
+      await dut.OnMessageReceived(new() { PacketType = PacketType.Response, Command = "Action_IAbstract", Id = 1 });/// Id should be 1 here when using <see cref="PipeMessageFactory"/>
 
       await task.Should().CompleteWithinAsync(TimeSpan.FromMilliseconds(100));
     }
@@ -315,7 +318,7 @@ namespace T.Pipes.Test
 
       await task.Should().NotCompleteWithinAsync(TimeSpan.FromMilliseconds(100));
 
-      dut.OnMessageReceived(new() { PacketType = PacketType.Response, Command = "Should be ignored...", Id = 1 , Parameter = 21});/// Id should be 1 here when using <see cref="PipeMessageFactory"/>
+      await dut.OnMessageReceived(new() { PacketType = PacketType.Response, Command = "Should be ignored...", Id = 1 , Parameter = 21});/// Id should be 1 here when using <see cref="PipeMessageFactory"/>
 
       await task.Should().CompleteWithinAsync(TimeSpan.FromMilliseconds(100));
       (await task).Should().Be(21);
@@ -335,7 +338,7 @@ namespace T.Pipes.Test
 
       await task.Should().NotCompleteWithinAsync(TimeSpan.FromMilliseconds(100));
 
-      dut.OnMessageReceived(new() { PacketType = PacketType.Response, Command = "Should be ignored...", Id = 1});/// Id should be 1 here when using <see cref="PipeMessageFactory"/>
+      await dut.OnMessageReceived(new() { PacketType = PacketType.Response, Command = "Should be ignored...", Id = 1});/// Id should be 1 here when using <see cref="PipeMessageFactory"/>
 
       await task.Should().CompleteWithinAsync(TimeSpan.FromMilliseconds(100));
     }

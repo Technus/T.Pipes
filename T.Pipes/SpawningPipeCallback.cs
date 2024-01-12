@@ -209,14 +209,17 @@ namespace T.Pipes
     /// Calls <see cref="OnProvideProxyCommandAsync{T}(PipeMessage, CancellationToken)"/> with broad generic type
     /// </summary>
     /// <param name="message"></param>
+    /// <param name="cancellationToken"></param>
     /// <exception cref="InvalidOperationException"></exception>
-    public override void OnMessageReceived(PipeMessage message)
+    public override async Task OnMessageReceived(PipeMessage message, CancellationToken cancellationToken = default)
     {
+      using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, LifetimeCancellation);
+
       if ((message.PacketType & PacketType.Response) != 0)//Any response
       {
         try
         {
-          _semaphore.Wait(LifetimeCancellation);
+          await _semaphore.WaitAsync(cts.Token).ConfigureAwait(false);
         }
         catch
         {
@@ -245,21 +248,13 @@ namespace T.Pipes
       {
         if (message.PacketType == PacketType.Command)
         {
-          OnCommandReceived(message);
+          await OnProvideProxyCommandAsync<IPipeDelegatingConnection<PipeMessage>>(message, cts.Token).ConfigureAwait(false);
         }
         else
           throw new InvalidOperationException("Failure or Cancellation commands are not supported");
       }
       else OnUnknownMessage(message);
     }
-
-    /// <summary>
-    /// Filtered <see cref="OnMessageReceived(PipeMessage)"/> to only fire on commands and not responses<br/>
-    /// Else calls <see cref="PipeCallbackBase{TPacket, TCallback}.OnUnknownMessage(TPacket)"/>
-    /// </summary>
-    /// <param name="command">packet containing command</param>
-    protected virtual void OnCommandReceived(PipeMessage command)
-      => Task.Run(() => OnProvideProxyCommandAsync<IPipeDelegatingConnection<PipeMessage>>(command));// The error handling of Provider === sending response by the OnProvideProxyCommandAsync, else it throws on this side
 
     /// <summary>
     /// Called on Command to create Delegating Proxy

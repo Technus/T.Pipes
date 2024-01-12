@@ -15,10 +15,10 @@ namespace T.Pipes.Test.Client
       _ => throw new ArgumentException($"Invalid {nameof(command)}: {command}", nameof(command)),
     };
 
-    public override void OnMessageReceived(PipeMessage message)
+    public override Task OnMessageReceived(PipeMessage message, CancellationToken cancellationToken = default)
     {
       ("I: " + message.ToString()).WriteLine(ConsoleColor.Yellow);
-      base.OnMessageReceived(message);
+      return base.OnMessageReceived(message, cancellationToken);
     }
 
     public override void OnMessageSent(PipeMessage message)

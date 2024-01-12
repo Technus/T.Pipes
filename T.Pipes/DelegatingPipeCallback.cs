@@ -404,16 +404,18 @@ namespace T.Pipes
     /// <summary>
     /// Called on each incoming message<br/>
     /// First tries to check if the <paramref name="message"/> is a response and passes it along<br/>
-    /// Else calls <see cref="OnCommandReceived(TPacket)"/>
     /// </summary>
     /// <param name="message"></param>
-    public override void OnMessageReceived(TPacket message)
+    /// <param name="cancellationToken"></param>
+    public override async Task OnMessageReceived(TPacket message, CancellationToken cancellationToken = default)
     {
+      using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, LifetimeCancellation);
+
       if ((message.PacketType & PacketType.Response)!=0)//Any response
       {
         try
         {
-          _semaphore.Wait(LifetimeCancellation);
+          await _semaphore.WaitAsync(cts.Token).ConfigureAwait(false);
         }
         catch
         {
@@ -450,11 +452,11 @@ namespace T.Pipes
           {
             try
             {
-              WriteAsync(PacketFactory.CreateResponse(message)).Wait();
+              await WriteAsync(PacketFactory.CreateResponse(message)).ConfigureAwait(false);
             }
             catch (Exception e)
             {
-              throw new AggregateException(e,ex);
+              throw new AggregateException(e, ex);
             }
           }
         }
@@ -471,7 +473,7 @@ namespace T.Pipes
           {
             try
             {
-              WriteAsync(PacketFactory.CreateResponse(message)).Wait();
+              await WriteAsync(PacketFactory.CreateResponse(message)).ConfigureAwait(false);
             }
             catch (Exception e)
             {
@@ -480,32 +482,23 @@ namespace T.Pipes
           }
         }
         else
-          OnCommandReceived(message);
+        {
+          if (Functions.TryGetValue(message.Command, out var function))
+          {
+            await OnCommandFunction(message, function, cts.Token).ConfigureAwait(false);// The error handling of Target === sending response by the OnCommandFunction, else it throws on this side
+          }
+          else
+          {
+            OnUnknownMessage(message);
+          }
+        }
       }
       else
         OnUnknownMessage(message);
     }
 
     /// <summary>
-    /// Filtered <see cref="OnMessageReceived(TPacket?)"/> to only fire on commands and not responses<br/>
-    /// First tries to check if the <paramref name="command"/> is a function command and calls <see cref="OnCommandFunction(TPacket, CommandFunction, CancellationToken)"/><br/>
-    /// Else calls <see cref="PipeCallbackBase{TPacket, TCallback}.OnUnknownMessage(TPacket)"/>
-    /// </summary>
-    /// <param name="command">packet containing command</param>
-    protected virtual void OnCommandReceived(TPacket command)
-    {
-      if (Functions.TryGetValue(command.Command, out var function))
-      {
-        Task.Run(() => OnCommandFunction(command, function));// The error handling of Target === sending response by the OnCommandFunction, else it throws on this side
-      }
-      else
-      {
-        OnUnknownMessage(command);
-      }
-    }
-
-    /// <summary>
-    /// Filtered <see cref="OnMessageReceived(TPacket?)"/> to only fire on commands in <see cref="Functions"/><br/>
+    /// Filtered <see cref="OnMessageReceived(TPacket?, CancellationToken)"/> to only fire on commands in <see cref="Functions"/><br/>
     /// </summary>
     /// <param name="command"></param>
     /// <param name="function"></param>

@@ -49,23 +49,23 @@
       await server.StartAsync();
       await client.StartAndConnectAsync();
 
-      serverCallback.Received(0).OnMessageReceived(Arg.Any<string>());
-      clientCallback.Received(0).OnMessageReceived(Arg.Any<string>());
+      await serverCallback.Received(0).OnMessageReceived(Arg.Any<string>());
+      await clientCallback.Received(0).OnMessageReceived(Arg.Any<string>());
 
       await client.WriteAsync("clientSent");
 
       await Task.Delay(100);
 
-      serverCallback.Received(1).OnMessageReceived("clientSent");
+      await serverCallback.Received(1).OnMessageReceived("clientSent");
       serverCallback.ClearReceivedCalls();
-      clientCallback.Received(0).OnMessageReceived(Arg.Any<string>());
+      await clientCallback.Received(0).OnMessageReceived(Arg.Any<string>());
 
       await server.WriteAsync("serverSent");
 
       await Task.Delay(100);
 
-      serverCallback.Received(0).OnMessageReceived(Arg.Any<string>());
-      clientCallback.Received(1).OnMessageReceived("serverSent");
+      await serverCallback.Received(0).OnMessageReceived(Arg.Any<string>());
+      await clientCallback.Received(1).OnMessageReceived("serverSent");
       clientCallback.ClearReceivedCalls();
     }
   }

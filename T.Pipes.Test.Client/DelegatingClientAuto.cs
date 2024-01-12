@@ -13,10 +13,10 @@ namespace T.Pipes.Test.Client
     { 
     }
 
-    public override void OnMessageReceived(PipeMessage message)
+    public override Task OnMessageReceived(PipeMessage message, CancellationToken cancellationToken = default)
     {
       ("I: " + message.ToString()).WriteLine(ConsoleColor.Yellow, ConsoleColor.DarkYellow);
-      base.OnMessageReceived(message);
+      return base.OnMessageReceived(message, cancellationToken);
     }
 
     public override void OnMessageSent(PipeMessage message)

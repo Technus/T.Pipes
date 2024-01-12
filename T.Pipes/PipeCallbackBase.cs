@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Threading;
@@ -77,7 +77,7 @@ namespace T.Pipes
     public abstract void OnExceptionOccurred(Exception exception);
 
     /// <inheritdoc/>
-    public abstract void OnMessageReceived(TPacket message);
+    public abstract Task OnMessageReceived(TPacket message, CancellationToken cancellationToken = default);
 
     /// <inheritdoc/>
     public abstract void OnMessageSent(TPacket message);

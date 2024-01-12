@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace T.Pipes.Abstractions
 {
@@ -36,8 +37,9 @@ namespace T.Pipes.Abstractions
     /// Triggers when receiving
     /// </summary>
     /// <param name="message"></param>
+    /// <param name="cancellationToken"></param>
     /// <remarks>To prevent circular dependencies must also be called inside callback before writing to pure pipe, (not the wrapped pipe)</remarks>
-    void OnMessageReceived(TMessage message);
+    Task OnMessageReceived(TMessage message, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Triggers when a connection was established

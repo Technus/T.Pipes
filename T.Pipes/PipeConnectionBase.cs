@@ -80,7 +80,17 @@ namespace T.Pipes
     }
 
     private void OnMessageReceived(object? sender, ConnectionMessageEventArgs<TPacket?> e)
-      => Callback.OnMessageReceived(e.Message!);
+      => Task.Run(() =>
+      {
+        try
+        {
+          Callback.OnMessageReceived(e.Message!, LifetimeCancellation).Wait();
+        }
+        catch (Exception ex)
+        {
+          OnExceptionOccurred(sender ?? this, new(ex));
+        }
+      }).ConfigureAwait(false);
 
     private void OnExceptionOccurred(object? sender, ExceptionEventArgs e)
       => Callback.OnExceptionOccurred(e.Exception);
