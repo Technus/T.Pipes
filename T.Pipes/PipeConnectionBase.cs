@@ -1,5 +1,6 @@
 using H.Pipes.Args;
 using System;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using T.Pipes.Abstractions;
@@ -24,6 +25,9 @@ namespace T.Pipes
 
     private int _connectionCount;
     private readonly SemaphoreSlim _noConnections = new(1, 1);
+
+    private int _responseTaskCount;
+    private readonly SemaphoreSlim _noResponseTasks = new(1, 1);
 
     /// <summary>
     /// The <typeparamref name="TPipe"/> used
@@ -61,6 +65,7 @@ namespace T.Pipes
     /// Must be called on incoming connection
     /// </summary>
     /// <returns>current count</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     protected int IncrementConnectionCount()
     {
       var result = Interlocked.Increment(ref _connectionCount);
@@ -72,6 +77,7 @@ namespace T.Pipes
     /// Must be called on closing connection
     /// </summary>
     /// <returns>current count</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     protected int DecrementConnectionCount()
     {
       var result = Interlocked.Decrement(ref _connectionCount);
@@ -79,16 +85,49 @@ namespace T.Pipes
       return result;
     }
 
-    private void OnMessageReceived(object? sender, ConnectionMessageEventArgs<TPacket?> e)
+    /// <summary>
+    /// Must be called on incoming connection
+    /// </summary>
+    /// <returns>current count</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    protected int IncrementResponseTaskCount()
+    {
+      var result = Interlocked.Increment(ref _responseTaskCount);
+      if (result == 1) _noResponseTasks.Wait(LifetimeCancellation);
+      return result;
+    }
+
+    /// <summary>
+    /// Must be called on closing connection
+    /// </summary>
+    /// <returns>current count</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    protected int DecrementResponseTaskCount()
+    {
+      var result = Interlocked.Decrement(ref _responseTaskCount);
+      if (result == 0) _noResponseTasks.Release();
+      return result;
+    }
+
+    private void OnMessageReceived(object? sender, ConnectionMessageEventArgs<TPacket?> e) 
       => Task.Run(() =>
       {
         try
         {
-          Callback.OnMessageReceived(e.Message!, LifetimeCancellation).Wait();
+          LifetimeCancellation.ThrowIfCancellationRequested();
+          IncrementResponseTaskCount();
+          try
+          {
+            Callback.OnMessageReceived(e.Message!, LifetimeCancellation).Wait();
+          }
+          finally
+          {
+            DecrementResponseTaskCount();
+          }
         }
         catch (Exception ex)
         {
-          OnExceptionOccurred(sender ?? this, new(ex));
+          Callback.OnExceptionOccurred(ex);
         }
       }).ConfigureAwait(false);
 
@@ -188,6 +227,7 @@ namespace T.Pipes
       await NoOperations.WaitAsync().ConfigureAwait(false);
       await Pipe.DisposeAsync().ConfigureAwait(false);
       await _noConnections.WaitAsync().ConfigureAwait(false);
+      await _noResponseTasks.WaitAsync().ConfigureAwait(false);
     }
 
     /// <summary>
@@ -202,7 +242,9 @@ namespace T.Pipes
         if(!disposeTask.IsCompleted) 
           disposeTask.AsTask().Wait();
         _noConnections.Wait();
+        _noResponseTasks.Wait();
       }
+      _noResponseTasks.Dispose();
       _noConnections.Dispose();
       NoOperations.Dispose();
       Pipe.MessageReceived -= OnMessageReceived;
