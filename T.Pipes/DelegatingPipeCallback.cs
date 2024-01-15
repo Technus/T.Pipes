@@ -337,7 +337,7 @@ namespace T.Pipes
     }
 
     /// <summary>
-    /// Clears the response awaiting tasks by <see cref="TaskCompletionSource{TResult}.TrySetCanceled()"/>
+    /// Clears the response awaiting tasks by <see cref="TaskCompletionSource{TResult}.TrySetException(Exception)"/>
     /// </summary>
     public void ClearResponses(Exception? exception = default)
     {
@@ -434,7 +434,7 @@ namespace T.Pipes
             if (message.Parameter is Exception ex)
               response!.TrySetException(ex);
             else
-              response!.TrySetCanceled();
+              response!.TrySetCanceled(default);
           }
           else
             response!.TrySetResult(message.Parameter);
@@ -452,7 +452,7 @@ namespace T.Pipes
           {
             try
             {
-              await WriteAsync(PacketFactory.CreateResponse(message)).ConfigureAwait(false);
+              await WriteAsync(PacketFactory.CreateResponse(message), default).ConfigureAwait(false);
             }
             catch (Exception e)
             {
@@ -473,7 +473,7 @@ namespace T.Pipes
           {
             try
             {
-              await WriteAsync(PacketFactory.CreateResponse(message)).ConfigureAwait(false);
+              await WriteAsync(PacketFactory.CreateResponse(message), default).ConfigureAwait(false);
             }
             catch (Exception e)
             {

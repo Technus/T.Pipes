@@ -19,7 +19,7 @@ namespace T.Pipes
     /// Creates Callback to handle Factorization of <see cref="IPipeDelegatingConnection{TMessage}"/>
     /// </summary>
     /// <param name="responseTimeoutMs"></param>
-    protected SpawningPipeCallback(int responseTimeoutMs = Timeout.Infinite) : base(PipeMessageFactory.Instance) 
+    protected SpawningPipeCallback(int responseTimeoutMs = Timeout.Infinite) : base(PipeMessageFactory.Instance)
       => ResponseTimeoutMs = responseTimeoutMs;
 
     /// <summary>
@@ -54,7 +54,7 @@ namespace T.Pipes
       }
       if (_responses.Count > 0)
       {
-        var exception = new LocalNoResponseException("Connected", new InvalidOperationException("Connection occured while operations were pending"));
+        var exception = new LocalNoResponseException("Connected", new InvalidOperationException("Connection occurred while operations were pending"));
         foreach (var item in _responses)
         {
           try
@@ -86,7 +86,7 @@ namespace T.Pipes
       }
       if (_responses.Count > 0)
       {
-        var exception = new LocalNoResponseException("Disconnected", new InvalidOperationException("Disconnection occured while operations were pending"));
+        var exception = new LocalNoResponseException("Disconnected", new InvalidOperationException("Disconnection occurred while operations were pending"));
         foreach (var item in _responses)
         {
           try
@@ -134,7 +134,7 @@ namespace T.Pipes
     }
 
     /// <summary>
-    /// Clears the response awaiting tasks by <see cref="TaskCompletionSource{TResult}.TrySetCanceled()"/>
+    /// Clears the response awaiting tasks by <see cref="TaskCompletionSource{TResult}.TrySetException(Exception)"/>
     /// </summary>
     public void ClearResponses(Exception? exception = default)
     {
@@ -238,7 +238,7 @@ namespace T.Pipes
             if (message.Parameter is Exception ex)
               response!.TrySetException(ex);
             else
-              response!.TrySetCanceled();
+              response!.TrySetCanceled(default);
           }
           else
             response!.TrySetResult(message.Parameter);
