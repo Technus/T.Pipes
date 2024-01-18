@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace T.Pipes.Abstractions
 {
 #pragma warning disable S3881 // "IDisposable" should be implemented correctly
-  public abstract partial class BaseClass : IAsyncDisposable, IDisposable
+  public abstract partial class BaseClass
 #pragma warning restore S3881 // "IDisposable" should be implemented correctly
   {
     /// <summary>

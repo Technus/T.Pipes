@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 
 namespace T.Pipes.Abstractions
 {
@@ -18,58 +19,122 @@ namespace T.Pipes.Abstractions
     /// <summary>
     /// Disposed or disposing
     /// </summary>
-    Old = 0x10,
+    Old = 1 << 28,
     /// <summary>
     /// In process of disposing
     /// </summary>
-    Busy = 0x20,
+    Busy = 1 << 29,
 
     /// <summary>
-    /// <see cref="IDisposable.Dispose"/>
+    /// <see cref="BaseClass.Dispose"/>
     /// </summary>
-    Sync = 0x01,
+    CheckedSync = 1 << 0,
     /// <summary>
-    /// <see cref="IAsyncDisposable.DisposeAsync"/>
+    /// <see cref="BaseClass.DisposeAsync"/>
     /// </summary>
-    Async = 0x02,
+    CheckedAsync = 1 << 1,
     /// <summary>
-    /// <see cref="object.Finalize"/> descendants
+    /// <see cref="BaseClass.FinalizerCore"/>
     /// </summary>
-    Finalize = 0x04,
+    CheckedFinalize = 1 << 2,
+    /// <summary>
+    /// <see cref="BaseClass.RegisterTryCancelOnCancellation"/>
+    /// </summary>
+    CheckedCancel = 1 << 3,
 
     /// <summary>
-    /// <see cref="BaseClass.LifetimeCancellation"/>
+    /// Any NonTry Was Called
     /// </summary>
-    Cancel = 0x08,
+    AnyChecked = CheckedSync | CheckedAsync | CheckedFinalize | CheckedCancel,
 
     /// <summary>
-    /// <see cref="IDisposable.Dispose"/> after cancelling <see cref="BaseClass.LifetimeCancellation"/>
+    /// <see cref="BaseClass.TryDisposeCore"/>
     /// </summary>
-    SyncAfterCancel = 0x100,
+    TrySync = 1 << 4,
     /// <summary>
-    /// <see cref="IAsyncDisposable.DisposeAsync"/> after cancelling <see cref="BaseClass.LifetimeCancellation"/>
+    /// <see cref="BaseClass.TryDisposeAsync"/>
     /// </summary>
-    AsyncAfterCancel = 0x200,
+    TryAsync = 1 << 5,
     /// <summary>
-    /// <see cref="object.Finalize"/> descendants after cancelling <see cref="BaseClass.LifetimeCancellation"/>
+    /// <see cref="BaseClass.TryFinalizerCore"/>
     /// </summary>
-    FinalizeAfterCancel = 0x400,
+    TryFinalize = 1 << 6,
+    /// <summary>
+    /// <see cref="BaseClass.RegisterTryCancelOnCancellation"/>
+    /// </summary>
+    TryCancel = 1 << 7,
 
     /// <summary>
-    /// Any Dispose/Async/Finalize was called after cancelling <see cref="BaseClass.LifetimeCancellation"/>
+    /// Any Try Was called
     /// </summary>
-    AnyDispose = SyncAfterCancel | AsyncAfterCancel | FinalizeAfterCancel | Sync | Async | Finalize,
+    AnyTry = TrySync | TryAsync | TryFinalize | TryCancel,
 
     /// <summary>
-    /// <see cref="BaseClass.LifetimeCancellation"/> was called after cancelling <see cref="BaseClass.LifetimeCancellation"/>
+    /// <see cref="BaseClass.Dispose"/> after any <see cref="AnySafe"/>
+    /// </summary>
+    SyncAfterTry = 1 << 8,
+    /// <summary>
+    /// <see cref="BaseClass.DisposeAsync"/> after any <see cref="AnySafe"/>
+    /// </summary>
+    AsyncAfterTry = 1 << 9,
+    /// <summary>
+    /// <see cref="BaseClass.FinalizerCore"/> descendants after any <see cref="AnySafe"/>
+    /// </summary>
+    FinalizeAfterTry = 1 << 10,
+    /// <summary>
+    /// <see cref="BaseClass.LifetimeCancellation"/> was called after any <see cref="AnySafe"/>
+    /// </summary>
+    CancelAfterTry = 1 << 11,
+
+    /// <summary>
+    /// Any AfterCancel Was called
+    /// </summary>
+    AnyAfterTry = SyncAfterTry | AsyncAfterTry | FinalizeAfterTry | CancelAfterTry,
+
+    /// <summary>
+    /// <see cref="BaseClass.Dispose"/> after any safe <see cref="AnySafe"/>
+    /// </summary>
+    SyncAfterCancel = 1 << 12,
+    /// <summary>
+    /// <see cref="BaseClass.DisposeAsync"/> after any safe <see cref="AnySafe"/>
+    /// </summary>
+    AsyncAfterCancel = 1 << 13,
+    /// <summary>
+    /// <see cref="BaseClass.FinalizerCore"/> descendants after any safe <see cref="AnySafe"/>
+    /// </summary>
+    FinalizeAfterCancel = 1 << 14,
+    /// <summary>
+    /// <see cref="BaseClass.LifetimeCancellation"/> was called after any safe <see cref="AnySafe"/>
     /// Should be unused...
     /// </summary>
-    CancelAfterCancel = 0x800,
+    CancelAfterCancel = 1 << 15,
+
+    /// <summary>
+    /// Any AfterCancel Was called
+    /// </summary>
+    AnyAfterCancel = SyncAfterCancel | AsyncAfterCancel | FinalizeAfterCancel | CancelAfterCancel,
+
+    /// <summary>
+    /// Any Non Try Was called
+    /// </summary>
+    AnyNonTry = AnyChecked | AnyAfterCancel | AnyAfterTry,
+
+    /// <summary>
+    /// Any Try/Dispose/Async/Finalize was called after cancelling <see cref="BaseClass.LifetimeCancellation"/>
+    /// </summary>
+    AnyDispose = CheckedSync | CheckedAsync | CheckedFinalize 
+      | SyncAfterCancel | AsyncAfterCancel | FinalizeAfterCancel
+      | SyncAfterTry | AsyncAfterTry | FinalizeAfterTry,
+
+    /// <summary>
+    /// Any Try/Dispose/Async/Finalize was called after cancelling <see cref="BaseClass.LifetimeCancellation"/>
+    /// </summary>
+    AnyCancel = CheckedCancel | CancelAfterCancel | CancelAfterTry,
 
     /// <summary>
     /// Finished <see cref="IDisposable.Dispose"/> no need for finalization
     /// </summary>
-    Disposed = Old | Sync,
+    Disposed = Old | CheckedSync,
     /// <summary>
     /// <see cref="IDisposable.Dispose"/> was called no need for finalization
     /// </summary>
@@ -77,7 +142,7 @@ namespace T.Pipes.Abstractions
     /// <summary>
     /// Finished <see cref="IAsyncDisposable.DisposeAsync"/> no need for finalization
     /// </summary>
-    DisposedAsync = Old | Async,
+    DisposedAsync = Old | CheckedAsync,
     /// <summary>
     /// <see cref="IAsyncDisposable.DisposeAsync"/> was called no need for finalization
     /// </summary>
@@ -85,7 +150,7 @@ namespace T.Pipes.Abstractions
     /// <summary>
     /// Was Finalized instead of disposing
     /// </summary>
-    Finalized = Old | Finalize,
+    Finalized = Old | CheckedFinalize,
     /// <summary>
     /// Finalizer was called
     /// </summary>
@@ -93,10 +158,52 @@ namespace T.Pipes.Abstractions
     /// <summary>
     /// Cancelled <see cref="BaseClass.LifetimeCancellation"/> instead of disposing no need for finalization
     /// </summary>
-    Cancelled = Old | Cancel,
+    Cancelled = Old | CheckedCancel,
     /// <summary>
     /// Finished cancelling <see cref="BaseClass.LifetimeCancellation"/> no need for finalization
     /// </summary>
     Cancelling = Busy | Cancelled,
+
+    /// <summary>
+    /// Finished <see cref="IDisposable.Dispose"/> no need for finalization
+    /// </summary>
+    TryDisposed = Old | TrySync,
+    /// <summary>
+    /// <see cref="IDisposable.Dispose"/> was called no need for finalization
+    /// </summary>
+    TryDisposing = Busy | TryDisposed,
+    /// <summary>
+    /// Finished <see cref="IAsyncDisposable.DisposeAsync"/> no need for finalization
+    /// </summary>
+    TryDisposedAsync = Old | TryAsync,
+    /// <summary>
+    /// <see cref="IAsyncDisposable.DisposeAsync"/> was called no need for finalization
+    /// </summary>
+    TryDisposingAsync = Busy | TryDisposedAsync,
+    /// <summary>
+    /// Was Finalized instead of disposing
+    /// </summary>
+    TryFinalized = Old | TryFinalize,
+    /// <summary>
+    /// Finalizer was called
+    /// </summary>
+    TryFinalizing = Busy | TryFinalized,
+    /// <summary>
+    /// Cancelled <see cref="BaseClass.LifetimeCancellation"/> instead of disposing no need for finalization
+    /// </summary>
+    TryCancelled = Old | TryCancel,
+    /// <summary>
+    /// Finished cancelling <see cref="BaseClass.LifetimeCancellation"/> no need for finalization
+    /// </summary>
+    TryCancelling = Busy | TryCancelled,
+  }
+
+  internal static class DisposeStateExtensions
+  {
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static bool NoneIn(this DisposeState state, int value) => (value & (int)state) == 0;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static bool AnyIn(this DisposeState state, int value) => (value & (int)state) != 0;
   }
 }

@@ -37,7 +37,7 @@ namespace T.Pipes
   /// <typeparam name="TPacket"></typeparam>
   /// <typeparam name="TCallback"></typeparam>
   public abstract class PipeCallbackBase<TPacket, TCallback>
-    : BaseClass, IPipeCallback<TPacket>
+    : UncheckedBaseClass, IPipeCallback<TPacket>
     where TPacket : IPipeMessage
     where TCallback : PipeCallbackBase<TPacket, TCallback>
   {
@@ -108,5 +108,26 @@ namespace T.Pipes
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     protected ObjectDisposedException CreateDisposedException(Exception exception) 
       => new($"ServerName: {Connection.ServerName}, PipeName: {Connection.PipeName}", exception);
+
+    /// <summary>
+    /// Disposes <see cref="Connection"/>
+    /// </summary>
+    /// <param name="disposing"></param>
+    /// <returns></returns>
+    protected override async ValueTask DisposeAsyncCore(bool disposing) 
+      => await Connection.DisposeAsync().ConfigureAwait(false);
+
+    /// <summary>
+    /// Disposes <see cref="Connection"/>
+    /// </summary>
+    /// <param name="disposing"></param>
+    /// <param name="includeAsync"></param>
+    protected override void DisposeCore(bool disposing, bool includeAsync)
+    {
+      if (includeAsync)
+      {
+        Connection.Dispose();
+      }
+    }
   }
 }

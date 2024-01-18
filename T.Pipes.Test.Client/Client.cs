@@ -12,6 +12,7 @@ namespace T.Pipes.Test.Client
     protected override IPipeDelegatingConnection<PipeMessage> CreateProxy(string command, string pipeName) => command switch
     {
       PipeConstants.Create => new DelegatingClientAuto<Target>(pipeName, new Target()),
+      PipeConstants.CreateInvalid => throw new InvalidOperationException("Creation of invalid object (Simulates some error occurring)"),
       _ => throw new ArgumentException($"Invalid {nameof(command)}: {command}", nameof(command)),
     };
 
@@ -35,6 +36,7 @@ namespace T.Pipes.Test.Client
 
     public override void OnExceptionOccurred(Exception exception)
     {
+      ("E: " + exception.ToString()).WriteLine(ConsoleColor.Yellow);
       LifetimeCancellationSource.Cancel();
       base.OnExceptionOccurred(exception);
     }

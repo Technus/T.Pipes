@@ -11,15 +11,15 @@ namespace T.Pipes.Abstractions
   public interface IPipeCallback<TMessage> : IDisposable, IAsyncDisposable
   {
     /// <summary>
+    /// Cancelled on dispose or finalize just in case, or when should be cancelled or finalized
+    /// </summary>
+    CancellationToken LifetimeCancellation { get; }
+
+    /// <summary>
     /// Allows to set the Connection this callback was applied to
     /// Setter should allow only one set with non null value
     /// </summary>
     IPipeConnection<TMessage> Connection { get; set; }
-
-    /// <summary>
-    /// Cancelled on dispose or finalize just in case, or when should be cancelled or finalized
-    /// </summary>
-    CancellationToken LifetimeCancellation { get; }
 
     /// <summary>
     /// Triggers when sending

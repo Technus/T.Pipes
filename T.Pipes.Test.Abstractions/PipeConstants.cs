@@ -10,6 +10,7 @@
     public const int ConnectionAwaitTimeMs = 10000;
     public const int ResponseTimeMs = 1000;
 
+    public const string CreateInvalid = "T.Pipes.Create.Invalid";
     public const string Create = "T.Pipes.Create";
   }
 }

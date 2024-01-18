@@ -8,7 +8,7 @@ namespace T.Pipes
   /// <summary>
   /// Wrapper for safe handling of surrogate process
   /// </summary>
-  public class SurrogateProcessWrapper : BaseClass
+  public class SurrogateProcessWrapper : CheckedBaseClass
   {
     private readonly SemaphoreSlim _semaphore = new(1, 1);
 

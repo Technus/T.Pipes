@@ -9,7 +9,7 @@ namespace T.Pipes.Test.Server
 
     private static async Task Start()
     {
-      $"Server Core: {typeof(byte).Assembly.FullName}".WriteLine(ConsoleColor.Green);
+      $"Server Core: {typeof(byte).Assembly.FullName}".WriteLine(ConsoleColor.White);
 #if !DEBUG
       await using var client = new SurrogateProcessWrapper(new(PipeConstants.ClientExeName));
       await client.StartProcess();
@@ -18,7 +18,25 @@ namespace T.Pipes.Test.Server
       {
         await server.StartAndConnectWithTimeoutAsync(PipeConstants.ConnectionAwaitTimeMs);
 
-        await using (var item = await server.Callback.Create())
+        try
+        {
+          await using (var itemMaybe = await server.Callback.CreateInvalidAsync())
+          {
+            itemMaybe?.Callback?.AsIAbstract?.GetInt().ToString().WriteLine(ConsoleColor.Green);
+          }
+        }
+        catch (Exception ex)
+        {
+          ex.PrintNicely();
+        }
+
+        using (var itemMaybe = server.Callback.CreateInvalidOrDefault())
+        {
+          itemMaybe?.GetInt().ToString().WriteLine(ConsoleColor.Green);
+        }
+
+
+        await using (var item = await server.Callback.CreateAsync())
         {
           var target = item.Callback.AsIAbstract;
           var target1 = item.Callback.AsIAbstract_args_Int16_end_;
@@ -30,13 +48,9 @@ namespace T.Pipes.Test.Server
             target.GetStrings().ToString().WriteLine(ConsoleColor.Green);
             target.GetInt().ToString().WriteLine(ConsoleColor.Green);
           }
-          catch (NoResponseException ex)
-          {
-            ex.ToString().WriteLine(ConsoleColor.Cyan, ConsoleColor.DarkGray);// Pipe errors
-          }
           catch (Exception ex)
           {
-            ex.ToString().WriteLine(ConsoleColor.Yellow, ConsoleColor.DarkGray);// Remote Target errors
+            ex.PrintNicely();
           }
           finally
           {
@@ -51,6 +65,16 @@ namespace T.Pipes.Test.Server
 #endif
     }
 
-    private static void Target_Get(string obj) => obj.WriteLine(ConsoleColor.Green);
+    internal static void PrintNicely(this Exception ex)
+    {
+      if (ex is RemoteNoResponseException)
+        ("R: " + ex.ToString()).WriteLine(ConsoleColor.Yellow, ConsoleColor.DarkGray);// Pipe related errors
+      else if (ex is LocalNoResponseException)
+        ("L: " + ex.ToString()).WriteLine(ConsoleColor.Cyan, ConsoleColor.DarkGray);// Pipe related errors
+      else
+        ("X: " + ex.ToString()).WriteLine(ConsoleColor.Red);// Remote Target errors
+    }
+
+    private static void Target_Get(string obj) => obj.WriteLine(ConsoleColor.DarkGreen);
   }
 }

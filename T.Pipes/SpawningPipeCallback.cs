@@ -27,6 +27,12 @@ namespace T.Pipes
     /// </summary>
     public int ResponseTimeoutMs { get; set; }
 
+    /// <summary>
+    /// Controls if proxy should be created only after getting the response
+    /// This allows to trade between memory performance vs speed when establishing proxy fails
+    /// </summary>
+    /// <remarks>For low traffic keep enabled, if timing is crucial only then disable</remarks>
+    public bool LazyProxyCreation { get; set; } = true;
 
     /// <inheritdoc/>
     public override async Task WriteAsync(PipeMessage message, CancellationToken cancellationToken = default)
@@ -370,21 +376,59 @@ namespace T.Pipes
     }
 
     /// <summary>
-    /// Server logic to initialize Delegating Proxy
+    /// Wraps <see cref="RequestProxy{T}(string)"/> to return null on failures
     /// </summary>
+    /// <typeparam name="T"></typeparam>
     /// <param name="command"></param>
-    /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    public virtual T CreateProxy<T>(string command, CancellationToken cancellationToken = default)
+    public virtual T? RequestProxyOrDefault<T>(string command)
       where T : class, IPipeDelegatingConnection<PipeMessage>
     {
       try
       {
-        return CreateProxyAsync<T>(command, cancellationToken).Result;
+        return RequestProxy<T>(command);
+      }
+      catch
+      {
+        return default;
+      }
+    }
+
+    /// <summary>
+    /// Server logic to initialize Delegating Proxy
+    /// </summary>
+    /// <param name="command"></param>
+    /// <returns></returns>
+    public virtual T RequestProxy<T>(string command)
+      where T : class, IPipeDelegatingConnection<PipeMessage>
+    {
+      try
+      {
+        return RequestProxyAsync<T>(command).Result;
       }
       catch (AggregateException ae) when (ae.InnerExceptions.Count == 1)//unpacks the exception once
       {
         throw ae.InnerException!;
+      }
+    }
+
+    /// <summary>
+    /// Wraps <see cref="RequestProxyAsync{T}(string, CancellationToken)"/> to return null on failures
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="command"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    public virtual async Task<T?> RequestProxyOrDefaultAsync<T>(string command, CancellationToken cancellationToken = default)
+      where T : class, IPipeDelegatingConnection<PipeMessage>
+    {
+      try
+      {
+        return await RequestProxyAsync<T>(command, cancellationToken).ConfigureAwait(false);
+      }
+      catch
+      {
+        return default;
       }
     }
 
@@ -396,7 +440,7 @@ namespace T.Pipes
     /// <param name="command"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    public virtual async Task<T> CreateProxyAsync<T>(string command, CancellationToken cancellationToken = default)
+    public virtual async Task<T> RequestProxyAsync<T>(string command, CancellationToken cancellationToken = default)
       where T : class, IPipeDelegatingConnection<PipeMessage>
     {
       try
@@ -444,6 +488,7 @@ namespace T.Pipes
 
       var pipeName = Guid.NewGuid().ToString();
       var message = PacketFactory.CreateCommand(command, pipeName);
+      var lazyProxyCreation = LazyProxyCreation;
       T proxy = default;
 
       try
@@ -451,21 +496,24 @@ namespace T.Pipes
         if (tcs.Task.IsCompleted)
           await tcs.Task.ConfigureAwait(false);
 
-        try
+        if(!lazyProxyCreation)
         {
-          proxy = (T)CreateProxy(command, pipeName);
-          if (proxy is null)
-            throw new InvalidOperationException("Crated proxy was null");
-        }
-        catch (Exception ex)
-        {
-          var e = new LocalNoResponseException("Creating Proxy", ex);
-          tcs.TrySetException(e);
-          throw e;
-        }
+          try
+          {
+            proxy = (T)CreateProxy(command, pipeName);
+            if (proxy is null)
+              throw new InvalidOperationException("Crated proxy was null");
+          }
+          catch (Exception ex)
+          {
+            var e = new LocalNoResponseException("Creating Proxy", ex);
+            tcs.TrySetException(e);
+            throw e;
+          }
 
-        if (tcs.Task.IsCompleted)
-          await tcs.Task.ConfigureAwait(false);
+          if (tcs.Task.IsCompleted)
+            await tcs.Task.ConfigureAwait(false);
+        }
 
         try
         {
@@ -501,6 +549,22 @@ namespace T.Pipes
         }
 
         await tcs.Task.ConfigureAwait(false);//Wait for response if all went ok then it means client is started
+
+        if(lazyProxyCreation)
+        {
+          try
+          {
+            proxy = (T)CreateProxy(command, pipeName);
+            if (proxy is null)
+              throw new InvalidOperationException("Crated proxy was null");
+          }
+          catch (Exception ex)
+          {
+            var e = new LocalNoResponseException("Creating Proxy", ex);
+            tcs.TrySetException(e);
+            throw e;
+          }
+        }
 
         try
         {

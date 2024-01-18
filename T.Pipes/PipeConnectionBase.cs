@@ -14,7 +14,7 @@ namespace T.Pipes
   /// <typeparam name="TPacket"></typeparam>
   /// <typeparam name="TCallback">any <see cref="IPipeCallback{TPacket}"/></typeparam>
   public abstract class PipeConnectionBase<TPipe, TPacket, TCallback>
-    : BaseClass, IPipeConnection<TPacket>
+    : UncheckedBaseClass, IPipeConnection<TPacket>
     where TPipe : H.Pipes.IPipeConnection<TPacket>
     where TCallback : IPipeCallback<TPacket>
   {
@@ -219,7 +219,7 @@ namespace T.Pipes
     }
 
     /// <summary>
-    /// Disposes <see cref="Pipe"/>
+    /// Disposes <see cref="Pipe"/> and <see cref="Callback"/>
     /// </summary>
     /// <returns></returns>
     protected override async ValueTask DisposeAsyncCore(bool disposing)
@@ -228,6 +228,7 @@ namespace T.Pipes
       await Pipe.DisposeAsync().ConfigureAwait(false);
       await _noConnections.WaitAsync().ConfigureAwait(false);
       await _noResponseTasks.WaitAsync().ConfigureAwait(false);
+      await Callback.DisposeAsync().ConfigureAwait(false);
     }
 
     /// <summary>
@@ -243,6 +244,7 @@ namespace T.Pipes
           disposeTask.AsTask().Wait();
         _noConnections.Wait();
         _noResponseTasks.Wait();
+        Callback.Dispose();
       }
       _noResponseTasks.Dispose();
       _noConnections.Dispose();
@@ -250,10 +252,5 @@ namespace T.Pipes
       Pipe.MessageReceived -= OnMessageReceived;
       Pipe.ExceptionOccurred -= OnExceptionOccurred;
     }
-
-    /// <summary>
-    /// Finalizer as this has unmanaged resources
-    /// </summary>
-    ~PipeConnectionBase() => Finalizer();
   }
 }
