@@ -1,4 +1,5 @@
-﻿using T.Pipes.Test.Abstractions;
+﻿using T.Pipes.Abstractions;
+using T.Pipes.Test.Abstractions;
 
 namespace T.Pipes.Test.Client
 {
@@ -13,16 +14,26 @@ namespace T.Pipes.Test.Client
       {
         try
         {
-          await client.StartAndConnectWithTimeoutAndAwaitCancellationAsync(PipeConstants.ConnectionAwaitTimeMs, client.Callback.LifetimeCancellation);
+          await client.StartAndConnectWithTimeoutAndAwaitCancellationAsync(PipeConstants.ConnectionAwaitTimeMs);
         }
-        catch
+        catch (Exception e)
         {
-          //Ignores
+          e.PrintNicely();
         }
 
         await Task.Delay(1000);
       }
       await Task.Delay(10000);
+    }
+
+    internal static void PrintNicely(this Exception ex)
+    {
+      if (ex is RemoteNoResponseException)
+        ("R: " + ex.ToString()).WriteLine(ConsoleColor.Cyan, ConsoleColor.DarkGray);// Pipe related errors
+      else if (ex is LocalNoResponseException)
+        ("L: " + ex.ToString()).WriteLine(ConsoleColor.Yellow, ConsoleColor.DarkGray);// Pipe related errors
+      else
+        ("X: " + ex.ToString()).WriteLine(ConsoleColor.Red);// Remote Target errors
     }
   }
 }

@@ -27,15 +27,15 @@ namespace T.Pipes.Test.Client
 
     public override void OnDisconnected(string connection)
     {
-      LifetimeCancellationSource.Cancel();
       base.OnDisconnected(connection);
+      Dispose();
     }
 
     public override void OnExceptionOccurred(Exception exception)
     {
       ("E: " + exception.ToString()).WriteLine(ConsoleColor.DarkYellow);
-      LifetimeCancellationSource.Cancel();
       base.OnExceptionOccurred(exception);
+      Dispose();
     }
 
     protected override void DisposeCore(bool disposing,bool includeAsync)
