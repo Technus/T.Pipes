@@ -52,5 +52,25 @@ namespace T.Pipes.Abstractions
     /// </summary>
     /// <param name="connection">the unique pipe id for this client/server internal pipe</param>
     void OnDisconnected(string connection);
+
+    /// <summary>
+    /// Called before starting the <see cref="Connection"/>
+    /// </summary>
+    void OnStarting();
+
+    /// <summary>
+    /// Called after starting the <see cref="Connection"/> if no error was encountered
+    /// </summary>
+    void OnStarted();
+
+    /// <summary>
+    /// Called before stopping/disposing the <see cref="Connection"/>
+    /// </summary>
+    void OnStopping();
+
+    /// <summary>
+    /// Called after stopping/disposing the <see cref="Connection"/> if no error was encountered
+    /// </summary>
+    void OnStopped();
   }
 }

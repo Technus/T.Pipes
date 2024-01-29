@@ -68,6 +68,18 @@ namespace T.Pipes
     public abstract Task WriteAsync(TPacket message, CancellationToken cancellationToken = default);
 
     /// <inheritdoc/>
+    public abstract void OnStarting();
+
+    /// <inheritdoc/>
+    public abstract void OnStarted();
+
+    /// <inheritdoc/>
+    public abstract void OnStopping();
+
+    /// <inheritdoc/>
+    public abstract void OnStopped();
+
+    /// <inheritdoc/>
     public abstract void OnConnected(string connection);
 
     /// <inheritdoc/>

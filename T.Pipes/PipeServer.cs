@@ -68,10 +68,10 @@ namespace T.Pipes
     /// <summary>
     /// Same as <see cref="ServerName"/>
     /// </summary>
-    public override string PipeName => Pipe.PipeName;
+    public sealed override string PipeName => Pipe.PipeName;
 
     /// <inheritdoc/>
-    public override string ServerName => Pipe.PipeName;
+    public sealed override string ServerName => Pipe.PipeName;
 
     /// <summary>
     /// Creates the base pipe server implementation
@@ -97,7 +97,7 @@ namespace T.Pipes
     }
 
     /// <inheritdoc/>
-    public override async Task StartAsync(CancellationToken cancellationToken = default)
+    public sealed override async Task StartAsync(CancellationToken cancellationToken = default)
     {
       cancellationToken.ThrowIfCancellationRequested();
       LifetimeCancellation.ThrowIfCancellationRequested();
@@ -108,7 +108,9 @@ namespace T.Pipes
         await NoOperations.WaitAsync(cts.Token).ConfigureAwait(false);
         try
         {
+          Callback.OnStarting();
           await Pipe.StartAsync(cts.Token).ConfigureAwait(false);
+          Callback.OnStarted();
         }
         finally
         {
@@ -130,13 +132,15 @@ namespace T.Pipes
     }
 
     /// <inheritdoc/>
-    public override async Task StopAsync(CancellationToken cancellationToken = default)
+    public sealed override async Task StopAsync(CancellationToken cancellationToken = default)
     {
       using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, LifetimeCancellation);
       await NoOperations.WaitAsync(cts.Token).ConfigureAwait(false);
       try
       {
+        Callback.OnStopping();
         await Pipe.StopAsync(cts.Token).ConfigureAwait(false);
+        Callback.OnStopped();
       }
       finally
       {
@@ -149,7 +153,7 @@ namespace T.Pipes
     /// </summary>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    public override async Task StartAndConnectAsync(CancellationToken cancellationToken = default)
+    public sealed override async Task StartAndConnectAsync(CancellationToken cancellationToken = default)
     {
       cancellationToken.ThrowIfCancellationRequested();
       LifetimeCancellation.ThrowIfCancellationRequested();
@@ -220,7 +224,7 @@ namespace T.Pipes
     }
 
     /// <inheritdoc/>
-    protected override async Task StartAndConnectWithTimeoutInternalAsync(int timeoutMs = 1000, CancellationToken cancellationToken = default)
+    protected sealed override async Task StartAndConnectWithTimeoutInternalAsync(int timeoutMs = 1000, CancellationToken cancellationToken = default)
     {
       cancellationToken.ThrowIfCancellationRequested();
       LifetimeCancellation.ThrowIfCancellationRequested();

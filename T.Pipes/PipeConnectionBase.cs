@@ -135,7 +135,7 @@ namespace T.Pipes
       => Callback.OnExceptionOccurred(e.Exception);
 
     /// <inheritdoc/>
-    public virtual async Task WriteAsync(TPacket value, CancellationToken cancellationToken = default)
+    public async Task WriteAsync(TPacket value, CancellationToken cancellationToken = default)
     {
       using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, LifetimeCancellation);
       cts.Token.ThrowIfCancellationRequested();
@@ -239,9 +239,11 @@ namespace T.Pipes
       if (includeAsync)
       {
         NoOperations.Wait();
+        Callback.OnStopping();
         var disposeTask = Pipe.DisposeAsync();
         if(!disposeTask.IsCompleted) 
           disposeTask.AsTask().Wait();
+        Callback.OnStopped();
         _noConnections.Wait();
         _noResponseTasks.Wait();
         Callback.Dispose();
