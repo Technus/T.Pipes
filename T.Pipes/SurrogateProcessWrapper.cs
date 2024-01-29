@@ -18,6 +18,12 @@ namespace T.Pipes
     protected internal readonly Process _process;
 
     /// <summary>
+    /// Constructs wrapper for <see cref="Process"/>
+    /// </summary>
+    /// <param name="process"></param>
+    public SurrogateProcessWrapper(Process process) => _process = process;
+
+    /// <summary>
     /// Constructs wrapper for <see cref="Process"/> using <paramref name="processStartInfo"/>
     /// </summary>
     /// <param name="processStartInfo"></param>
