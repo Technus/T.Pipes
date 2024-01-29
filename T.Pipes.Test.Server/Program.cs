@@ -5,16 +5,16 @@ namespace T.Pipes.Test.Server
 {
   internal static class Program
   {
-    public static void Main(string[] args) => Start().Wait();
+    public static void Main(string[]? args) => Start(args).Wait();
 
-    private static async Task Start()
+    private static async Task Start(string[]? args)
     {
       $"Server Core: {typeof(byte).Assembly.FullName}".WriteLine(ConsoleColor.White);
-#if !DEBUG
-      await using var client = new SurrogateProcessWrapper(new(PipeConstants.ClientExeName));
-      await client.StartProcess();
-#endif
-      await using (var server = new Server())
+      var name = args is null || args.Length==0 || string.IsNullOrEmpty(args[0])
+        ? $"{PipeConstants.ServerPipeName}-{Guid.NewGuid()}"
+        : args[0];
+      $"Pipe name: {name}".WriteLine(ConsoleColor.White);
+      await using (var server = new Server(name))
       {
         await server.StartAndConnectWithTimeoutAsync(PipeConstants.ConnectionAwaitTimeMs);
 
@@ -60,9 +60,6 @@ namespace T.Pipes.Test.Server
         await Task.Delay(1000);
       }
       await Task.Delay(10000);
-#if !DEBUG
-      await client.StopProcess();
-#endif
     }
 
     internal static void PrintNicely(this Exception ex)

@@ -47,7 +47,8 @@ namespace T.Pipes.Test.Client
   /// </summary>
   internal sealed class Client : SpawningPipeClient<ClientCallback>
   {
-    public Client() : this(new H.Pipes.PipeClient<PipeMessage>(PipeConstants.ServerPipeName, formatter: new Formatter()))
+    public Client(string name = PipeConstants.ServerPipeName)
+      : this(new H.Pipes.PipeClient<PipeMessage>(name, formatter: new Formatter()))
     {
     }
 

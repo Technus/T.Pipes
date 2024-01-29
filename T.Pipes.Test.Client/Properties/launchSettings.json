@@ -1,6 +1,6 @@
 {
   "profiles": {
-    "T.Pipes.Test.Server": {
+    "T.Pipes.Test.Client": {
       "commandName": "Project",
       "commandLineArgs": "EggNog"
     }

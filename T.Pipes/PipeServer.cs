@@ -188,7 +188,9 @@ namespace T.Pipes
           await NoOperations.WaitAsync(cts.Token).ConfigureAwait(false);
           try
           {
+            Callback.OnStarting();
             await Pipe.StartAsync(cts.Token).ConfigureAwait(false);
+            Callback.OnStarted();
           }
           finally
           {

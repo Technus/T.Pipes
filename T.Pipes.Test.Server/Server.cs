@@ -1,13 +1,17 @@
-﻿using T.Pipes.Abstractions;
+﻿using System;
+using System.Diagnostics;
+using System.Xml.Linq;
+using T.Pipes.Abstractions;
 using T.Pipes.Test.Abstractions;
 
 namespace T.Pipes.Test.Server
 {
   internal sealed class ServerCallback : SpawningPipeCallback
   {
-    public ServerCallback() : base(PipeConstants.ResponseTimeMs)
-    {
-    }
+    private readonly SurrogateProcessWrapper _process;
+
+    public ServerCallback(string pipeName) : base(PipeConstants.ResponseTimeMs) 
+      => _process = new SurrogateProcessWrapper(new ProcessStartInfo(PipeConstants.ClientExeName, pipeName));
 
     protected override IPipeDelegatingConnection<PipeMessage> CreateProxy(string command, string pipeName) => command switch
     {
@@ -85,6 +89,26 @@ namespace T.Pipes.Test.Server
       ("E: " + exception.ToString()).WriteLine(ConsoleColor.Cyan);
       base.OnExceptionOccurred(exception);
     }
+
+    public override void OnStarting()
+    {
+      ("R: "+ Connection.ServerName).WriteLine(ConsoleColor.Cyan);
+      base.OnStarting();
+      _process.StartProcess().Wait();
+    }
+
+    public override void OnStopping()
+    {
+      ("S: " + Connection.ServerName).WriteLine(ConsoleColor.Cyan);
+      base.OnStopping();
+      _process.StopProcess().Wait();
+    }
+
+    protected override void DisposeCore(bool disposing, bool includeAsync)
+    {
+      base.DisposeCore(disposing, includeAsync);
+      _process.Dispose();
+    }
   }
 
   /// <summary>
@@ -92,11 +116,12 @@ namespace T.Pipes.Test.Server
   /// </summary>
   internal sealed class Server : SpawningPipeServer<ServerCallback>
   {
-    public Server() : this(new H.Pipes.PipeServer<PipeMessage>(PipeConstants.ServerPipeName, formatter: new Formatter()))
+    public Server(string name = PipeConstants.ServerPipeName)
+      : this(new H.Pipes.PipeServer<PipeMessage>(name, formatter: new Formatter()))
     {
     }
 
-    private Server(H.Pipes.PipeServer<PipeMessage> pipe) : base(pipe, new())
+    private Server(H.Pipes.PipeServer<PipeMessage> pipe) : base(pipe, new(pipe.PipeName))
     {
     }
   }

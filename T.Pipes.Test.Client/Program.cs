@@ -5,12 +5,16 @@ namespace T.Pipes.Test.Client
 {
   internal static class Program
   {
-    public static void Main(string[] args) => Start().Wait();
+    public static void Main(string[]? args) => Start(args).Wait();
 
-    private static async Task Start()
+    private static async Task Start(string[]? args)
     {
       $"Client Core: {typeof(byte).Assembly.FullName}".WriteLine(ConsoleColor.White);
-      await using (var client = new Client())
+      var name = args is null || args.Length == 0 || string.IsNullOrWhiteSpace(args[0])
+        ? throw new ArgumentOutOfRangeException(nameof(args), args, "Pipe name was invalid")
+        : args[0];
+      $"Pipe name: {name}".WriteLine(ConsoleColor.White);
+      await using (var client = new Client(name))
       {
         try
         {

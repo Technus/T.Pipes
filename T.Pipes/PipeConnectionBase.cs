@@ -225,7 +225,9 @@ namespace T.Pipes
     protected override async ValueTask DisposeAsyncCore(bool disposing)
     {
       await NoOperations.WaitAsync().ConfigureAwait(false);
+      Callback.OnStopping();
       await Pipe.DisposeAsync().ConfigureAwait(false);
+      Callback.OnStopped();
       await _noConnections.WaitAsync().ConfigureAwait(false);
       await _noResponseTasks.WaitAsync().ConfigureAwait(false);
       await Callback.DisposeAsync().ConfigureAwait(false);
