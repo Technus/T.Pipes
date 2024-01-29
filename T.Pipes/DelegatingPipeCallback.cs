@@ -254,7 +254,7 @@ namespace T.Pipes
       }
       if (_responses.Count > 0)
       {
-        var exception = new LocalNoResponseException("Connected", new InvalidOperationException("Connection occured while operations were pending"));
+        var exception = new LocalNoResponseException("Connected", new InvalidOperationException("Connection occurred while operations were pending"));
         foreach (var item in _responses)
         {
           try
