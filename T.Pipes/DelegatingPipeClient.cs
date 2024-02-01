@@ -7,7 +7,6 @@ namespace T.Pipes
   /// <inheritdoc/>
   public abstract class DelegatingPipeClient<TTarget, TCallback>
       : DelegatingPipeClient<H.Pipes.PipeClient<PipeMessage>, TTarget, TCallback>
-    where TTarget : IDisposable
     where TCallback : DelegatingPipeCallback<PipeMessage, PipeMessageFactory, TTarget, TCallback>
   {
     /// <summary>
@@ -33,7 +32,6 @@ namespace T.Pipes
   public abstract class DelegatingPipeClient<TPipe, TTarget, TCallback>
     : DelegatingPipeClient<TPipe, PipeMessage, PipeMessageFactory, TTarget, TCallback>
     where TPipe : H.Pipes.IPipeClient<PipeMessage>
-    where TTarget : IDisposable
     where TCallback : DelegatingPipeCallback<PipeMessage, PipeMessageFactory, TTarget, TCallback>
   {
     /// <summary>
@@ -59,7 +57,6 @@ namespace T.Pipes
     where TPipe : H.Pipes.IPipeClient<TPacket>
     where TPacket : IPipeMessage
     where TPacketFactory : IPipeMessageFactory<TPacket>
-    where TTarget : IDisposable
     where TCallback : DelegatingPipeCallback<TPacket, TPacketFactory, TTarget, TCallback>
   {
     /// <summary>

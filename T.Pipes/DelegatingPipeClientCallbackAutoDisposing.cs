@@ -11,7 +11,6 @@ namespace T.Pipes
   /// <typeparam name="TCallback"></typeparam>
   public abstract class DelegatingPipeClientCallbackAutoDisposing<TTarget, TCallback>
   : DelegatingPipeClientCallbackSelfDisposing<TTarget, TCallback>
-    where TTarget : IDisposable
     where TCallback : DelegatingPipeClientCallbackAutoDisposing<TTarget, TCallback>
   {
     /// <summary>
@@ -31,8 +30,20 @@ namespace T.Pipes
     protected override void DisposeCore(bool disposing, bool includeAsync)
     {
       base.DisposeCore(disposing, includeAsync);
-      if(includeAsync || Target is not IAsyncDisposable)
-        Target.Dispose();
+
+      if(Target is IDisposable disposable)
+      {
+        if (includeAsync || Target is not IAsyncDisposable)
+        {
+          disposable.Dispose();
+        }
+      }
+      else if (includeAsync && Target is IAsyncDisposable asyncDisposable)
+      {
+        var disposeTask = asyncDisposable.DisposeAsync();
+        if (!disposeTask.IsCompleted)
+          disposeTask.AsTask().Wait();
+      }
     }
 
     /// <summary>
@@ -43,8 +54,8 @@ namespace T.Pipes
     protected override async ValueTask DisposeAsyncCore(bool disposing)
     {
       await base.DisposeAsyncCore(disposing).ConfigureAwait(false);
-      if (Target is IAsyncDisposable disposable)
-        await disposable.DisposeAsync().ConfigureAwait(false);
+      if (Target is IAsyncDisposable asyncDisposable)
+        await asyncDisposable.DisposeAsync().ConfigureAwait(false);
     }
   }
 }

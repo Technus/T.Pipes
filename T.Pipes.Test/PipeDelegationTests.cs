@@ -33,7 +33,6 @@ namespace T.Pipes.Test
       await using var pipe = new PipeClient<ClientCallback<IAbstract>>(name, dut);
 
       dut.Target.Should().Be(target);
-      ((IPipeDelegatingCallback<PipeMessage>)dut).Target.Should().Be(target);
     }
 
     [Fact]
@@ -44,7 +43,6 @@ namespace T.Pipes.Test
       await using var pipe = new PipeServer<ServerCallback>(name, dut);
 
       dut.Target.Should().Be(dut);
-      ((IPipeDelegatingCallback<PipeMessage>)dut).Target.Should().Be(dut);
     }
 
     [Fact]

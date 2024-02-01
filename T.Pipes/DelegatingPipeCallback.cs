@@ -14,7 +14,6 @@ namespace T.Pipes
   /// <typeparam name="TCallback">the final implementing type</typeparam>
   public abstract class DelegatingPipeClientCallback<TTarget, TCallback>
     : DelegatingPipeCallback<TTarget, TCallback>
-    where TTarget : IDisposable
     where TCallback : DelegatingPipeClientCallback<TTarget, TCallback>
   {
     /// <summary>
@@ -53,7 +52,6 @@ namespace T.Pipes
   /// <typeparam name="TCallback">the final implementing type</typeparam>
   public abstract class DelegatingPipeServerCallback<TTarget, TCallback>
     : DelegatingPipeCallback<TTarget, TCallback>
-    where TTarget : IDisposable
     where TCallback : DelegatingPipeCallback<PipeMessage, PipeMessageFactory, TTarget, TCallback>
   {
     /// <summary>
@@ -68,7 +66,6 @@ namespace T.Pipes
   /// <inheritdoc/>
   public abstract class DelegatingPipeCallback<TTarget, TCallback>
     : DelegatingPipeCallback<PipeMessage, PipeMessageFactory, TTarget, TCallback>
-    where TTarget : IDisposable
     where TCallback : DelegatingPipeCallback<PipeMessage, PipeMessageFactory, TTarget, TCallback>
   {
     /// <summary>
@@ -100,7 +97,6 @@ namespace T.Pipes
   /// <typeparam name="TCallback">the final implementing type</typeparam>
   public abstract class DelegatingPipeCallback<TPacket, TPacketFactory, TTarget, TCallback>
     : PipeCallbackBase<TPacket, TPacketFactory, TCallback>, IPipeDelegatingCallback<TPacket>
-    where TTarget : IDisposable
     where TPacket : IPipeMessage
     where TPacketFactory : IPipeMessageFactory<TPacket>
     where TCallback : DelegatingPipeCallback<TPacket, TPacketFactory, TTarget, TCallback>
@@ -213,8 +209,6 @@ namespace T.Pipes
         }
       }
     }
-
-    IDisposable IPipeDelegatingCallback<TPacket>.Target => Target;
 
     /// <summary>
     /// Initialization logic for new target

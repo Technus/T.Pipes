@@ -9,12 +9,6 @@ namespace T.Pipes.Abstractions
   public interface IPipeDelegatingCallback<TMessage> : IPipeCallback<TMessage>
   {
     /// <summary>
-    /// Client will point to the target implementation<br/>
-    /// Server will point to the proxy callback which is 'this'
-    /// </summary>
-    public IDisposable Target { get; }
-
-    /// <summary>
     /// The response await timeout should happen after that time
     /// </summary>
     public int ResponseTimeoutMs { get; set; }

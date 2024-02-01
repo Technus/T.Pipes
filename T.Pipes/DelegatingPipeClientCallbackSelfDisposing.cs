@@ -10,7 +10,6 @@ namespace T.Pipes
   /// <typeparam name="TCallback"></typeparam>
   public abstract class DelegatingPipeClientCallbackSelfDisposing<TTarget, TCallback>
   : DelegatingPipeClientCallback<TTarget, TCallback>
-    where TTarget : IDisposable
     where TCallback : DelegatingPipeClientCallbackSelfDisposing<TTarget, TCallback>
   {
     /// <summary>
