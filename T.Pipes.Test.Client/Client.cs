@@ -16,6 +16,7 @@ namespace T.Pipes.Test.Client
       _ => throw new ArgumentException($"Invalid {nameof(command)}: {command}", nameof(command)),
     };
 
+#if TRACE
     public override Task OnMessageReceived(PipeMessage message, CancellationToken cancellationToken = default)
     {
       ("I: " + message.ToString()).WriteLine(ConsoleColor.Yellow);
@@ -33,6 +34,7 @@ namespace T.Pipes.Test.Client
       ("E: " + exception.ToString()).WriteLine(ConsoleColor.Yellow);
       base.OnExceptionOccurred(exception);
     }
+#endif
   }
 
   /// <summary>
@@ -40,12 +42,8 @@ namespace T.Pipes.Test.Client
   /// </summary>
   internal sealed class Client : SpawningPipeClient<ClientCallback>
   {
-    public Client(string name = PipeConstants.ServerPipeName)
-      : this(new H.Pipes.PipeClient<PipeMessage>(name, formatter: new Formatter()))
-    {
-    }
-
-    private Client(H.Pipes.PipeClient<PipeMessage> pipe) : base(pipe, new())
+    public Client(string name)
+      : base(name, new())
     {
     }
   }

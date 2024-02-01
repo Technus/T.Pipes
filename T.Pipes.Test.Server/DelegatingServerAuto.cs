@@ -11,6 +11,7 @@ namespace T.Pipes.Test.Server
     {
     }
 
+#if TRACE
     public override Task OnMessageReceived(PipeMessage message, CancellationToken cancellationToken = default)
     {
       ("I: " + message.ToString()).WriteLine(ConsoleColor.DarkCyan);
@@ -28,15 +29,12 @@ namespace T.Pipes.Test.Server
       ("E: " + exception.ToString()).WriteLine(ConsoleColor.DarkCyan);
       base.OnExceptionOccurred(exception);
     }
+#endif
   }
 
   internal sealed class DelegatingServerAuto : DelegatingPipeServer<DelegatingCallback>
   {
-    public DelegatingServerAuto(string pipe) : this(new H.Pipes.PipeServer<PipeMessage>(pipe, formatter: new Formatter()))
-    {
-    }
-
-    public DelegatingServerAuto(H.Pipes.PipeServer<PipeMessage> pipe) : base(pipe, new())
+    public DelegatingServerAuto(string pipe) : base(pipe, new())
     {
     }
   }

@@ -22,6 +22,7 @@ namespace T.Pipes.Test.Server
     public Task<DelegatingServerAuto> CreateAsync() => RequestProxyAsync<DelegatingServerAuto>(PipeConstants.Create);
     public Task<DelegatingServerAuto> CreateInvalidAsync() => RequestProxyAsync<DelegatingServerAuto>(PipeConstants.CreateInvalid);
 
+    #region Helper methods
     public IAbstract? CreateOrDefault() => RequestProxyOrDefault<DelegatingServerAuto>(PipeConstants.Create)?.Callback?.AsIAbstract;
     public IAbstract? CreateInvalidOrDefault() => RequestProxyOrDefault<DelegatingServerAuto>(PipeConstants.CreateInvalid)?.Callback?.AsIAbstract;
 
@@ -70,7 +71,9 @@ namespace T.Pipes.Test.Server
         return default;
       }
     }
+    #endregion Helper methods
 
+#if TRACE
     public override Task OnMessageReceived(PipeMessage message, CancellationToken cancellationToken = default)
     {
       ("I: " + message.ToString()).WriteLine(ConsoleColor.Cyan);
@@ -100,6 +103,7 @@ namespace T.Pipes.Test.Server
       ("S: " + Connection.ServerName).WriteLine(ConsoleColor.Cyan);
       base.OnStopping();
     }
+#endif
   }
 
   /// <summary>
@@ -107,12 +111,7 @@ namespace T.Pipes.Test.Server
   /// </summary>
   internal sealed class Server : SpawningPipeServer<ServerCallback>
   {
-    public Server(string name = PipeConstants.ServerPipeName)
-      : this(new H.Pipes.PipeServer<PipeMessage>(name, formatter: new Formatter()))
-    {
-    }
-
-    private Server(H.Pipes.PipeServer<PipeMessage> pipe) : base(pipe, new(pipe.PipeName))
+    public Server(string name) : base(name, new(name))
     {
     }
   }
