@@ -6,12 +6,11 @@ using T.Pipes.Test.Abstractions;
 
 namespace T.Pipes.Test.Server
 {
-  internal sealed class ServerCallback : SpawningPipeCallback
+  internal sealed class ServerCallback : SpawningPipeCallbackSurrogateWrapper
   {
-    private readonly SurrogateProcessWrapper _process;
-
-    public ServerCallback(string pipeName) : base(PipeConstants.ResponseTimeMs) 
-      => _process = new SurrogateProcessWrapper(new ProcessStartInfo(PipeConstants.ClientExeName, pipeName));
+    public ServerCallback(string pipeName) 
+      : base(new SurrogateProcessWrapper(new ProcessStartInfo(PipeConstants.ClientExeName, pipeName)), PipeConstants.ResponseTimeMs)
+    { }
 
     protected override IPipeDelegatingConnection<PipeMessage> CreateProxy(string command, string pipeName) => command switch
     {
@@ -94,20 +93,12 @@ namespace T.Pipes.Test.Server
     {
       ("R: "+ Connection.ServerName).WriteLine(ConsoleColor.Cyan);
       base.OnStarting();
-      _process.StartProcess().Wait();
     }
 
     public override void OnStopping()
     {
       ("S: " + Connection.ServerName).WriteLine(ConsoleColor.Cyan);
       base.OnStopping();
-      _process.StopProcess().Wait();
-    }
-
-    protected override void DisposeCore(bool disposing, bool includeAsync)
-    {
-      base.DisposeCore(disposing, includeAsync);
-      _process.Dispose();
     }
   }
 

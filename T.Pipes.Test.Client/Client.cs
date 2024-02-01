@@ -3,7 +3,7 @@ using T.Pipes.Test.Abstractions;
 
 namespace T.Pipes.Test.Client
 {
-  internal sealed class ClientCallback : SpawningPipeCallback
+  internal sealed class ClientCallback : SpawningPipeCallbackSelfDisposing
   {
     public ClientCallback() : base(PipeConstants.ResponseTimeMs)
     {
@@ -28,17 +28,10 @@ namespace T.Pipes.Test.Client
       base.OnMessageSent(message);
     }
 
-    public override void OnDisconnected(string connection)
-    {
-      base.OnDisconnected(connection);
-      Dispose();
-    }
-
     public override void OnExceptionOccurred(Exception exception)
     {
       ("E: " + exception.ToString()).WriteLine(ConsoleColor.Yellow);
       base.OnExceptionOccurred(exception);
-      Dispose();
     }
   }
 

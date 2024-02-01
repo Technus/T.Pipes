@@ -6,7 +6,7 @@ namespace T.Pipes.Test.Client
   [PipeUse(typeof(IAbstract))]
   [PipeUse(typeof(IAbstract<short>))]
   internal sealed partial class DelegatingCallback<TTarget>
-    : DelegatingPipeClientCallback<TTarget, DelegatingCallback<TTarget>>
+    : DelegatingPipeClientCallbackAutoDisposing<TTarget, DelegatingCallback<TTarget>>
     where TTarget : IAbstract, IAbstract<short>
   {
     public DelegatingCallback(TTarget target) : base(target, PipeConstants.ResponseTimeMs)
@@ -25,23 +25,10 @@ namespace T.Pipes.Test.Client
       base.OnMessageSent(message);
     }
 
-    public override void OnDisconnected(string connection)
-    {
-      base.OnDisconnected(connection);
-      Dispose();
-    }
-
     public override void OnExceptionOccurred(Exception exception)
     {
       ("E: " + exception.ToString()).WriteLine(ConsoleColor.DarkYellow);
       base.OnExceptionOccurred(exception);
-      Dispose();
-    }
-
-    protected override void DisposeCore(bool disposing,bool includeAsync)
-    {
-      base.DisposeCore(disposing, includeAsync);
-      Target.Dispose();
     }
   }
 
