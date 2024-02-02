@@ -110,6 +110,9 @@ namespace T.Pipes
     /// <inheritdoc/>
     public sealed override async Task StopAsync(CancellationToken cancellationToken = default)
     {
+      cancellationToken.ThrowIfCancellationRequested();
+      LifetimeCancellation.ThrowIfCancellationRequested();
+
       using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, LifetimeCancellation);
       await NoOperations.WaitAsync(cts.Token).ConfigureAwait(false);
       try
