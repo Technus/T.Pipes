@@ -135,9 +135,9 @@ namespace T.Pipes
       }
       finally
       {
+        _semaphore.Dispose();
         _process.Dispose();
       }
-      _semaphore.Dispose();
     }
 
     /// <summary>

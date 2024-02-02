@@ -58,23 +58,29 @@ namespace T.Pipes
       {
         return;
       }
-      if (_responses.Count > 0)
+      try
       {
-        var exception = new LocalNoResponseException("Connected", new InvalidOperationException("Connection occurred while operations were pending"));
-        foreach (var item in _responses)
+        if (_responses.Count > 0)
         {
-          try
+          var exception = new LocalNoResponseException("Connected", new InvalidOperationException("Connection occurred while operations were pending"));
+          foreach (var item in _responses)
           {
-            item.Value.TrySetException(exception);
+            try
+            {
+              item.Value.TrySetException(exception);
+            }
+            finally
+            {
+              //Ignored
+            }
           }
-          finally
-          {
-            //Ignored
-          }
+          _responses.Clear();
         }
-        _responses.Clear();
       }
-      _semaphore.Release();
+      finally
+      {
+        _semaphore.Release();
+      }
     }
 
     /// <summary>
@@ -90,23 +96,29 @@ namespace T.Pipes
       {
         return;
       }
-      if (_responses.Count > 0)
+      try
       {
-        var exception = new LocalNoResponseException("Disconnected", new InvalidOperationException("Disconnection occurred while operations were pending"));
-        foreach (var item in _responses)
+        if (_responses.Count > 0)
         {
-          try
+          var exception = new LocalNoResponseException("Disconnected", new InvalidOperationException("Disconnection occurred while operations were pending"));
+          foreach (var item in _responses)
           {
-            item.Value.TrySetException(exception);
+            try
+            {
+              item.Value.TrySetException(exception);
+            }
+            finally
+            {
+              //Ignored
+            }
           }
-          finally
-          {
-            //Ignored
-          }
+          _responses.Clear();
         }
-        _responses.Clear();
       }
-      _semaphore.Release();
+      finally
+      {
+        _semaphore.Release();
+      }
     }
 
     /// <summary>
@@ -152,26 +164,32 @@ namespace T.Pipes
       {
         return;
       }
-      if (_responses.Count > 0)
+      try
       {
-        if (exception is not LocalNoResponseException)
+        if (_responses.Count > 0)
         {
-          exception = new LocalNoResponseException("Clearing", exception ?? new InvalidOperationException("Clearing while operations were pending"));
-        }
-        foreach (var item in _responses)
-        {
-          try
+          if (exception is not LocalNoResponseException)
           {
-            item.Value.TrySetException(exception);
+            exception = new LocalNoResponseException("Clearing", exception ?? new InvalidOperationException("Clearing while operations were pending"));
           }
-          finally
+          foreach (var item in _responses)
           {
-            //Ignored
+            try
+            {
+              item.Value.TrySetException(exception);
+            }
+            finally
+            {
+              //Ignored
+            }
           }
+          _responses.Clear();
         }
-        _responses.Clear();
       }
-      _semaphore.Release();
+      finally
+      {
+        _semaphore.Release();
+      }
     }
 
     /// <inheritdoc/>
@@ -185,23 +203,29 @@ namespace T.Pipes
       {
         return;
       }
-      if (_responses.Count > 0)
+      try
       {
-        exception = new LocalNoResponseException("Exception occurred", exception);
-        foreach (var item in _responses)
+        if (_responses.Count > 0)
         {
-          try
+          exception = new LocalNoResponseException("Exception occurred", exception);
+          foreach (var item in _responses)
           {
-            item.Value.TrySetException(exception);
+            try
+            {
+              item.Value.TrySetException(exception);
+            }
+            finally
+            {
+              //Ignored
+            }
           }
-          finally
-          {
-            //Ignored
-          }
+          _responses.Clear();
         }
-        _responses.Clear();
       }
-      _semaphore.Release();
+      finally
+      {
+        _semaphore.Release();
+      }
     }
 
     /// <summary>
@@ -231,10 +255,18 @@ namespace T.Pipes
         {
           return;
         }
-        var exists = _responses.TryGetValue(message.Id, out var response);
-        if (exists)
-          _responses.Remove(message.Id);
-        _semaphore.Release();
+        bool exists;
+        TaskCompletionSource<object?>? response;
+        try
+        {
+          exists = _responses.TryGetValue(message.Id, out response);
+          if (exists)
+            _responses.Remove(message.Id);
+        }
+        finally
+        {
+          _semaphore.Release();
+        }
         if (exists)
         {
           if (message.PacketType == PacketType.ResponseFailure)
@@ -597,8 +629,14 @@ namespace T.Pipes
         try
         {
           await _semaphore.WaitAsync(LifetimeCancellation).ConfigureAwait(false);
-          _responses.Remove(message.Id);
-          _semaphore.Release();
+          try
+          {
+            _responses.Remove(message.Id);
+          }
+          finally
+          {
+            _semaphore.Release();
+          }
         }
         catch
         {
