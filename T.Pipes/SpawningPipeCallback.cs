@@ -618,6 +618,12 @@ namespace T.Pipes
           proxy = default;//So it wont get Disposed
         }
       }
+      catch (Exception e)
+      {
+        if (!tcs.Task.IsCompleted)//If the response was not set on the task...
+          tcs.TrySetException(new LocalNoResponseException("Catch block reached", e));
+        throw;
+      }
       finally
       {
         if (!tcs.Task.IsCompleted)
