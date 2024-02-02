@@ -84,13 +84,13 @@ namespace T.Pipes.Abstractions
     /// <summary>
     /// Signal that it is not needed anymore
     /// </summary>
-    protected CancellationTokenSource LifetimeCancellationSource { get; } = new();
+    internal CancellationTokenSource LifetimeCancellationSource { get; } = new();
 
     /// <summary>
     /// Signal that it is not needed anymore
     /// </summary>
     /// <remarks><see cref="LifetimeCancellationSource"/>.Token</remarks>
-    public CancellationToken LifetimeCancellation => LifetimeCancellationSource.Token;
+    public CancellationToken LifetimeCancellation => IsDisposed ? new CancellationToken(canceled: true) : LifetimeCancellationSource.Token;
 
     /// <summary>
     /// Check if disposed

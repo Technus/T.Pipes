@@ -5,9 +5,7 @@ namespace T.Pipes.Test.Server
 {
   internal static class Program
   {
-    public static void Main(string[]? args) => Start(args).Wait();
-
-    private static async Task Start(string[]? args)
+    private static async Task Main(string[]? args)
     {
       $"Server Core: {typeof(byte).Assembly.FullName}".WriteLine(ConsoleColor.White);
       var name = args is null || args.Length==0 || string.IsNullOrEmpty(args[0])
