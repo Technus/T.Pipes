@@ -666,6 +666,12 @@ namespace T.Pipes
 
         return (T)await tcs.Task.ConfigureAwait(false);
       }
+      catch (Exception e)
+      {
+        if (!tcs.Task.IsCompleted)//If the response was not set on the task...
+          tcs.TrySetException(new LocalNoResponseException("Catch block reached", e));
+        throw;
+      }
       finally
       {
         if (!tcs.Task.IsCompleted)

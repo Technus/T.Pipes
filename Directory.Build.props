@@ -6,7 +6,7 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/Technus/T.Pipes</RepositoryUrl>
     <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
-    <VersionPrefix>5.1.4</VersionPrefix>
+    <VersionPrefix>5.1.5</VersionPrefix>
   </PropertyGroup>
 
   <ItemGroup>
