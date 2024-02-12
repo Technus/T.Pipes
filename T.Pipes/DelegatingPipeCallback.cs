@@ -33,7 +33,7 @@ namespace T.Pipes
   /// <typeparam name="TTargetAndCallback">target to operate on and the callback at the same time</typeparam>
   public abstract class DelegatingPipeServerCallback<TTargetAndCallback>
     : DelegatingPipeCallback<TTargetAndCallback, TTargetAndCallback>
-    where TTargetAndCallback : DelegatingPipeCallback<PipeMessage, PipeMessageFactory, TTargetAndCallback, TTargetAndCallback>, IDisposable
+    where TTargetAndCallback : DelegatingPipeCallback<PipeMessage, PipeMessageFactory, TTargetAndCallback, TTargetAndCallback>
   {
     /// <summary>
     /// Creates the callback, must be done with the same pipe as in the pipe connection holding it.
