@@ -6,6 +6,8 @@
     event Func<int>? Set;
     event Action<string>? Get;
 
+    event EventHandler Egg;
+
     /// <summary>
     /// get/set
     /// add/remove

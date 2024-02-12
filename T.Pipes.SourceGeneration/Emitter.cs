@@ -83,6 +83,7 @@ namespace T.Pipes.SourceGeneration
 
     private void RenderCast(ITypeSymbol typeSymbol) => Writer
       .WriteLine($$"""
+        [System.Runtime.CompilerServices.CompilerGenerated]
         public {{typeSymbol.TypeUse()}} As{{() => RenderTypeName((INamedTypeSymbol)typeSymbol!,true)}} 
           => ({{typeSymbol.TypeUse()}})this;
         """);
@@ -102,32 +103,41 @@ namespace T.Pipes.SourceGeneration
 
     private void RenderNewMethod(IMethodSymbol methodSymbol) => Writer
       .WriteLine($$"""
+        [System.Runtime.CompilerServices.CompilerGenerated]
         {{methodSymbol.ReturnType.TypeUse()}} {{methodSymbol.ContainingType.TypeUse()}}.{{methodSymbol.Name}}({{()=>RenderParameters(methodSymbol.Parameters)}})
           => {{()=>RenderName(methodSymbol, true)}}({{()=>RenderStrings(methodSymbol.Parameters.Select(p=> p.Prefix() + p.Name).ToArray())}});
         """);
 
     private void RenderNewEvent(IEventSymbol eventSymbol) => Writer
       .WriteLine($$"""
+        [System.Runtime.CompilerServices.CompilerGenerated]
         internal {{eventSymbol.Type.TypeUse()}} {{() => RenderName(eventSymbol, true,"event_")}};
+        [System.Runtime.CompilerServices.CompilerGenerated]
         event {{eventSymbol.Type.TypeUse()}} {{eventSymbol.ContainingType.TypeUse()}}.{{eventSymbol.Name}}
-        { 
+        {
+          [System.Runtime.CompilerServices.CompilerGenerated]
           add => {{() => RenderName(eventSymbol, true, "event_")}} += value;
+          [System.Runtime.CompilerServices.CompilerGenerated]
           remove => {{() => RenderName(eventSymbol, true, "event_")}} -= value;
         }
         """);
 
     private void RenderNewProperty(IPropertySymbol propertySymbol) => Writer
       .WriteLine($$"""
+        [System.Runtime.CompilerServices.CompilerGenerated]
         {{propertySymbol.Type.TypeUse()}} {{propertySymbol.ContainingType.TypeUse()}}.{{propertySymbol.Name}}
         { 
-          get => {{()=>RenderName(propertySymbol,true,"get_")}}(); 
-          set => {{() => RenderName(propertySymbol, true, "set_")}}(value); 
+          [System.Runtime.CompilerServices.CompilerGenerated]
+          get => {{()=>RenderName(propertySymbol,true,"get_")}}();
+          [System.Runtime.CompilerServices.CompilerGenerated]
+          set => {{() => RenderName(propertySymbol, true, "set_")}}(value);
         }
         """);
-
+    
     private void RenderTargetHandling() => Writer
       .WriteLine($$"""
 
+        [System.Runtime.CompilerServices.CompilerGenerated]
         [System.ComponentModel.Description("TargetInit")]
         protected override void TargetInitAuto()
         {
@@ -135,7 +145,7 @@ namespace T.Pipes.SourceGeneration
         {{() => RenderEventHandling(TypeDefinition.UsedMemberDeclarations.Where(x => x is IEventSymbol).Cast<IEventSymbol>().ToArray(), true)}}
         }
       
-        [System.ComponentModel.Description("TargetDeInit")]
+        [System.Runtime.CompilerServices.CompilerGenerated]
         protected override void TargetDeInitAuto()
         {
           base.TargetDeInitAuto();
@@ -161,11 +171,13 @@ namespace T.Pipes.SourceGeneration
 
     private void RenderStaticSelector() => Writer
       .Write($$"""
+      [System.Runtime.CompilerServices.CompilerGenerated]
       static {{TypeDefinition.TypeDeclarationSyntax.Identifier}}()
       {
         RegisterCommandSelectorFunctionsFor{{()=>RenderTypeSyntaxName()}}();
       }
 
+      [System.Runtime.CompilerServices.CompilerGenerated]
       [System.ComponentModel.Description("CommandSelector")]
       static internal void RegisterCommandSelectorFunctionsFor{{() => RenderTypeSyntaxName()}}()
       {{() => RenderStaticSelectorBody()}}
@@ -228,7 +240,11 @@ namespace T.Pipes.SourceGeneration
           if (item.Value.invoke.Parameters.Length > 0)
           {
             Writer.Write('(');
+            if (item.Value.invoke.Parameters.Length > 1)
+              Writer.Write('(');
             RenderStrings(item.Value.invoke.Parameters.Select(x => x.Type.TypeUse()).ToArray());
+            if (item.Value.invoke.Parameters.Length > 1)
+              Writer.Write(')');
             Writer.Write(")message.Parameter");
           }
 
@@ -280,6 +296,7 @@ namespace T.Pipes.SourceGeneration
     }
 
     private void RenderAttributes(IEventSymbol eventSymbol, bool served = false) => Writer
+      .WriteLine("[System.Runtime.CompilerServices.CompilerGenerated]")
       .Write("[System.ComponentModel.Description(\"")
       .Write(MethodKind.EventRaise)
       .WriteLine("\")]");
@@ -287,6 +304,7 @@ namespace T.Pipes.SourceGeneration
     private void RenderAttributes(IMethodSymbol methodSymbol, bool served = false)
     {
       Writer
+        .WriteLine("[System.Runtime.CompilerServices.CompilerGenerated]")
         .Write("[System.ComponentModel.Description(\"")
         .Write(methodSymbol.MethodKind)
         .WriteLine("\")]");
@@ -315,21 +333,120 @@ namespace T.Pipes.SourceGeneration
 
       Writer.WriteLine('{');
       Writer.IncreaseIndent();
+      var (input, output) = GetIO(invokeSymbol);
+
       if (served)
       {
-        if (invokeSymbol.ReturnsVoid)
+        if (!invokeSymbol.ReturnsVoid)
         {
-          Writer.Write($$"""{{() => RenderName(eventSymbol, true, "event_")}}?.Invoke({{()=>RenderStrings(invokeSymbol.Parameters.Select(x=>x.Name).ToArray())}});""");
+          Writer.WriteLine($$"""var invoke = {{() => RenderName(eventSymbol, true, "event_")}};""");
+          Writer.Write("var result = invoke is null ? default : invoke.Invoke");
         }
         else
+          Writer.Write($$"""{{() => RenderName(eventSymbol, true, "event_")}}?.Invoke""");
+
+        if (invokeSymbol.TypeParameters.Length > 0)
         {
-          Writer.Write($$"""return {{() => RenderName(eventSymbol, true, "event_")}}?.Invoke({{() => RenderStrings(invokeSymbol.Parameters.Select(x => x.Name).ToArray())}}) ?? default;""");
+          Writer.Write('<');
+          RenderTypeParameters(invokeSymbol.TypeParameters);
+          Writer.Write('>');
+        }
+
+        Writer.Write('(');
+        for (int i = 0; i < invokeSymbol.Parameters.Length; i++)
+        {
+          var parameter = invokeSymbol.Parameters[i];
+          switch (parameter.RefKind)
+          {
+            case RefKind.None when input.Count > 1: Writer.Write("parameter."); break;
+            case RefKind.Ref when input.Count > 1: Writer.Write("ref parameter."); break;
+            case RefKind.Ref: Writer.Write("ref "); break;
+            case RefKind.Out: Writer.Write("out var "); break;
+            case RefKind.In when input.Count > 1:
+            case RefKind.In + 1 when input.Count > 1: Writer.Write("ref parameter."); break;
+            case RefKind.In:
+            case RefKind.In + 1: Writer.Write("in "); break;
+          }
+          Writer.Write(parameter.Name);
+          if (i != invokeSymbol.Parameters.Length - 1)
+          {
+            Writer.Write(", ");
+          }
+        }
+        Writer.Write(");");
+
+        if (!invokeSymbol.ReturnsVoid || output.Count > 0)
+        {
+          Writer.WriteLine();
+
+          if (!invokeSymbol.ReturnsVoid)
+          {
+            if (output.Count == 0)
+              Writer.Write("return result;");
+            else
+            {
+              Writer.Write("return (result, ");
+              for (int i = 0; i < output.Count; i++)
+              {
+                var parameter = output[i];
+                switch (parameter.RefKind)
+                {
+                  case RefKind.None when input.Count > 1:
+                  case RefKind.Ref when input.Count > 1: Writer.Write("parameter."); break;
+                  case RefKind.Ref: break;
+                  case RefKind.Out: break;
+                  case RefKind.In when input.Count > 1:
+                  case RefKind.In + 1 when input.Count > 1: Writer.Write("parameter."); break;
+                  case RefKind.In:
+                  case RefKind.In + 1: break;
+                }
+                Writer.Write(parameter.Name);
+                if (i != output.Count - 1)
+                {
+                  Writer.Write(", ");
+                }
+              }
+              Writer.Write(");");
+            }
+          }
+          else
+          {
+            if (output.Count == 1)
+            {
+              Writer.Write("return ");
+              Writer.Write(output[0].Name);
+              Writer.Write(';');
+            }
+            else
+            {
+              Writer.Write("return (");
+              for (int i = 0; i < output.Count; i++)
+              {
+                var parameter = output[i];
+                switch (parameter.RefKind)
+                {
+                  case RefKind.None when input.Count > 1:
+                  case RefKind.Ref when input.Count > 1: Writer.Write("parameter."); break;
+                  case RefKind.Ref: break;
+                  case RefKind.Out: break;
+                  case RefKind.In when input.Count > 1:
+                  case RefKind.In + 1 when input.Count > 1: Writer.Write("parameter."); break;
+                  case RefKind.In:
+                  case RefKind.In + 1: break;
+                }
+                Writer.Write(parameter.Name);
+                if (i != output.Count - 1)
+                {
+                  Writer.Write(", ");
+                }
+              }
+              Writer.Write(");");
+            }
+          }
         }
       }
       else
       {
-        var (input, output) = GetIO(invokeSymbol);
-
         if (!invokeSymbol.ReturnsVoid || output.Count > 0)
           Writer.Write("var result = ");
 
@@ -741,7 +858,22 @@ namespace T.Pipes.SourceGeneration
         .Write(' ');
       RenderName(eventSymbol, served, "invoke_");
       Writer.Write('(');
-      RenderParameters(invokeSymbol.Parameters);
+
+      if(served)
+      {
+        if (invokeSymbol.Parameters.Length > 0)
+        {
+          if (invokeSymbol.Parameters.Length > 1)
+            Writer.Write('(');
+          RenderParameters(invokeSymbol.Parameters);
+          if (invokeSymbol.Parameters.Length > 1)
+            Writer.Write(") parameter");
+        }
+      }
+      else
+      {
+        RenderParameters(invokeSymbol.Parameters);
+      }
       Writer.Write(')');
 
       if (served)

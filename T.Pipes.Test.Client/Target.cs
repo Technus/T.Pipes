@@ -28,6 +28,8 @@ namespace T.Pipes.Test.Client
 
     public event Func<short, short>? Map;
 
+    public event EventHandler Egg;
+
     public void Action()
     { }
 
