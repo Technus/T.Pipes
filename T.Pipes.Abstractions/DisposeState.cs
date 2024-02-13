@@ -26,19 +26,19 @@ namespace T.Pipes.Abstractions
     Busy = 1 << 29,
 
     /// <summary>
-    /// <see cref="BaseClass.Dispose"/>
+    /// <see cref="BaseClass.CheckedDispose"/>
     /// </summary>
     CheckedSync = 1 << 0,
     /// <summary>
-    /// <see cref="BaseClass.DisposeAsync"/>
+    /// <see cref="BaseClass.CheckedDisposeAsync"/>
     /// </summary>
     CheckedAsync = 1 << 1,
     /// <summary>
-    /// <see cref="BaseClass.FinalizerCore"/>
+    /// <see cref="BaseClass.CheckedFinalizer"/>
     /// </summary>
     CheckedFinalize = 1 << 2,
     /// <summary>
-    /// <see cref="BaseClass.RegisterTryCancelOnCancellation"/>
+    /// <see cref="BaseClass.RegisterCheckedCancelOnCancellation"/>
     /// </summary>
     CheckedCancel = 1 << 3,
 
@@ -48,7 +48,7 @@ namespace T.Pipes.Abstractions
     AnyChecked = CheckedSync | CheckedAsync | CheckedFinalize | CheckedCancel,
 
     /// <summary>
-    /// <see cref="BaseClass.TryDisposeCore"/>
+    /// <see cref="BaseClass.TryDispose"/>
     /// </summary>
     TrySync = 1 << 4,
     /// <summary>
@@ -56,7 +56,7 @@ namespace T.Pipes.Abstractions
     /// </summary>
     TryAsync = 1 << 5,
     /// <summary>
-    /// <see cref="BaseClass.TryFinalizerCore"/>
+    /// <see cref="BaseClass.TryFinalizer"/>
     /// </summary>
     TryFinalize = 1 << 6,
     /// <summary>
@@ -70,19 +70,19 @@ namespace T.Pipes.Abstractions
     AnyTry = TrySync | TryAsync | TryFinalize | TryCancel,
 
     /// <summary>
-    /// <see cref="BaseClass.Dispose"/> after any <see cref="AnySafe"/>
+    /// <see cref="IDisposable.Dispose"/> after any <see cref="AnyTry"/>
     /// </summary>
     SyncAfterTry = 1 << 8,
     /// <summary>
-    /// <see cref="BaseClass.DisposeAsync"/> after any <see cref="AnySafe"/>
+    /// <see cref="IAsyncDisposable.DisposeAsync"/> after any <see cref="AnyTry"/>
     /// </summary>
     AsyncAfterTry = 1 << 9,
     /// <summary>
-    /// <see cref="BaseClass.FinalizerCore"/> descendants after any <see cref="AnySafe"/>
+    /// <see cref="object.Finalize"/> descendants after any <see cref="AnyTry"/>
     /// </summary>
     FinalizeAfterTry = 1 << 10,
     /// <summary>
-    /// <see cref="BaseClass.LifetimeCancellation"/> was called after any <see cref="AnySafe"/>
+    /// <see cref="BaseClass.LifetimeCancellation"/> was called after any <see cref="AnyTry"/>
     /// </summary>
     CancelAfterTry = 1 << 11,
 
@@ -92,19 +92,19 @@ namespace T.Pipes.Abstractions
     AnyAfterTry = SyncAfterTry | AsyncAfterTry | FinalizeAfterTry | CancelAfterTry,
 
     /// <summary>
-    /// <see cref="BaseClass.Dispose"/> after any safe <see cref="AnySafe"/>
+    /// <see cref="IDisposable.Dispose"/> after any safe <see cref="AnyChecked"/>
     /// </summary>
     SyncAfterCancel = 1 << 12,
     /// <summary>
-    /// <see cref="BaseClass.DisposeAsync"/> after any safe <see cref="AnySafe"/>
+    /// <see cref="IAsyncDisposable.DisposeAsync"/> after any safe <see cref="AnyChecked"/>
     /// </summary>
     AsyncAfterCancel = 1 << 13,
     /// <summary>
-    /// <see cref="BaseClass.FinalizerCore"/> descendants after any safe <see cref="AnySafe"/>
+    /// <see cref="object.Finalize"/> descendants after any safe <see cref="AnyChecked"/>
     /// </summary>
     FinalizeAfterCancel = 1 << 14,
     /// <summary>
-    /// <see cref="BaseClass.LifetimeCancellation"/> was called after any safe <see cref="AnySafe"/>
+    /// <see cref="BaseClass.LifetimeCancellation"/> was called after any safe <see cref="AnyChecked"/>
     /// Should be unused...
     /// </summary>
     CancelAfterCancel = 1 << 15,

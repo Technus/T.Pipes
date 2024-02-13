@@ -18,7 +18,7 @@ namespace T.Pipes
     where TPacketFactory : IPipeMessageFactory<TPacket>
     where TCallback : PipeCallbackBase<TPacket, TPacketFactory, TCallback>
   {
-    internal static T CastOrDefault<T>(object o) => o is T t ? t : default!;
+    internal static T CastOrDefault<T>(object? o) => o is T t ? t : default!;
 
     /// <summary>
     /// Packet factory being used

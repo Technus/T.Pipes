@@ -300,7 +300,7 @@ namespace T.Pipes
     /// <param name="command"></param>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    protected virtual async Task OnProvideProxyCommandAsync<T>(PipeMessage command, CancellationToken cancellationToken = default) 
+    protected virtual async Task<T?> OnProvideProxyCommandAsync<T>(PipeMessage command, CancellationToken cancellationToken = default)
       where T : class, IPipeDelegatingConnection<PipeMessage>
     {
       if (command.Parameter is not string name || name == string.Empty)
@@ -309,7 +309,7 @@ namespace T.Pipes
         try
         {
           await WriteAsync(PacketFactory.CreateResponseFailure(command, new RemoteNoResponseException("Invalid Pipe Name", ex)), default).ConfigureAwait(false);
-          return;
+          return default;
         }
         catch (Exception e)
         {
@@ -326,7 +326,7 @@ namespace T.Pipes
         try
         {
           await WriteAsync(PacketFactory.CreateResponseFailure(command, new RemoteNoResponseException("Cancelled", ex)), default).ConfigureAwait(false);
-          return;
+          return default;
         }
         catch (Exception e)
         {
@@ -343,7 +343,7 @@ namespace T.Pipes
         try
         {
           await WriteAsync(PacketFactory.CreateResponseFailure(command, new RemoteNoResponseException("Disposed", CreateDisposedException(ex))), default).ConfigureAwait(false);
-          return;
+          return default;
         }
         catch (Exception e)
         {
@@ -357,21 +357,19 @@ namespace T.Pipes
       else if (ResponseTimeoutMs > 0)
         cts.CancelAfter(ResponseTimeoutMs);
 
-      T? proxy = default;
+      IPipeDelegatingConnection<PipeMessage>? proxy = default;
       try
       {
         try
         {
-          proxy = CastOrDefault<T>(CreateProxy(command.Command, name));
-          if (proxy is null)
-            throw new InvalidOperationException("Crated proxy was null");
+          proxy = CreateProxy(command.Command, name);
         }
         catch (Exception ex)
         {
           try
           {
             await WriteAsync(PacketFactory.CreateResponseFailure(command, new RemoteNoResponseException("Creating proxy", ex)), default).ConfigureAwait(false);
-            return;
+            return default;
           }
           catch (Exception e)
           {
@@ -379,7 +377,13 @@ namespace T.Pipes
           }
         }
 
-        await WriteAsync(PacketFactory.CreateResponse(command), cts.Token).ConfigureAwait(false);
+        if (proxy is not T)
+        {
+          await WriteAsync(PacketFactory.CreateResponse(command, false), cts.Token).ConfigureAwait(false);
+          return default;
+        }
+
+        await WriteAsync(PacketFactory.CreateResponse(command, true), cts.Token).ConfigureAwait(false);
 
         try
         {
@@ -390,7 +394,7 @@ namespace T.Pipes
           try
           {
             await WriteAsync(PacketFactory.CreateResponseFailure(command, new RemoteNoResponseException("Connecting", ex)), default).ConfigureAwait(false);
-            return;
+            return default;
           }
           catch (Exception e)
           {
@@ -398,7 +402,14 @@ namespace T.Pipes
           }
         }
 
-        proxy = default;//So it wont get Disposed
+        try
+        {
+          return proxy as T;
+        }
+        finally
+        {
+          proxy = default;//So it wont get Disposed
+        }
       }
       finally
       {
@@ -521,20 +532,20 @@ namespace T.Pipes
       var pipeName = Guid.NewGuid().ToString();
       var message = PacketFactory.CreateCommand(command, pipeName);
       var lazyProxyCreation = LazyProxyCreation;
-      T proxy = default;
+      IPipeDelegatingConnection<PipeMessage> proxy = default;
 
       try
       {
-        if (tcs.Task.IsCompleted)
-          await tcs.Task.ConfigureAwait(false);
+        if (tcs.Task.IsCompleted && !CastOrDefault<bool>(await tcs.Task.ConfigureAwait(false)))
+          return default;
 
         if(!lazyProxyCreation)
         {
           try
           {
-            proxy = CastOrDefault<T>(CreateProxy(command, pipeName));
-            if (proxy is null)
-              throw new InvalidOperationException("Crated proxy was null");
+            proxy = CreateProxy(command, pipeName);
+            if(proxy is not T)
+              throw new InvalidOperationException($"Crated proxy was not: {typeof(T)}");
           }
           catch (Exception ex)
           {
@@ -543,8 +554,8 @@ namespace T.Pipes
             throw e;
           }
 
-          if (tcs.Task.IsCompleted)
-            await tcs.Task.ConfigureAwait(false);
+          if (tcs.Task.IsCompleted && !CastOrDefault<bool>(await tcs.Task.ConfigureAwait(false)))
+            return default;
         }
 
         try
@@ -566,8 +577,8 @@ namespace T.Pipes
           throw e;
         }
 
-        if (tcs.Task.IsCompleted)
-          await tcs.Task.ConfigureAwait(false);
+        if (tcs.Task.IsCompleted && !CastOrDefault<bool>(await tcs.Task.ConfigureAwait(false)))
+          return default;
 
         try
         {
@@ -580,15 +591,16 @@ namespace T.Pipes
           throw e;
         }
 
-        await tcs.Task.ConfigureAwait(false);//Wait for response if all went ok then it means client is started
+        if (!CastOrDefault<bool>(await tcs.Task.ConfigureAwait(false)))//Wait for response if all went ok then it means client is started
+          return default;
 
-        if(lazyProxyCreation)
+        if (lazyProxyCreation)
         {
           try
           {
-            proxy = CastOrDefault<T>(CreateProxy(command, pipeName));
-            if (proxy is null)
-              throw new InvalidOperationException("Crated proxy was null");
+            proxy = CreateProxy(command, pipeName);
+            if (proxy is not T)
+              throw new InvalidOperationException($"Crated proxy was not: {typeof(T)}");
           }
           catch (Exception ex)
           {
@@ -611,7 +623,7 @@ namespace T.Pipes
 
         try
         {
-          return proxy;
+          return proxy as T;
         }
         finally
         {

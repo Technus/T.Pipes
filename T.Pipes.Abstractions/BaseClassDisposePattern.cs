@@ -52,7 +52,7 @@ namespace T.Pipes.Abstractions
 #pragma warning restore S3881 // "IDisposable" should be implemented correctly
   {
     /// <summary>
-    /// <see cref="CancelCore"/>
+    /// <see cref="TryCancel"/> <see cref="CheckedCancel"/>
     /// </summary>
     private CancellationTokenRegistration _lifetimeCancellationRegistration;
 
