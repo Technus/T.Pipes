@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -70,7 +70,7 @@ namespace T.Pipes.Abstractions
     /// </summary>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    Task StartAsService(CancellationToken cancellationToken = default);
+    Task StartAsServiceAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// For servers it is <see cref="ServerName"/>
@@ -82,5 +82,15 @@ namespace T.Pipes.Abstractions
     /// The server pipe name
     /// </summary>
     string ServerName { get; }
+
+    /// <summary>
+    /// Current connection count
+    /// </summary>
+    int ConnectionCount { get; }
+
+    /// <summary>
+    /// Current response task count
+    /// </summary>
+    int ResponseTaskCount { get; }
   }
 }

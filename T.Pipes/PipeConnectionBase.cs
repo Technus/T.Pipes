@@ -26,8 +26,14 @@ namespace T.Pipes
     private int _connectionCount;
     private readonly SemaphoreSlim _noConnections = new(1, 1);
 
+    /// <inheritdoc/>
+    public int ConnectionCount => _connectionCount;
+
     private int _responseTaskCount;
     private readonly SemaphoreSlim _noResponseTasks = new(1, 1);
+
+    /// <inheritdoc/>
+    public int ResponseTaskCount => _responseTaskCount;
 
     /// <summary>
     /// The <typeparamref name="TPipe"/> used
@@ -198,7 +204,7 @@ namespace T.Pipes
     }
 
     /// <inheritdoc/>
-    public async Task StartAsService(CancellationToken cancellationToken = default)
+    public async Task StartAsServiceAsync(CancellationToken cancellationToken = default)
     {
       using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, LifetimeCancellation);
       while (!cts.Token.IsCancellationRequested)

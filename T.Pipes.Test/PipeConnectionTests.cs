@@ -223,7 +223,7 @@ namespace T.Pipes.Test
       await using var client = new PipeClient<IPipeCallback<PipeMessage>>(pipeName, clientCallback);
       await server.StartAsync();
 
-      var task = client.StartAsService();
+      var task = client.StartAsServiceAsync();
 
       await task.Should().NotCompleteWithinAsync(TimeSpan.FromSeconds(2));
 
@@ -254,7 +254,7 @@ namespace T.Pipes.Test
 
       await server.WriteAsync(new() { Command = "13" });
 
-      _ = client.StartAsService();
+      _ = client.StartAsServiceAsync();
 
       await Task.Delay(100);
 
