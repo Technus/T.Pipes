@@ -238,6 +238,11 @@ namespace T.Pipes
     /// </summary>
     protected virtual void TargetDeInitAuto() { }
 
+    /// <summary>
+    /// Stub for source generator, to clean events
+    /// </summary>
+    protected virtual void TargetDisposeAuto() { }
+
     /// <inheritdoc/>
     public int ResponseTimeoutMs { get; set; }
 
@@ -345,6 +350,7 @@ namespace T.Pipes
       {
         TargetDeInitAuto();
         TargetDeInit(Target);
+        TargetDisposeAuto();
       }
     }
 

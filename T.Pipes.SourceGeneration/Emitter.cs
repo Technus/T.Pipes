@@ -86,7 +86,8 @@ namespace T.Pipes.SourceGeneration
         [System.Runtime.CompilerServices.CompilerGenerated]
         public {{typeSymbol.TypeUse()}} As{{() => RenderTypeName((INamedTypeSymbol)typeSymbol!,true)}} 
           => ({{typeSymbol.TypeUse()}})this;
-        """);
+        """)
+      .WriteLine();
 
     private void RenderImplementation(ISymbol symbol)
     {
@@ -117,8 +118,10 @@ namespace T.Pipes.SourceGeneration
         {
           [System.Runtime.CompilerServices.CompilerGenerated]
           add => {{() => RenderName(eventSymbol, true, "event_")}} += value;
+          #pragma warning disable CS8601
           [System.Runtime.CompilerServices.CompilerGenerated]
           remove => {{() => RenderName(eventSymbol, true, "event_")}} -= value;
+          #pragma warning restore CS8601
         }
         """);
 
@@ -151,6 +154,13 @@ namespace T.Pipes.SourceGeneration
           base.TargetDeInitAuto();
         {{() => RenderEventHandling(TypeDefinition.UsedMemberDeclarations.Where(x => x is IEventSymbol).Cast<IEventSymbol>().ToArray(), false)}}
         }
+        
+        [System.Runtime.CompilerServices.CompilerGenerated]
+        protected override void TargetDisposeAuto()
+        {
+          base.TargetDisposeAuto();
+        {{() => RenderEventDispose(TypeDefinition.ServeMemberDeclarations.Where(x => x is IEventSymbol).Cast<IEventSymbol>().ToArray())}}
+        }
 
         """);
 
@@ -164,6 +174,19 @@ namespace T.Pipes.SourceGeneration
         Writer.Write(v ? " += " : " -= ");
         RenderName(e, false, "invoke_");
         Writer.WriteLine(';');
+      }
+
+      Writer.DecreaseIndent();
+    }
+
+    private void RenderEventDispose(IReadOnlyList<IEventSymbol> symbols)
+    {
+      Writer.IncreaseIndent();
+
+      foreach (var e in symbols)
+      {
+        RenderName(e, true, "event_");
+        Writer.WriteLine(" = null!;");
       }
 
       Writer.DecreaseIndent();
