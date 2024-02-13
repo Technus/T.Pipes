@@ -41,7 +41,7 @@ namespace T.Pipes.Abstractions
     /// </summary>
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
-    public Task StartAndConnectAsync(CancellationToken cancellationToken = default);
+    Task StartAndConnectAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Allows to start and await connection for a specified time
@@ -56,7 +56,7 @@ namespace T.Pipes.Abstractions
     /// And awaits, it will also get cancelled on the <see cref="IPipeCallback{TMessage}.LifetimeCancellation"/>
     /// </summary>
     /// <returns>Only after the client is Cancelled</returns>
-    public Task StartAndConnectWithTimeoutAndAwaitCancellationAsync(int timeoutMs = 1000, CancellationToken cancellationToken = default);
+    Task StartAndConnectWithTimeoutAndAwaitCancellationAsync(int timeoutMs = 1000, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Stops the pipe, finishes ~instantly
@@ -71,7 +71,7 @@ namespace T.Pipes.Abstractions
     /// </summary>
     /// <param name="cancellationToken"></param>
     /// <returns>an enumerable representing if a connection is present</returns>
-    public IAsyncEnumerable<bool> StartAsServiceAsync(CancellationToken cancellationToken = default);
+    IAsyncEnumerable<bool> StartAsServiceAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// For servers it is <see cref="ServerName"/>
