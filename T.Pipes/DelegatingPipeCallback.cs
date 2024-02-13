@@ -637,7 +637,7 @@ namespace T.Pipes
       try
       {
         if(tcs.Task.IsCompleted)
-          return (T)await tcs.Task.ConfigureAwait(false);
+          return CastOrDefault<T>(await tcs.Task.ConfigureAwait(false));
 
         try
         {
@@ -654,11 +654,11 @@ namespace T.Pipes
         catch (Exception ex)
         {
           tcs.TrySetException(new LocalNoResponseException("Queueing TaskCompletionSource", ex));
-          return (T)await tcs.Task.ConfigureAwait(false);
+          return CastOrDefault<T>(await tcs.Task.ConfigureAwait(false));
         }
 
         if (tcs.Task.IsCompleted)
-          return (T)await tcs.Task.ConfigureAwait(false);
+          return CastOrDefault<T>(await tcs.Task.ConfigureAwait(false));
 
         try
         {
@@ -667,10 +667,10 @@ namespace T.Pipes
         catch (Exception ex)
         {
           tcs.TrySetException(new LocalNoResponseException("Sending Command", ex));
-          return (T)await tcs.Task.ConfigureAwait(false);
+          return CastOrDefault<T>(await tcs.Task.ConfigureAwait(false));
         }
 
-        return (T)await tcs.Task.ConfigureAwait(false);
+        return CastOrDefault<T>(await tcs.Task.ConfigureAwait(false));
       }
       catch (Exception e)
       {

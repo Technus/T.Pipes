@@ -362,7 +362,7 @@ namespace T.Pipes
       {
         try
         {
-          proxy = (T)CreateProxy(command.Command, name!);
+          proxy = CastOrDefault<T>(CreateProxy(command.Command, name));
           if (proxy is null)
             throw new InvalidOperationException("Crated proxy was null");
         }
@@ -532,7 +532,7 @@ namespace T.Pipes
         {
           try
           {
-            proxy = (T)CreateProxy(command, pipeName);
+            proxy = CastOrDefault<T>(CreateProxy(command, pipeName));
             if (proxy is null)
               throw new InvalidOperationException("Crated proxy was null");
           }
@@ -586,7 +586,7 @@ namespace T.Pipes
         {
           try
           {
-            proxy = (T)CreateProxy(command, pipeName);
+            proxy = CastOrDefault<T>(CreateProxy(command, pipeName));
             if (proxy is null)
               throw new InvalidOperationException("Crated proxy was null");
           }
