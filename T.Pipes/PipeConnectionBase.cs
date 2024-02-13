@@ -1,5 +1,6 @@
 using H.Pipes.Args;
 using System;
+using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,19 +19,18 @@ namespace T.Pipes
     where TPipe : H.Pipes.IPipeConnection<TPacket>
     where TCallback : IPipeCallback<TPacket>
   {
+    private int _connectionCount;
+    private readonly SemaphoreSlim _noConnections = new(1, 1);
+    private int _responseTaskCount;
+    private readonly SemaphoreSlim _noResponseTasks = new(1, 1);
+
     /// <summary>
     /// If there are any pending operations
     /// </summary>
     protected SemaphoreSlim NoOperations { get; } = new(1, 1);
 
-    private int _connectionCount;
-    private readonly SemaphoreSlim _noConnections = new(1, 1);
-
     /// <inheritdoc/>
     public int ConnectionCount => _connectionCount;
-
-    private int _responseTaskCount;
-    private readonly SemaphoreSlim _noResponseTasks = new(1, 1);
 
     /// <inheritdoc/>
     public int ResponseTaskCount => _responseTaskCount;
@@ -204,22 +204,24 @@ namespace T.Pipes
     }
 
     /// <inheritdoc/>
-    public async Task StartAsServiceAsync(CancellationToken cancellationToken = default)
+    public async IAsyncEnumerable<bool> StartAsServiceAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
       using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, LifetimeCancellation);
       while (!cts.Token.IsCancellationRequested)
       {
         await _noConnections.WaitAsync(cts.Token).ConfigureAwait(false);
-        _noConnections.Release();
-        cts.Token.ThrowIfCancellationRequested();
         try
         {
-          await StartAndConnectAsync(cts.Token).ConfigureAwait(false);
+          yield return false;
         }
         finally
         {
-          await Task.Delay(20, cts.Token).ConfigureAwait(false);
+          _noConnections.Release();
         }
+        cts.Token.ThrowIfCancellationRequested();
+        await StartAndConnectAsync(cts.Token).ConfigureAwait(false);
+        cts.Token.ThrowIfCancellationRequested();
+        yield return true;
       }
       cts.Token.ThrowIfCancellationRequested();
     }

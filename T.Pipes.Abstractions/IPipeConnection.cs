@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -69,8 +70,8 @@ namespace T.Pipes.Abstractions
     /// Should not finish and cancel on token or <see cref="IPipeCallback{TMessage}.LifetimeCancellation"/>
     /// </summary>
     /// <param name="cancellationToken"></param>
-    /// <returns></returns>
-    Task StartAsServiceAsync(CancellationToken cancellationToken = default);
+    /// <returns>an enumerable representing if a connection is present</returns>
+    public IAsyncEnumerable<bool> StartAsServiceAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// For servers it is <see cref="ServerName"/>
