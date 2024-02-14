@@ -62,7 +62,7 @@ namespace T.Pipes
       {
         if (_responses.Count > 0)
         {
-          var exception = new LocalNoResponseException("Connected", new InvalidOperationException("Connection occurred while operations were pending"));
+          var exception = new LocalNoResponseException("Connection occurred while operations are pending", new InvalidOperationException($"Connected: {connection}"));
           foreach (var item in _responses)
           {
             try
@@ -100,7 +100,7 @@ namespace T.Pipes
       {
         if (_responses.Count > 0)
         {
-          var exception = new LocalNoResponseException("Disconnected", new InvalidOperationException("Disconnection occurred while operations were pending"));
+          var exception = new LocalNoResponseException("Disconnection occurred while operations are pending", new InvalidOperationException($"Disconnected: {connection}"));
           foreach (var item in _responses)
           {
             try
@@ -141,7 +141,7 @@ namespace T.Pipes
         _semaphore.Wait();
       if (_responses.Count > 0)
       {
-        var exception = new LocalNoResponseException("Disposing", CreateDisposingException());
+        var exception = new LocalNoResponseException("Disposing while operations are pending", CreateDisposingException());
         foreach (var item in _responses)
         {
           item.Value.TrySetException(exception);
@@ -170,7 +170,7 @@ namespace T.Pipes
         {
           if (exception is not LocalNoResponseException)
           {
-            exception = new LocalNoResponseException("Clearing", exception ?? new InvalidOperationException("Clearing while operations were pending"));
+            exception = new LocalNoResponseException("Clearing while operations are pending", exception ?? new InvalidOperationException("Clearing responses"));
           }
           foreach (var item in _responses)
           {
@@ -207,7 +207,7 @@ namespace T.Pipes
       {
         if (_responses.Count > 0)
         {
-          exception = new LocalNoResponseException("Exception occurred", exception);
+          exception = new LocalNoResponseException("Exception occurred while operations are pending", exception);
           foreach (var item in _responses)
           {
             try
@@ -305,7 +305,7 @@ namespace T.Pipes
     {
       if (command.Parameter is not string name || name == string.Empty)
       {
-        var ex = new ArgumentException("Name was not specified.", nameof(command));
+        var ex = new ArgumentException("Name was not specified", nameof(command));
         try
         {
           await WriteAsync(PacketFactory.CreateResponseFailure(command, new RemoteNoResponseException("Invalid Pipe Name", ex)), default).ConfigureAwait(false);
@@ -313,7 +313,7 @@ namespace T.Pipes
         }
         catch (Exception e)
         {
-          throw new AggregateException(e, ex);
+          throw new AggregateException("Failed to send failure response", e, ex);
         }
       }
 
@@ -325,12 +325,12 @@ namespace T.Pipes
       {
         try
         {
-          await WriteAsync(PacketFactory.CreateResponseFailure(command, new RemoteNoResponseException("Cancelled", ex)), default).ConfigureAwait(false);
+          await WriteAsync(PacketFactory.CreateResponseFailure(command, new RemoteNoResponseException("Operation cancelled", ex)), default).ConfigureAwait(false);
           return default;
         }
         catch (Exception e)
         {
-          throw new AggregateException(e, ex);
+          throw new AggregateException("Failed to send failure response", e, ex);
         }
       }
 
@@ -342,12 +342,12 @@ namespace T.Pipes
       {
         try
         {
-          await WriteAsync(PacketFactory.CreateResponseFailure(command, new RemoteNoResponseException("Disposed", CreateDisposedException(ex))), default).ConfigureAwait(false);
+          await WriteAsync(PacketFactory.CreateResponseFailure(command, new RemoteNoResponseException("Operation performed on disposed object", CreateDisposedException(ex))), default).ConfigureAwait(false);
           return default;
         }
         catch (Exception e)
         {
-          throw new AggregateException(e, ex);
+          throw new AggregateException("Failed to send failure response", e, ex);
         }
       }
 
@@ -368,12 +368,12 @@ namespace T.Pipes
         {
           try
           {
-            await WriteAsync(PacketFactory.CreateResponseFailure(command, new RemoteNoResponseException("Creating proxy", ex)), default).ConfigureAwait(false);
+            await WriteAsync(PacketFactory.CreateResponseFailure(command, new RemoteNoResponseException("Creating proxy failed", ex)), default).ConfigureAwait(false);
             return default;
           }
           catch (Exception e)
           {
-            throw new AggregateException(e, ex);
+            throw new AggregateException("Failed to send failure response", e, ex);
           }
         }
 
@@ -393,12 +393,12 @@ namespace T.Pipes
         {
           try
           {
-            await WriteAsync(PacketFactory.CreateResponseFailure(command, new RemoteNoResponseException("Connecting", ex)), default).ConfigureAwait(false);
+            await WriteAsync(PacketFactory.CreateResponseFailure(command, new RemoteNoResponseException("Connecting failed or timed out", ex)), default).ConfigureAwait(false);
             return default;
           }
           catch (Exception e)
           {
-            throw new AggregateException(e, ex);
+            throw new AggregateException("Failed to send failure response", e, ex);
           }
         }
 
@@ -492,7 +492,7 @@ namespace T.Pipes
       }
       catch (Exception ex)
       {
-        throw new LocalNoResponseException("Cancelled", ex);
+        throw new LocalNoResponseException("Request failed operation was cancelled", ex);
       }
       try
       {
@@ -500,7 +500,7 @@ namespace T.Pipes
       }
       catch (Exception ex)
       {
-        throw new LocalNoResponseException("Cancelled", CreateDisposedException(ex));
+        throw new LocalNoResponseException("Request failed object was disposed", CreateDisposedException(ex));
       }
 
       var tcs = new TaskCompletionSource<object>();
@@ -517,7 +517,7 @@ namespace T.Pipes
         var state = ((TaskCompletionSource<object> tcs, CancellationToken cancellationToken, CancellationToken lifetimeCancellation))x;
         if (state.tcs.Task.IsCompleted || state.cancellationToken.IsCancellationRequested || state.lifetimeCancellation.IsCancellationRequested)
           return;
-        state.tcs.TrySetException(new LocalNoResponseException("Cancelled", new TimeoutException("Timed out")));
+        state.tcs.TrySetException(new LocalNoResponseException("Operation timed out", new TimeoutException("Timed out")));
       }, (tcs, cancellationToken, LifetimeCancellation)).ConfigureAwait(false);
 #else
       using var ctr = cts.Token.Register(static x =>
@@ -525,7 +525,7 @@ namespace T.Pipes
           var state = ((TaskCompletionSource<object> tcs, CancellationToken cancellationToken, CancellationToken lifetimeCancellation))x;
           if (state.tcs.Task.IsCompleted || state.cancellationToken.IsCancellationRequested || state.lifetimeCancellation.IsCancellationRequested)
             return;
-          state.tcs.TrySetException(new LocalNoResponseException("Cancelled",new TimeoutException("Timed out")));
+          state.tcs.TrySetException(new LocalNoResponseException("Operation timed out",new TimeoutException("Timed out")));
         }, (tcs, cancellationToken, LifetimeCancellation));
 #endif
 
@@ -545,11 +545,11 @@ namespace T.Pipes
           {
             proxy = CreateProxy(command, pipeName);
             if(proxy is not T)
-              throw new InvalidOperationException($"Crated proxy was not: {typeof(T)}");
+              throw new InvalidOperationException($"Crated proxy was not: {typeof(T).FullName}");
           }
           catch (Exception ex)
           {
-            var e = new LocalNoResponseException("Creating Proxy", ex);
+            var e = new LocalNoResponseException("Creating proxy failed", ex);
             tcs.TrySetException(e);
             throw e;
           }
@@ -572,7 +572,7 @@ namespace T.Pipes
         }
         catch (Exception ex)
         {
-          var e = new LocalNoResponseException("Queueing TaskCompletionSource", ex);
+          var e = new LocalNoResponseException("Queueing response failed", ex);
           tcs.TrySetException(e);
           throw e;
         }
@@ -586,7 +586,7 @@ namespace T.Pipes
         }
         catch (Exception ex)
         {
-          var e = new LocalNoResponseException("Sending Command", ex);
+          var e = new LocalNoResponseException("Sending command failed", ex);
           tcs.TrySetException(e);
           throw e;
         }
@@ -604,7 +604,7 @@ namespace T.Pipes
           }
           catch (Exception ex)
           {
-            var e = new LocalNoResponseException("Creating Proxy", ex);
+            var e = new LocalNoResponseException("Creating proxy failed", ex);
             tcs.TrySetException(e);
             throw e;
           }
@@ -616,7 +616,7 @@ namespace T.Pipes
         }
         catch (Exception ex)
         {
-          var e = new LocalNoResponseException("Awaiting Connection", ex);
+          var e = new LocalNoResponseException("Connecting failed or timed out", ex);
           tcs.TrySetException(e);
           throw e;
         }
@@ -633,13 +633,13 @@ namespace T.Pipes
       catch (Exception e)
       {
         if (!tcs.Task.IsCompleted)//If the response was not set on the task...
-          tcs.TrySetException(new LocalNoResponseException("Catch block reached", e));
+          tcs.TrySetException(new LocalNoResponseException("Catch block reached, trying setting exception", e));
         throw;
       }
       finally
       {
         if (!tcs.Task.IsCompleted)
-          tcs.TrySetException(new LocalNoResponseException("Finally block reached", new InvalidOperationException("Failed to finish gracefully.")));
+          tcs.TrySetException(new LocalNoResponseException("Finally block reached, trying setting exception", new InvalidOperationException("Failed to finish gracefully")));
 
         if (proxy is not null)
           await proxy.DisposeAsync().ConfigureAwait(false);

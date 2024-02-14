@@ -156,7 +156,7 @@ namespace T.Pipes
         }
         catch (Exception stopException)
         {
-          throw new AggregateException(startException, stopException);
+          throw new AggregateException("Failed to stop the pipe on error", startException, stopException);
         }
         throw;
       }

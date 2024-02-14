@@ -125,7 +125,7 @@ namespace T.Pipes
         }
         catch (Exception stopException)
         {
-          throw new AggregateException(startException, stopException);
+          throw new AggregateException("Failed to stop the pipe on error", startException, stopException);
         }
         throw;
       }
@@ -209,7 +209,7 @@ namespace T.Pipes
           }
           catch (Exception stopException)
           {
-            throw new AggregateException(tcsException,stopException);
+            throw new AggregateException("Failed to stop the pipe on error", tcsException, stopException);
           }
           throw;
         }
@@ -223,7 +223,7 @@ namespace T.Pipes
       {
         ctr.Dispose();
         if (!tcs.Task.IsCompleted)
-          tcs.TrySetException(new InvalidOperationException("Failed to finish gracefully."));
+          tcs.TrySetException(new InvalidOperationException("Failed to finish gracefully"));
         Pipe.ClientConnected -= onConnected;
       }
     }

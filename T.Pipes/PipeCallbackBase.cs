@@ -54,7 +54,7 @@ namespace T.Pipes
       set
       {
         if (_connection is null)
-          _connection = value ?? throw new InvalidOperationException("Trying to set to null.");
+          _connection = value ?? throw new InvalidOperationException("Trying to set to null");
         else
           throw new InvalidOperationException("Value already set");
       }

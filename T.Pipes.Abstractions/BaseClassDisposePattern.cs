@@ -45,7 +45,7 @@ namespace T.Pipes.Abstractions
   }
 
   /// <summary>
-  /// Base patterns.
+  /// Base patterns for disposing.
   /// </summary>
 #pragma warning disable S3881 // "IDisposable" should be implemented correctly
   public abstract partial class BaseClass : IAsyncDisposable, IDisposable
