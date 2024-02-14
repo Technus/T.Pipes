@@ -2,7 +2,6 @@
 {
   public static class PipeConstants
   {
-    public const string ServerPipeName = "T.Pipes.Test";
     public const string ClientDisplayName = "T.Pipes.Test.Client";
     public const string ServerDisplayName = "T.Pipes.Test.Server";
     public const string ClientExeName = "T.Pipes.Test.Client.exe";

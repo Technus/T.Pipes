@@ -9,7 +9,7 @@ namespace T.Pipes.Test.Server
     {
       $"Server Core: {typeof(byte).Assembly.FullName}".WriteLine(ConsoleColor.White);
       var name = args is null || args.Length==0 || string.IsNullOrEmpty(args[0])
-        ? $"{PipeConstants.ServerPipeName}-{Guid.NewGuid()}"
+        ? Guid.NewGuid().ToString()
         : args[0];
       $"Pipe name: {name}".WriteLine(ConsoleColor.White);
       await using (var server = new Server(name))
