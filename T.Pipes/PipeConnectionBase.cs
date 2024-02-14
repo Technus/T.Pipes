@@ -213,6 +213,8 @@ namespace T.Pipes
         _noConnections.Release();
         cts.Token.ThrowIfCancellationRequested();
         await StartAndConnectAsync(cts.Token).ConfigureAwait(false);
+        cts.Token.ThrowIfCancellationRequested();
+        await Task.Yield();
       }
       cts.Token.ThrowIfCancellationRequested();
     }
@@ -236,6 +238,8 @@ namespace T.Pipes
         await StartAndConnectAsync(cts.Token).ConfigureAwait(false);
         cts.Token.ThrowIfCancellationRequested();
         yield return true;
+        cts.Token.ThrowIfCancellationRequested();
+        await Task.Yield();
       }
       cts.Token.ThrowIfCancellationRequested();
     }
