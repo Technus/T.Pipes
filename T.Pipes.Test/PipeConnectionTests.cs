@@ -225,7 +225,7 @@ namespace T.Pipes.Test
       await using var clientCallback = Substitute.For<IPipeCallback<PipeMessage>>();
       await using var client = new PipeClient<IPipeCallback<PipeMessage>>(pipeName, clientCallback);
 
-      var (task, check) = ToListAsync(client.StartAsServiceAsync());
+      var (task, check) = ToListAsync(client.StartAsServiceEnumerableAsync());
       check().Should().NotBeTrue();
 
       await task.Should().NotCompleteWithinAsync(TimeSpan.FromSeconds(2));
@@ -262,7 +262,7 @@ namespace T.Pipes.Test
       await using var clientCallback = Substitute.For<IPipeCallback<PipeMessage>>();
       await using var client = new PipeClient<IPipeCallback<PipeMessage>>(pipeName, clientCallback);
 
-      var (task, check) = ToListAsync(server.StartAsServiceAsync());
+      var (task, check) = ToListAsync(server.StartAsServiceEnumerableAsync());
       check().Should().NotBeTrue();
 
       await task.Should().NotCompleteWithinAsync(TimeSpan.FromSeconds(2));
@@ -300,7 +300,7 @@ namespace T.Pipes.Test
       await using var client = new PipeClient<IPipeCallback<PipeMessage>>(pipeName, clientCallback);
       await server.StartAsync();
 
-      var (task, check) = ToListAsync(client.StartAsServiceAsync());
+      var (task, check) = ToListAsync(client.StartAsServiceEnumerableAsync());
 
       await task.Should().NotCompleteWithinAsync(TimeSpan.FromSeconds(2));
       check().Should().BeTrue();
@@ -332,7 +332,7 @@ namespace T.Pipes.Test
       await using var client = new PipeClient<IPipeCallback<PipeMessage>>(pipeName, clientCallback);
       await client.StartAsync();
 
-      var (task,check) = ToListAsync(server.StartAsServiceAsync());
+      var (task,check) = ToListAsync(server.StartAsServiceEnumerableAsync());
 
       await task.Should().NotCompleteWithinAsync(TimeSpan.FromSeconds(2));
       check().Should().BeTrue();

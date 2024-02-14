@@ -204,7 +204,21 @@ namespace T.Pipes
     }
 
     /// <inheritdoc/>
-    public async IAsyncEnumerable<bool> StartAsServiceAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
+    public async Task StartAsServiceAsync(CancellationToken cancellationToken = default)
+    {
+      using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, LifetimeCancellation);
+      while (!cts.Token.IsCancellationRequested)
+      {
+        await _noConnections.WaitAsync(cts.Token).ConfigureAwait(false);
+        _noConnections.Release();
+        cts.Token.ThrowIfCancellationRequested();
+        await StartAndConnectAsync(cts.Token).ConfigureAwait(false);
+      }
+      cts.Token.ThrowIfCancellationRequested();
+    }
+
+    /// <inheritdoc/>
+    public async IAsyncEnumerable<bool> StartAsServiceEnumerableAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
       using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, LifetimeCancellation);
       while (!cts.Token.IsCancellationRequested)

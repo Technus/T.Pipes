@@ -70,8 +70,17 @@ namespace T.Pipes.Abstractions
     /// Should not finish and cancel on token or <see cref="IPipeCallback{TMessage}.LifetimeCancellation"/>
     /// </summary>
     /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    Task StartAsServiceAsync(CancellationToken cancellationToken = default);
+
+
+    /// <summary>
+    /// Starts the Pipe as a service that will ignore most exceptions and try it's best at being alive
+    /// Should not finish and cancel on token or <see cref="IPipeCallback{TMessage}.LifetimeCancellation"/>
+    /// </summary>
+    /// <param name="cancellationToken"></param>
     /// <returns>an enumerable representing if a connection is present</returns>
-    IAsyncEnumerable<bool> StartAsServiceAsync(CancellationToken cancellationToken = default);
+    IAsyncEnumerable<bool> StartAsServiceEnumerableAsync(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// For servers it is <see cref="ServerName"/>
