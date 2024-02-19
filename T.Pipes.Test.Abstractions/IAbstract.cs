@@ -80,5 +80,8 @@
     int? MaybeInt(int? a);
 
     string? MaybeString(string? a);
+
+    int GetOnly { get; }
+    int SetOnly { set; }
   }
 }

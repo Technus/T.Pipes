@@ -130,13 +130,31 @@ namespace T.Pipes.SourceGeneration
         [System.Runtime.CompilerServices.CompilerGenerated]
         {{propertySymbol.Type.TypeUse()}} {{propertySymbol.ContainingType.TypeUse()}}.{{propertySymbol.Name}}
         { 
-          [System.Runtime.CompilerServices.CompilerGenerated]
-          get => {{()=>RenderName(propertySymbol,true,"get_")}}();
-          [System.Runtime.CompilerServices.CompilerGenerated]
-          set => {{() => RenderName(propertySymbol, true, "set_")}}(value);
+        {{() => RenderGet(propertySymbol)}}
+        {{() => RenderSet(propertySymbol)}}
         }
         """);
-    
+
+    private void RenderGet(IPropertySymbol propertySymbol)
+    {
+      if (propertySymbol.GetMethod is null)
+        return;
+      Writer.Write($$"""
+          [System.Runtime.CompilerServices.CompilerGenerated]
+          get => {{() => RenderName(propertySymbol, true, "get_")}}();
+        """);
+    }
+
+    private void RenderSet(IPropertySymbol propertySymbol)
+    {
+      if (propertySymbol.SetMethod is null)
+        return;
+      Writer.Write($$"""
+          [System.Runtime.CompilerServices.CompilerGenerated]
+          set => {{() => RenderName(propertySymbol, true, "set_")}}(value);
+        """);
+    }
+
     private void RenderTargetHandling() => Writer
       .WriteLine($$"""
 

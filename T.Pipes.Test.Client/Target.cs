@@ -18,6 +18,11 @@ namespace T.Pipes.Test.Client
 
     public Func<int, int>? Tea { get; set; }
     public int Int { get; set; } = 1337;
+
+    public int GetOnly => i;
+
+    public int SetOnly { set => i = value; }
+
     short IAbstract<short>.Tea { get; set; }
 
     public event Action? Act;
