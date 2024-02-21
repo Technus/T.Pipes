@@ -167,6 +167,7 @@ namespace T.Pipes.SourceGeneration
         }
       
         [System.Runtime.CompilerServices.CompilerGenerated]
+        [System.ComponentModel.Description("TargetDeInit")]
         protected override void TargetDeInitAuto()
         {
           base.TargetDeInitAuto();
@@ -174,6 +175,7 @@ namespace T.Pipes.SourceGeneration
         }
         
         [System.Runtime.CompilerServices.CompilerGenerated]
+        [System.ComponentModel.Description("TargetDispose")]
         protected override void TargetDisposeAuto()
         {
           base.TargetDisposeAuto();
