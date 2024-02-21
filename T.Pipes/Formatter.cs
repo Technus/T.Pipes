@@ -29,7 +29,7 @@ namespace T.Pipes
       /// <inheritdoc/>
       public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
       {
-        if (value is not null && value.GetType() is var type && type.IsPrimitive)
+        if (value is not null && value.GetType() is var type && (type.IsPrimitive || type.IsEnum))
         {
           writer.WriteStartObject();
           writer.WritePropertyName("$type");

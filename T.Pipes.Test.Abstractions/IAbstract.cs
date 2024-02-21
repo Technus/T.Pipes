@@ -83,5 +83,10 @@
 
     int GetOnly { get; }
     int SetOnly { set; }
+
+
+    SomeEnumsLong CheckEnum(SomeEnums simple);
+
+    SomeEnums CheckEnums(SomeEnumsUInt unsigned);
   }
 }

@@ -38,8 +38,14 @@ namespace T.Pipes.Test.Server
         {
           var target = item.Callback.AsIAbstract;
           var target1 = item.Callback.AsIAbstract_args_Int16_end_;
+          
           try
           {
+            var e1 = target.CheckEnum(SomeEnums.One);
+            $"{SomeEnums.One} => {e1}".WriteLine(ConsoleColor.Green);
+            var e2 = target.CheckEnums(SomeEnumsUInt.Two);
+            $"{SomeEnumsUInt.Two} => {e2}".WriteLine(ConsoleColor.Green);
+
             target1.GetT().ToString().WriteLine(ConsoleColor.Green);
 
             target.Get += Target_Get;

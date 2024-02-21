@@ -1,4 +1,5 @@
-﻿using T.Pipes.Test.Abstractions;
+﻿using System;
+using T.Pipes.Test.Abstractions;
 
 namespace T.Pipes.Test.Client
 {
@@ -37,6 +38,9 @@ namespace T.Pipes.Test.Client
 
     public void Action()
     { }
+
+    public SomeEnumsLong CheckEnum(SomeEnums simple) => (SomeEnumsLong)(long)simple;
+    public SomeEnums CheckEnums(SomeEnumsUInt unsigned) => (SomeEnums)(long)unsigned;
 
     public void Dispose()
     {
