@@ -33,6 +33,8 @@ namespace T.Pipes.SourceGeneration
         name: GetHintName(classy),
         namespaceName: classy.TryGetParentSyntax<NamespaceDeclarationSyntax>(out var parent) 
           ? parent.Name.ToString() 
+          : classy.TryGetParentSyntax<FileScopedNamespaceDeclarationSyntax>(out var parentF)
+          ? parentF.Name.ToString()
           : throw new ArgumentException("Has no Namespace", nameof(classy)),
         typeList: GetTypeList(classy),
         serveMemberDeclarations: served,
@@ -234,8 +236,12 @@ namespace T.Pipes.SourceGeneration
         sb.Insert(0, '.');
         sb.Insert(0, ns.Name.ToString());
       }
+      else if(classy.TryGetParentSyntax<FileScopedNamespaceDeclarationSyntax>(out var fns))
+      {
+          sb.Insert(0, '.');
+          sb.Insert(0, fns.Name.ToString());
+      }
       return sb.ToString();
     }
-
   }
 }

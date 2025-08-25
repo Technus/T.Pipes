@@ -30,6 +30,8 @@
       T.Pipes Source Code Generator.
       Writes Interface Implementations for Inter Process Communication.
     </Description>
+
+	<IsRoslynComponent>true</IsRoslynComponent>
   </PropertyGroup>
 
   <ItemGroup>
